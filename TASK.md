@@ -14,8 +14,8 @@
 ```yaml
 Status:      🚧 In Progress
 Milestone:   M3 — Landing (M0 ✅ · M1 ✅ · M2 ✅)
-Progress:    24 / 87 tasks
-Terakhir:    M3-02 (2026-10-08)
+Progress:    26 / 87 tasks
+Terakhir:    M3-03 (+ M3-05 ditarik ke depan)
 
 Aturan:
   - Satu task = satu sesi kerja
@@ -214,19 +214,20 @@ Target: landing page dengan hero + carousel event.
   - `src/lib/api/events.ts` — `is_published = true AND starts_at > now()`, order `starts_at ASC`, limit default 12
   - Fallback ke `eventFixtures` **hanya kalau tabel `events` benar-benar kosong** (bukan saat hasil query 0)
   - Verifikasi: `pnpm typecheck` ✅ · uji DB → 1 event (`lanjalan-vol-1`) ✅
-- [ ] **M3-03** Buat `<EventCard />`
-  - File: `src/components/event/event-card.tsx`
-  - Aspect 16:9, hover scale 1.04
-  - Referensi: `COMPONENTS.md` section 3.3
+- [x] **M3-03** Buat `<EventCard />` ✅ 2026-10-08
+  - File: `src/components/event/event-card.tsx` — **Server Component** (hover CSS `group-hover`), aspect 16:9, hover scale 1.04, shadow, focus outline primary
+  - Badge volume diambil dari judul (regex `vol. N`) — tidak ada kolom khusus di schema
+  - Ketergantungan yang ikut ditarik ke depan: `src/lib/utils/format.ts` (`formatDate`/`formatTime`/`formatRupiah` via `Intl` + tz **Asia/Jakarta**) & `src/lib/utils/event-status.ts` (`getEventStatus`)
+  - Verifikasi: `pnpm typecheck` ✅ · `pnpm build` ✅ · uji format dengan `TZ=UTC` tetap WIB-correct ✅
+  - ⚠️ a11y: `text-primary` pada badge `upcoming` kontrasnya rendah (DESIGN.md §8.1) — ditinjau di M10-06
 - [ ] **M3-04** Buat `<EventCarousel />`
   - File: `src/components/event/event-carousel.tsx`
   - Horizontal scroll + snap
   - Panah navigasi saat hover (desktop)
   - Referensi: `COMPONENTS.md` section 3.4
-- [ ] **M3-05** Buat `<EventStatusBadge />`
-  - File: `src/components/event/event-status-badge.tsx`
-  - Varian: upcoming, live, past
-  - Referensi: `COMPONENTS.md` section 3.5
+- [x] **M3-05** Buat `<EventStatusBadge />` ✅ 2026-10-08 *(ditarik ke depan untuk M3-03)*
+  - File: `src/components/event/event-status-badge.tsx` — varian `upcoming` / `live` (dot pulse) / `past`, selalu ada teks (a11y)
+  - Referensi: `COMPONENTS.md` §3.5
 - [ ] **M3-06** Buat hero landing
   - File: `app/(public)/page.tsx`
   - Background foto + overlay gradient
@@ -566,6 +567,7 @@ Catatan task yang sudah selesai, di luar checklist (untuk audit).
 | 2026-10-08 | M2-06 | Layout `(public)` + landing dipindah ke route group; milestone M2 ✅ selesai |
 | 2026-10-08 | M3-01 | `lib/types/event.ts` + `lib/fixtures/events.ts` (1 travel fixture) |
 | 2026-10-08 | M3-02 | `lib/api/events.ts` `getUpcomingEvents` (+fallback fixture); uji DB lolos |
+| 2026-10-08 | M3-03 | `<EventCard />` + `format.ts` + `event-status.ts` + `EventStatusBadge` (M3-05 ditarik ke depan) |
 | 2026-10-08 | M0-06 | 8 tabel + 4 enum + relations ditulis di `schema.ts` (252 baris); typecheck lolos |
 | 2026-10-08 | M0-04 | 13 dependency runtime + 3 dev terpasang; `pnpm.onlyBuiltDependencies` diset; @types/bcryptjs dihapus |
 | 2026-10-08 | M0-05 | `drizzle.config.ts` + `lib/db/client.ts` (prepare:false) + `schema.ts` kosong; script `db:*` ditambah |

@@ -15,3 +15,6 @@ export type RundownItem = typeof rundownItems.$inferSelect;
 export type BudgetItem = typeof budgetItems.$inferSelect;
 export type EventMedia = typeof eventMedia.$inferSelect;
 export type EventExtra = typeof eventExtras.$inferSelect;
+
+/** Status tampil event (RULES.md §2.3). */
+export type EventStatus = "upcoming" | "live" | "past";
