@@ -288,7 +288,7 @@ Card untuk carousel event di landing / arsip.
 ```ts
 type EventCardProps = {
   event: Event;
-  size?: 'sm' | 'md' | 'lg';
+  size?: 'sm' | 'md' | 'lg' | 'fill';
   showBadge?: boolean;   // default true
 };
 ```
@@ -299,6 +299,7 @@ type EventCardProps = {
 | `sm` | 16:9 | 200px |
 | `md` | 16:9 | 280px |
 | `lg` | 16:9 | 360px |
+| `fill` | 16:9 | `w-full` (mengisi sel grid — dipakai `/arsip`) |
 
 **Isi:**
 - Poster (aspect 16:9), radius `md`

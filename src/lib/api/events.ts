@@ -64,6 +64,19 @@ export async function getPastTravelEvents(limit: number = DEFAULT_LIMIT): Promis
 }
 
 /**
+ * Arsip semua jenis event: published dan `starts_at` sudah lewat,
+ * diurutkan dari yang paling baru — dipakai halaman `/arsip` (ROUTES.md §1.1).
+ */
+export async function getPastEvents(limit: number = DEFAULT_LIMIT): Promise<Event[]> {
+  return db
+    .select()
+    .from(events)
+    .where(and(eq(events.isPublished, true), lt(events.startsAt, new Date())))
+    .orderBy(desc(events.startsAt))
+    .limit(limit);
+}
+
+/**
  * Event publik berdasarkan slug + relasi lengkap (SCHEMA.md §5.1).
  * Hanya event `is_published = true`; kalau tidak ada → `null`.
  * Sesi yang diambil hanya yang `is_active = true` (maks 1).

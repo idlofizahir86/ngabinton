@@ -13,9 +13,9 @@
 
 ```yaml
 Status:      🚧 In Progress
-Milestone:   M4 — Event Public (M0 ✅ · M1 ✅ · M2 ✅ · M3 ✅)
-Progress:    37 / 87 tasks
-Terakhir:    M4-08 (2026-10-08)
+Milestone:   M5 — Storytelling (M0 ✅ · M1 ✅ · M2 ✅ · M3 ✅ · M4 ✅)
+Progress:    38 / 87 tasks
+Terakhir:    M4-09 (2026-10-08)
 
 Aturan:
   - Satu task = satu sesi kerja
@@ -304,11 +304,16 @@ Target: halaman `/[slug]` dengan hero, rundown, biaya.
   - Anchor `#biaya` ditambahkan ke `EVENT_ANCHORS`
   - Verifikasi: `pnpm typecheck` ✅ · `pnpm lint` ✅ · `pnpm build` ✅ · SSR HTML → `id="biaya"`, judul, deskripsi, `Rp 175.000`, anchor ✅ · a11y snapshot: section "Biaya" + total tampil ✅
   - Temuan: note rundown "Optional" (Inggris) — dicatat di Backlog **B4**
-- [ ] **M4-09** Buat `app/(public)/arsip/page.tsx`
+- [x] **M4-09** Buat `app/(public)/arsip/page.tsx` ✅ 2026-10-08
   - Grid semua event past
   - Referensi: `CONTENT.md` section 3.3
+  - `src/lib/api/events.ts`: tambah `getPastEvents(limit)` (published + `starts_at < now()`, desc)
+  - `EventCard`: tambah `size="fill"` (`w-full`, mengisi sel grid) + `IMAGE_SIZES` per ukuran; didokumentasikan di `COMPONENTS.md` §3.3
+  - Halaman: ISR 300s (ROUTES §1.1), judul "Arsip Lan Jalan", grid `2/3/4` kolom, empty state "Belum ada event. Pantengin terus ya!" (CONTENT §1.4)
+  - Verifikasi: `pnpm typecheck` ✅ · `pnpm lint` ✅ · `pnpm build` ✅ (`/arsip` → ○ Static, revalidate 5m) · GET `/arsip` → 200 + title + navbar/footer + empty state ✅ · uji grid (temp pakai upcoming, dikembalikan) → kartu + badge + tanggal + `w-full` ✅ · screenshot ✅
+  - ⚠️ Gambar kartu 404 (aset belum ada, Backlog B2) — bukan error kode
 
-**Catatan M4:**
+**Catatan M4:** ✅ Milestone M4 selesai (`/lanjalan-vol-1` = hero + rundown + biaya; `/arsip` siap).
 - Setelah M4, `/lanjalan-vol-1` bisa dibuka (walau baru hero + rundown).
 - Section storytelling (M5) akan menambah section di antaranya.
 
@@ -613,6 +618,7 @@ Catatan task yang sudah selesai, di luar checklist (untuk audit).
 | 2026-10-08 | M4-06 | `<EventSubNav />` (sticky scroll-spy, sembunyi di hero/`#absen`); uji browser lolos |
 | 2026-10-08 | M4-07 | Section `#rundown` (wire `RundownTimeline` + `EventSubNav`) di halaman `/[slug]`; SSR + screenshot lolos |
 | 2026-10-08 | M4-08 | Section `#biaya` versi minimal + anchor `#biaya`; SSR + a11y snapshot lolos |
+| 2026-10-08 | M4-09 | Halaman `/arsip` (grid `getPastEvents`, `EventCard size="fill"`); ISR 300s. **Milestone M4 ✅** |
 | 2026-10-08 | M0-06 | 8 tabel + 4 enum + relations ditulis di `schema.ts` (252 baris); typecheck lolos |
 | 2026-10-08 | M0-04 | 13 dependency runtime + 3 dev terpasang; `pnpm.onlyBuiltDependencies` diset; @types/bcryptjs dihapus |
 | 2026-10-08 | M0-05 | `drizzle.config.ts` + `lib/db/client.ts` (prepare:false) + `schema.ts` kosong; script `db:*` ditambah |

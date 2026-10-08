@@ -97,6 +97,7 @@ Setiap selesai task di `TASK.md`:
 - **M4-06**: `<EventSubNav />` (client, sticky `top-16`, scroll-spy IntersectionObserver, sembunyi di hero & `#absen`); `html { scroll-behavior: smooth }` di `globals.css`
 - **M4-07**: Section `#rundown` di halaman `/[slug]` (wire `<RundownTimeline />` + `<EventSubNav />`, anchor `#hero`/`#rundown`)
 - **M4-08**: Section `#biaya` versi minimal (judul + deskripsi + total `/ orang`) & anchor `#biaya`; full version menyusul di M5-05 (`<BudgetTable />`)
+- **M4-09**: Halaman `/arsip` (ISR 300s) — grid semua event lewat via `getPastEvents`; `EventCard` dapat ukuran `fill` untuk grid. **Milestone M4 selesai**
 
 ### Changed
 - **PLAN**: `COMPONENTS.md` §3.1 `<EventHero />` — CTA utama dipetakan per `status` (upcoming → "Lihat Rundown", live → "Presensi Sekarang", past → "Lihat Dokumentasi"); "Daftar Sekarang" dihapus karena belum ada alur pendaftaran

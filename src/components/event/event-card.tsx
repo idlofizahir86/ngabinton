@@ -8,15 +8,26 @@ import { getVolumeLabel } from "@/lib/utils/event-label";
 import { getEventStatus } from "@/lib/utils/event-status";
 import { formatDate } from "@/lib/utils/format";
 
-const SIZE_CLASSES: Record<"sm" | "md" | "lg", string> = {
+/** Ukuran kartu. `fill` = memenuhi sel grid (dipakai halaman `/arsip`). */
+export type EventCardSize = "sm" | "md" | "lg" | "fill";
+
+const SIZE_CLASSES: Record<EventCardSize, string> = {
   sm: "w-[200px]",
   md: "w-[280px]",
   lg: "w-[360px]",
+  fill: "w-full",
+};
+
+const IMAGE_SIZES: Record<EventCardSize, string> = {
+  sm: "200px",
+  md: "(max-width: 640px) 200px, 280px",
+  lg: "(max-width: 640px) 280px, 360px",
+  fill: "(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw",
 };
 
 export type EventCardProps = {
   event: Event;
-  size?: "sm" | "md" | "lg";
+  size?: EventCardSize;
   showBadge?: boolean;
 };
 
@@ -32,8 +43,9 @@ export function EventCard({ event, size = "md", showBadge = true }: EventCardPro
     <Link
       href={`/${event.slug}`}
       className={cn(
-        "group block shrink-0 rounded-md focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary",
+        "group block rounded-md focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary",
         SIZE_CLASSES[size],
+        size !== "fill" && "shrink-0",
       )}
     >
       <div className="relative aspect-video overflow-hidden rounded-md bg-surface shadow-card transition duration-[250ms] ease-brand group-hover:scale-[1.04] group-hover:shadow-card-hover">
@@ -42,7 +54,7 @@ export function EventCard({ event, size = "md", showBadge = true }: EventCardPro
             src={event.heroImageUrl}
             alt={event.title}
             fill
-            sizes="(max-width: 640px) 200px, 280px"
+            sizes={IMAGE_SIZES[size]}
             className="object-cover"
           />
         ) : null}
