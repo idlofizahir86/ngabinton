@@ -534,6 +534,9 @@ type QuranQuoteProps = {
 
 Section narasi dengan gambar, layout dua kolom alternating.
 
+> Ini **blok konten** (tanpa `<section>`/`Container`) — halaman yang membungkusnya dengan
+> `id="narasi"` (ROUTES.md §2.1).
+
 **Props:**
 ```ts
 type StoryNarrativeProps = {

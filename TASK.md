@@ -14,8 +14,8 @@
 ```yaml
 Status:      🚧 In Progress
 Milestone:   M5 — Storytelling (M0 ✅ · M1 ✅ · M2 ✅ · M3 ✅ · M4 ✅)
-Progress:    39 / 87 tasks
-Terakhir:    M5-01 (2026-10-08)
+Progress:    40 / 87 tasks
+Terakhir:    M5-02 (2026-10-08)
 
 Aturan:
   - Satu task = satu sesi kerja
@@ -337,10 +337,15 @@ Target: section-section khusus event travel.
   - Bug dari M4-07/M4-08: `#rundown` memakai varian **storytelling** (teks `story-text` hampir hitam) padahal latarnya gelap → judul tak terbaca
   - Perbaikan: `#rundown` selalu varian **cinema** + teks putih (DESIGN.md §2: "Rundown (gelap, kontras)"); `#biaya` (varian storytelling) diberi latar `bg-story-bg`
   - Bukti: computed style → judul rundown `rgb(255,255,255)`, dot `rgb(229,9,20)`, `#biaya` bg `rgb(247,245,239)` ✅
-- [ ] **M5-02** Buat `<StoryNarrative />`
+- [x] **M5-02** Buat `<StoryNarrative />` ✅ 2026-10-08
   - File: `src/components/event/story-narrative.tsx`
   - Dua kolom, gambar bisa kiri/kanan
   - Referensi: `COMPONENTS.md` section 4.2
+  - Blok konten (tanpa `<section>`/`Container`) — grid `lg:grid-cols-5` (teks 60 / gambar 40); mobile satu kolom, gambar di atas; `direction` default `right`; gambar `aspect-video` + radius `lg` + `shadow-story`
+  - Belum di-wire — integrasi semua section di M5-08
+  - Verifikasi: `pnpm typecheck` ✅ · `pnpm lint` ✅ · `pnpm build` ✅ · temp-wire → `id="narasi"`, judul, body, gambar + alt, aset `narrative-meme.jpg` → 200 `image/jpeg` (589 KB) ✅ · screenshot: layout 60/40 sesuai ✅ lalu dikembalikan
+  - ℹ️ Aset `public/` sudah lengkap (19 file, 14,15 MB) sesuai `ASSETS.md` — 404 gambar sebelumnya kini teratasi
+  - ❓ QUESTION: sumber path gambar per section belum ada di DB (`event_media` kosong; `media_type` tak punya `narrative`). Perlu keputusan di M5-08 (seed `event_media` vs konstanta per-event)
 - [ ] **M5-03** Buat `<DestinationCard />`
   - File: `src/components/event/destination-card.tsx`
   - Card full-width, gambar kiri, konten kanan
@@ -566,7 +571,7 @@ Task yang muncul setelah planning awal, belum dimasukkan ke milestone.
 | ID | Task | Prioritas | Ditambahkan |
 |---|---|---|---|
 | B1 | `POST /api/auth/logout` (route handler, `ROUTES.md` §4.1) — apakah perlu, atau cukup `logoutAction` saja? Kalau tak perlu, hapus dari `ROUTES.md` | Rendah | 2026-10-08 |
-| B2 | Aset **foto hero landing** (AI-generated, jersey NGABINTON) — taruh di `public/` lalu isi `HERO_IMAGE_URL` di `src/app/(public)/page.tsx` (juga untuk event: hero/transport/Pawon/peserta) | Sedang | 2026-10-08 |
+| B2 | **Aset foto** — ✅ semua 19 file sudah ditambahkan ke `public/` sesuai `ASSETS.md` (2026-10-08). Sisa: isi `HERO_IMAGE_URL` di `src/app/(public)/page.tsx`, dan sumber path gambar section event (lihat ❓ QUESTION M5-02) | Sedang | 2026-10-08 |
 | B3 | Section **"Momen Kami"** (galeri, `event_media` gallery) & **"Mau Ikutan?"** (`CONTENT.md` §3.5) — belum dikerjakan; tambahkan saat media/data siap | Rendah | 2026-10-08 |
 | B4 | Teks Inggris di UI: note rundown "Petik Stroberi" = `"Optional"` (seed + `CONTENT.md` §4.7/§6.2). Redundan dengan badge "Opsional" dari `is_optional`. Saran: ganti note jadi kalimat Indonesia (mis. "Kalau sempat mampir") — perlu keputusan + `UPDATE` baris rundown (seed idempoten tidak meng-update baris lama) | Sedang | 2026-10-08 |
 
@@ -630,6 +635,7 @@ Catatan task yang sudah selesai, di luar checklist (untuk audit).
 | 2026-10-08 | M4-08 | Section `#biaya` versi minimal + anchor `#biaya`; SSR + a11y snapshot lolos |
 | 2026-10-08 | M4-09 | Halaman `/arsip` (grid `getPastEvents`, `EventCard size="fill"`); ISR 300s. **Milestone M4 ✅** |
 | 2026-10-08 | M5-01 | `<QuranQuote />` + `lib/validators/event-extras.ts`; wire `#pembuka`; **fix kontras** rundown/biaya (varian storytelling di latar gelap) |
+| 2026-10-08 | M5-02 | `<StoryNarrative />` (grid 60/40, `direction`); aset `public/` lengkap 19 file |
 | 2026-10-08 | M0-06 | 8 tabel + 4 enum + relations ditulis di `schema.ts` (252 baris); typecheck lolos |
 | 2026-10-08 | M0-04 | 13 dependency runtime + 3 dev terpasang; `pnpm.onlyBuiltDependencies` diset; @types/bcryptjs dihapus |
 | 2026-10-08 | M0-05 | `drizzle.config.ts` + `lib/db/client.ts` (prepare:false) + `schema.ts` kosong; script `db:*` ditambah |
