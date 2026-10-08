@@ -14,8 +14,8 @@
 ```yaml
 Status:      🚧 In Progress
 Milestone:   M3 — Landing (M0 ✅ · M1 ✅ · M2 ✅)
-Progress:    22 / 87 tasks
-Terakhir:    M2-06
+Progress:    23 / 87 tasks
+Terakhir:    M3-01 (2026-10-08)
 
 Aturan:
   - Satu task = satu sesi kerja
@@ -204,9 +204,12 @@ Target: kerangka visual (navbar, footer, container) siap dipakai.
 
 Target: landing page dengan hero + carousel event.
 
-- [ ] **M3-01** Buat `lib/fixtures/events.ts`
-  - Data mock: **1 event travel** (`lanjalan-vol-1`) saja (tidak ada dummy badminton)
-  - Referensi: `CONTENT.md` section 6
+- [x] **M3-01** Buat `lib/fixtures/events.ts` ✅ 2026-10-08
+  - `src/lib/fixtures/events.ts` — 1 event travel `lanjalan-vol-1` (`eventFixtures`) dari `CONTENT.md` §6
+  - Tambahan: `src/lib/types/event.ts` (tipe domain dari schema Drizzle: `Event`, `RundownItem`, `BudgetItem`, `EventMedia`, `EventExtra`)
+  - `startsAt`/`endsAt` pakai `Date` (tipe schema), `id`/timestamp sintetis untuk mock
+  - `ARCHITECTURE.md` tree: `src/types/` → `src/lib/types/` (selaras `AGENTS.md` §3.2)
+  - Verifikasi: `pnpm typecheck` ✅ · `pnpm build` ✅
 - [ ] **M3-02** Buat `lib/api/events.ts` — `getUpcomingEvents`
   - Query Drizzle, tapi fallback ke fixture kalau DB kosong
   - Referensi: `SCHEMA.md` section 5.2
@@ -560,6 +563,7 @@ Catatan task yang sudah selesai, di luar checklist (untuk audit).
 | 2026-10-08 | M2-04 | `<Navbar />` + primitif `<Sheet />`; typecheck/build lolos |
 | 2026-10-08 | M2-05 | `<Footer />` (3 kolom + baris bawah); typecheck/build lolos |
 | 2026-10-08 | M2-06 | Layout `(public)` + landing dipindah ke route group; milestone M2 ✅ selesai |
+| 2026-10-08 | M3-01 | `lib/types/event.ts` + `lib/fixtures/events.ts` (1 travel fixture) |
 | 2026-10-08 | M0-06 | 8 tabel + 4 enum + relations ditulis di `schema.ts` (252 baris); typecheck lolos |
 | 2026-10-08 | M0-04 | 13 dependency runtime + 3 dev terpasang; `pnpm.onlyBuiltDependencies` diset; @types/bcryptjs dihapus |
 | 2026-10-08 | M0-05 | `drizzle.config.ts` + `lib/db/client.ts` (prepare:false) + `schema.ts` kosong; script `db:*` ditambah |

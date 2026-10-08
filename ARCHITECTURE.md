@@ -423,13 +423,13 @@ ngabinton/
     │   │   ├── events.ts
     │   │   ├── rundown.ts
     │   │   └── budget.ts
+    │   ├── types/              # tipe domain (diturunkan dari schema Drizzle)
+    │   │   ├── event.ts
+    │   │   ├── attendance.ts
+    │   │   └── index.ts
     │   └── constants.ts        # APP_NAME, SESSION_DURATION, dll
     ├── styles/
     │   └── globals.css         # tailwind + CSS variables dari DESIGN.md
-    └── types/
-        ├── event.ts
-        ├── attendance.ts
-        └── index.ts
 ```
 
 ### Aturan Folder

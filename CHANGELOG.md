@@ -84,6 +84,7 @@ Setiap selesai task di `TASK.md`:
 - **M2-04**: `<Navbar />` (transparan→solid saat scroll, Sheet mobile) + primitif `<Sheet />`
 - **M2-05**: `<Footer />` (3 kolom + baris bawah)
 - **M2-06**: Layout `(public)` (Navbar+Footer) + landing dipindah ke `app/(public)/` — milestone M2 selesai
+- **M3-01**: `src/lib/types/event.ts` (tipe dari schema) + `src/lib/fixtures/events.ts` (fixture 1 travel)
 
 ### Changed
 - **PLAN**: Resolusi konflik `.md` pra-M0 — tanggal event `2026-10-10`, rate limit login 5 menit, logger `lib/utils/logger.ts`, stack tambah Upstash Redis + `sharp` + `@dnd-kit`, fixture event cukup 1 travel, seed M0-08 sekalian fixture, peserta via AI-generated (aturan hijab/base layer/jersey)
