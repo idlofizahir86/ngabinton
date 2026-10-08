@@ -14,8 +14,8 @@
 ```yaml
 Status:      🚧 In Progress
 Milestone:   M5 — Storytelling (M0 ✅ · M1 ✅ · M2 ✅ · M3 ✅ · M4 ✅)
-Progress:    40 / 87 tasks
-Terakhir:    M5-02 (2026-10-08)
+Progress:    41 / 87 tasks
+Terakhir:    M5-09 (2026-10-08)
 
 Aturan:
   - Satu task = satu sesi kerja
@@ -369,6 +369,13 @@ Target: section-section khusus event travel.
 - [ ] **M5-08** Integrasi storytelling section di `/[slug]`
   - Urutan: `#pembuka` → `#narasi` → `#destinasi` → `#transportasi` → `#rundown` → `#makan` → `#biaya` → `#kado` → `#peserta` → `#absen` → `#penutup`
   - Referensi: `DESIGN.md` section 2 (ritme gelap-terang)
+  - ⚠️ `page.tsx` sudah ~234 baris → pecah jadi komponen section sebelum menambah section baru (AGENTS.md §3.2 no. 12)
+  - Gambar narasi (`narrative-meme.jpg`): `media_type` belum punya tipe `narrative` → pakai konstanta halaman (diputuskan 2026-10-08, opsi A + konstanta)
+- [x] **M5-09** Seed `event_media` untuk aset Lan Jalan Vol. 1 ✅ 2026-10-08
+  - Task baru (disetujui user 2026-10-08, "sesuai rekomendasi anda") — opsi A: daftarkan aset ke DB agar gambar section tersedia dari `event_media`
+  - `scripts/seed.ts` §6: 5 baris (destination, transport, food ×2, participant) — hero/cover tidak diduplikasi (SCHEMA.md §3.5)
+  - Idempoten lewat cek keberadaan (tabel tidak punya unique constraint)
+  - Verifikasi: `pnpm tsx scripts/seed.ts` → "✅ Media: 5 item", re-run → "↷ Media sudah ada" ✅
 
 **Catatan M5:**
 - Setelah M5, halaman `/lanjalan-vol-1` sudah lengkap secara visual.
@@ -636,6 +643,7 @@ Catatan task yang sudah selesai, di luar checklist (untuk audit).
 | 2026-10-08 | M4-09 | Halaman `/arsip` (grid `getPastEvents`, `EventCard size="fill"`); ISR 300s. **Milestone M4 ✅** |
 | 2026-10-08 | M5-01 | `<QuranQuote />` + `lib/validators/event-extras.ts`; wire `#pembuka`; **fix kontras** rundown/biaya (varian storytelling di latar gelap) |
 | 2026-10-08 | M5-02 | `<StoryNarrative />` (grid 60/40, `direction`); aset `public/` lengkap 19 file |
+| 2026-10-08 | M5-09 | Seed `event_media` 5 baris (destination/transport/food×2/participant); idempoten |
 | 2026-10-08 | M0-06 | 8 tabel + 4 enum + relations ditulis di `schema.ts` (252 baris); typecheck lolos |
 | 2026-10-08 | M0-04 | 13 dependency runtime + 3 dev terpasang; `pnpm.onlyBuiltDependencies` diset; @types/bcryptjs dihapus |
 | 2026-10-08 | M0-05 | `drizzle.config.ts` + `lib/db/client.ts` (prepare:false) + `schema.ts` kosong; script `db:*` ditambah |

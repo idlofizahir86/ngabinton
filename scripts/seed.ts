@@ -14,7 +14,7 @@ async function main() {
   // Dynamic import: `client.ts` membaca DATABASE_URL saat di-import,
   // jadi env harus dimuat lebih dulu.
   const { db } = await import("../src/lib/db/client");
-  const { users, events, rundownItems, budgetItems, eventExtras } = await import(
+  const { users, events, rundownItems, budgetItems, eventExtras, eventMedia } = await import(
     "../src/lib/db/schema"
   );
 
@@ -175,6 +175,61 @@ async function main() {
     ])
     .onConflictDoNothing({ target: [eventExtras.eventId, eventExtras.key] });
   console.log("✅ Extras: 5 key");
+
+  // ------------------------------------------------------------
+  // 6) Media (5 item) — SCHEMA.md §3.5 & ASSETS.md §2
+  // ------------------------------------------------------------
+  // Hero & cover tetap di `events.hero_image_url` / `cover_image_url` (SCHEMA.md §3.5),
+  // jadi tidak diduplikasi di sini.
+  const mediaBaseUrl = `/events/${SLUG}`;
+  const existingMedia = await db
+    .select({ id: eventMedia.id })
+    .from(eventMedia)
+    .where(eq(eventMedia.eventId, eventId))
+    .limit(1);
+
+  if (existingMedia.length === 0) {
+    await db.insert(eventMedia).values([
+      {
+        eventId,
+        type: "destination",
+        url: `${mediaBaseUrl}/dest-walini.jpg`,
+        alt: "Kolam air panas Walini di Ciwidey",
+        order: 0,
+      },
+      {
+        eventId,
+        type: "transport",
+        url: `${mediaBaseUrl}/transport-angkot.jpg`,
+        alt: "Angkot sewaan di jalan menuju Ciwidey",
+        order: 0,
+      },
+      {
+        eventId,
+        type: "food",
+        url: `${mediaBaseUrl}/food-pawon.jpg`,
+        alt: "Teras resto Sunda Pawon Kang Bima",
+        order: 0,
+      },
+      {
+        eventId,
+        type: "food",
+        url: `${mediaBaseUrl}/menu-pawon.jpg`,
+        alt: "Nasi liwet dan telor di Pawon Kang Bima",
+        order: 1,
+      },
+      {
+        eventId,
+        type: "participant",
+        url: `${mediaBaseUrl}/participants-collage.jpg`,
+        alt: "Kolase peserta Lan Jalan Vol. 1",
+        order: 0,
+      },
+    ]);
+    console.log("✅ Media: 5 item");
+  } else {
+    console.log("↷ Media sudah ada");
+  }
 
   console.log("✅ Seed selesai");
   process.exit(0);
