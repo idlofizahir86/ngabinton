@@ -13,9 +13,9 @@
 
 ```yaml
 Status:      🚧 In Progress
-Milestone:   M5 — Storytelling (M0 ✅ · M1 ✅ · M2 ✅ · M3 ✅ · M4 ✅)
-Progress:    47 / 87 tasks
-Terakhir:    M5-07 (2026-10-08)
+Milestone:   M6 — Presensi Peserta (M0 ✅ · M1 ✅ · M2 ✅ · M3 ✅ · M4 ✅ · M5 ✅)
+Progress:    48 / 87 tasks
+Terakhir:    M5-08 (2026-10-08)
 
 Aturan:
   - Satu task = satu sesi kerja
@@ -391,11 +391,18 @@ Target: section-section khusus event travel.
   - Verifikasi: `pnpm typecheck` ✅ · `pnpm lint` ✅ · `pnpm build` ✅ · temp-wire (4 foto galeri) → `id="peserta"` + judul + 4 item; `id="penutup"` + "See you in the ANGKOT!" + tombol "Lihat Event Lain" → `/arsip` ✅ · computed style: grid `4 kolom` gap `8px` radius `8px`; font `Caveat` warna `rgb(194,65,12)` size `60px`; bg `rgb(247,245,239)` ✅ · screenshot ✅ lalu dikembalikan
   - ⚠️ Catatan untuk M5-08: aset `participants-collage.jpg` adalah **satu** gambar kolase 1:1 → dirender sebagai 1 sel grid akan terlihat kecil; pertimbangkan lebar penuh atau `columns={2}`
   - ⚠️ Konflik `.md` (dicatat, tidak memblokir): `DESIGN.md` §2 menyebut "Presensi & Penutup (gelap)", tapi §7.14 (spesifik komponen) menyebut penutup berlatar `story-bg` (terang). Dipakai §7.14 → butuh `SectionTransition` saat #absen (M6) selesai
-- [ ] **M5-08** Integrasi storytelling section di `/[slug]`
+- [x] **M5-08** Integrasi storytelling section di `/[slug]` ✅ 2026-10-08
   - Urutan: `#pembuka` → `#narasi` → `#destinasi` → `#transportasi` → `#rundown` → `#makan` → `#biaya` → `#kado` → `#peserta` → `#absen` → `#penutup`
   - Referensi: `DESIGN.md` section 2 (ritme gelap-terang)
-  - ⚠️ `page.tsx` sudah ~234 baris → pecah jadi komponen section sebelum menambah section baru (AGENTS.md §3.2 no. 12)
-  - Gambar narasi (`narrative-meme.jpg`): `media_type` belum punya tipe `narrative` → pakai konstanta halaman (diputuskan 2026-10-08, opsi A + konstanta)
+  - **Arsitektur baru** (agar `page.tsx` ≤ 300 baris): `src/lib/event-content.ts` (label, anchor per varian, copy `CONTENT.md` §4.5–§4.12, path gambar narasi), `<EventSection />` (wrapper latar/judul/container, tone `base`/`alt`/`dark`), `<EventSections />` (susunan semua section)
+  - `page.tsx` turun dari **306 → 115 baris** ✅; `event-sections.tsx` 195 baris (< 200)
+  - `lib/validators/event-extras.ts`: tambah `narrativeSchema` + **`parseEventExtras()`** (semua extra diparse sekali)
+  - Anchor sub-nav storytelling jadi 12 item (`hero`…`penutup`)
+  - **Aset baru** `lanjalan-1-team.png` → dikonversi ke **`lanjalan-1-team.jpg` (2.398 KB → 293 KB)** via `sharp`; didaftarkan di `event_media` sebagai `participant` (order 0 = kolase tim 16:9, order 1 = kolase foto 1:1) sesuai keputusan user 2026-10-08 (dipakai di `#peserta` **dan** `#penutup`, kedua kolase tampil)
+  - `ParticipantGrid`: tambah `aspect` (`square`/`video`) + `columns: 1`; `ClosingMessage`: tambah `image`/`imageAlt`
+  - `scripts/seed.ts`: media sekarang **reset + insert** (tabel tak punya unique key) — ⚠️ media yang di-upload manual lewat admin akan terhapus saat seed dijalankan ulang
+  - Verifikasi: `pnpm typecheck` ✅ · `pnpm lint` ✅ · `pnpm build` ✅ · SSR HTML urutan section **persis sesuai spesifikasi** ✅ · sub-nav 12 anchor ✅ · team JPG + collage terpakai ✅ · screenshot `#peserta`, `#destinasi`+`#transportasi`, `#penutup` ✅ · warning `sizes` diperbaiki
+  - ❗ TEMUAN untuk keputusan lanjutan (lihat Backlog **B8–B11**): `<TravelHero />` belum dibuat; `menu-pawon.jpg` belum terpakai; teks "See you in the ANGKOT!" muncul **dua kali** (`#penutup` + di dalam gambar); `ROUTES.md` §2.1 tidak memisahkan `#narasi`; `BRAND.md`/`ASSETS.md` minta gaya *photorealistic & bukan kartun* tapi semua aset yang ada bergaya **ilustrasi**
 - [x] **M5-09** Seed `event_media` untuk aset Lan Jalan Vol. 1 ✅ 2026-10-08
   - Task baru (disetujui user 2026-10-08, "sesuai rekomendasi anda") — opsi A: daftarkan aset ke DB agar gambar section tersedia dari `event_media`
   - `scripts/seed.ts` §6: 5 baris (destination, transport, food ×2, participant) — hero/cover tidak diduplikasi (SCHEMA.md §3.5)
@@ -409,9 +416,8 @@ Target: section-section khusus event travel.
   - **B7**: hapus `"Budget Rp 10.000 – Rp 15.000"` dari `gift_exchange.rules` (budget sudah dirender terpisah) — `CONTENT.md` §4.10 jadi "**Budget:** …" + 3 aturan
   - Verifikasi: `pnpm tsx scripts/seed.ts` ✅ (upsert) · cek DB: note rundown = "Kalau sempat mampir", `gift_exchange.rules` = 3 item ✅
 
-**Catatan M5:**
-- Setelah M5, halaman `/lanjalan-vol-1` sudah lengkap secara visual.
-- Presensi (M6) belum ada, jadi section `#absen` masih placeholder.
+**Catatan M5:** ✅ Milestone M5 selesai — `/lanjalan-vol-1` lengkap secara visual (12 section).
+- Presensi (M6) belum ada, section `#absen` masih keterangan "Presensi akan dibuka saat hari H".
 
 ---
 
@@ -616,6 +622,10 @@ Task yang muncul setelah planning awal, belum dimasukkan ke milestone.
 | B5 | `media_type` belum punya tipe `narrative` → gambar `narrative-meme.jpg` harus dari konstanta halaman (diputuskan opsi A). Tambah enum `narrative` + migration kalau mau DB-driven penuh | Rendah | 2026-10-08 |
 | B6 | Isi **data nyata** `event_extras.payment_info` (bank, no. rekening, a.n.) — sekarang masih `[PLACEHOLDER: ...]`, sengaja tidak dirender (`paymentInfoSchema`). Butuh `CONTENT.md` §4.9 final + `UPDATE` DB | Tinggi (pra-produksi) | 2026-10-08 |
 | B7 | **Duplikasi baris budget** di `#kado` — ✅ **diselesaikan di M5-10** | — | 2026-10-08 |
+| B8 | **`<TravelHero />`** (`COMPONENTS.md` §3.2, `DESIGN.md` §7.5) belum dibuat — halaman travel masih memakai hero blok sementara di `page.tsx` | Sedang | 2026-10-08 |
+| B9 | `menu-pawon.jpg` (media `food` order 1) belum dipakai — section `#makan` memakai `<StoryNarrative />` dengan foto tempat saja. Perlu komponen section makan yang lebih kaya atau memang dibuang | Rendah | 2026-10-08 |
+| B10 | Teks **"See you in the ANGKOT!"** muncul dua kali: dirender `#penutup` (font script) **dan** tercetak di dalam `lanjalan-1-team.jpg`. Saran: ganti gambar tanpa teks, atau hapus teks script di `#penutup` | Sedang | 2026-10-08 |
+| B11 | **Gaya aset ≠ dokumen**: `BRAND.md` §7 & `ASSETS.md` minta *candid photorealistic* dan melarang kartun/clipart, tetapi semua aset yang ada bergaya **ilustrasi/anime**. Selaraskan: perbarui aturan `.md` atau ganti aset | Sedang | 2026-10-08 |
 
 **Aturan:**
 - Task baru **tidak** langsung dikerjakan.
@@ -685,6 +695,7 @@ Catatan task yang sudah selesai, di luar checklist (untuk audit).
 | 2026-10-08 | M5-06 | `<GiftExchangeInfo />` (+`giftExchangeSchema`); computed style cocok DESIGN §7.12; screenshot lolos |
 | 2026-10-08 | M5-10 | Seed **upsert** (rundown/budget/extras) + perbaikan konten B4 (note Indonesia) & B7 (budget duplikat); DB tersinkron |
 | 2026-10-08 | M5-07 | `<ParticipantGrid />` + `<ClosingMessage />`; computed style cocok DESIGN §7.13/§7.14; screenshot lolos |
+| 2026-10-08 | M5-08 | Integrasi 11 section storytelling + `lib/event-content.ts` + `<EventSection />`/`<EventSections />`; `page.tsx` 306→115 baris; aset tim dikonversi & dipasang. **Milestone M5 ✅** |
 | 2026-10-08 | M0-06 | 8 tabel + 4 enum + relations ditulis di `schema.ts` (252 baris); typecheck lolos |
 | 2026-10-08 | M0-04 | 13 dependency runtime + 3 dev terpasang; `pnpm.onlyBuiltDependencies` diset; @types/bcryptjs dihapus |
 | 2026-10-08 | M0-05 | `drizzle.config.ts` + `lib/db/client.ts` (prepare:false) + `schema.ts` kosong; script `db:*` ditambah |

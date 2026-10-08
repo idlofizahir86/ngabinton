@@ -60,6 +60,34 @@ export const giftExchangeSchema = z.object({
 
 export type GiftExchangeExtra = z.infer<typeof giftExchangeSchema>;
 
+/** `narrative` — CONTENT.md §4.4. */
+export const narrativeSchema = z.object({
+  title: z.string().min(1).optional(),
+  body: z.string().min(1),
+});
+
+export type Narrative = z.infer<typeof narrativeSchema>;
+
+/** Semua extra yang dikenal, sudah diparse (SCHEMA.md §5.4: `jsonb` di-parse). */
+export type ParsedEventExtras = {
+  quranVerse: QuranVerse | null;
+  narrative: Narrative | null;
+  giftExchange: GiftExchangeExtra | null;
+  pickupPoints: string[] | null;
+  paymentInfo: PaymentInfoExtra | null;
+};
+
+/** Parse seluruh `event_extras` sekaligus supaya halaman tidak mengulang pemanggilan. */
+export function parseEventExtras(extras: EventExtra[]): ParsedEventExtras {
+  return {
+    quranVerse: getEventExtra(extras, EVENT_EXTRA_KEYS.quranVerse, quranVerseSchema),
+    narrative: getEventExtra(extras, EVENT_EXTRA_KEYS.narrative, narrativeSchema),
+    giftExchange: getEventExtra(extras, EVENT_EXTRA_KEYS.giftExchange, giftExchangeSchema),
+    pickupPoints: getEventExtra(extras, EVENT_EXTRA_KEYS.pickupPoints, pickupPointsSchema),
+    paymentInfo: getEventExtra(extras, EVENT_EXTRA_KEYS.paymentInfo, paymentInfoSchema),
+  };
+}
+
 /**
  * Ambil satu extra berdasarkan `key` lalu validasi bentuknya.
  * Mengembalikan `null` kalau extra tidak ada atau bentuknya tidak sesuai.

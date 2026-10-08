@@ -1,23 +1,16 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 
-import { BudgetTable } from "@/components/event/budget-table";
 import { EventHero } from "@/components/event/event-hero";
+import { EventSections } from "@/components/event/event-sections";
 import { EventSubNav } from "@/components/event/event-sub-nav";
-import { QuranQuote } from "@/components/event/quran-quote";
-import { RundownTimeline } from "@/components/event/rundown-timeline";
 import { Container } from "@/components/layout/container";
 import { getEventBySlug } from "@/lib/api/events";
 import { APP_URL } from "@/lib/constants";
-import { cn } from "@/lib/utils/cn";
+import { CINEMA_ANCHORS, EVENT_TYPE_LABEL, STORY_ANCHORS } from "@/lib/event-content";
 import { getEventStatus } from "@/lib/utils/event-status";
 import { formatDate } from "@/lib/utils/format";
-import {
-  EVENT_EXTRA_KEYS,
-  getEventExtra,
-  paymentInfoSchema,
-  quranVerseSchema,
-} from "@/lib/validators/event-extras";
+import { parseEventExtras } from "@/lib/validators/event-extras";
 
 /** Halaman event di-render ulang tiap 60 detik (ROUTES.md §1.1). */
 export const revalidate = 60;
@@ -32,38 +25,6 @@ const DEFAULT_DESCRIPTION =
 
 /** Minimum `metadataBase` kalau `NEXT_PUBLIC_APP_URL` belum diisi. */
 const FALLBACK_APP_URL = "http://localhost:3000";
-
-/** Label jenis event untuk metadata & header. */
-const EVENT_TYPE_LABEL: Record<string, string> = {
-  badminton: "Badminton",
-  travel: "Travel",
-  gathering: "Kumpul",
-  other: "Event",
-};
-
-/**
- * Anchor sub-nav yang **sudah ada** di halaman (ROUTES.md §2.1).
- * Bertambah saat section storytelling (M5) & presensi (M6) menyusul.
- * Konstanta modul agar identitas array stabil (dipakai sebagai dep `useEffect`).
- */
-/**
- * Anchor sub-nav yang **sudah ada** di halaman (ROUTES.md §2.1).
- * Bertambah saat section storytelling (M5) & presensi (M6) menyusul.
- * Konstanta modul agar identitas array stabil (dipakai sebagai dep `useEffect`).
- */
-const CINEMA_ANCHORS = [
-  { id: "hero", label: "Awal" },
-  { id: "rundown", label: "Rundown" },
-  { id: "biaya", label: "Biaya" },
-];
-
-/** Anchor tambahan untuk event storytelling (varian travel). */
-const STORY_ANCHORS = [
-  { id: "hero", label: "Awal" },
-  { id: "pembuka", label: "Pembuka" },
-  { id: "rundown", label: "Rundown" },
-  { id: "biaya", label: "Biaya" },
-];
 
 /**
  * Metadata SEO per event (RULES.md §6.3).
@@ -110,30 +71,19 @@ export default async function EventPage({ params }: EventPageProps) {
     notFound();
   }
 
-  const typeLabel = EVENT_TYPE_LABEL[event.eventType] ?? EVENT_TYPE_LABEL.other;
   const isCinema = event.theme === "cinema";
   const variant = isCinema ? "cinema" : "storytelling";
   const status = getEventStatus(event);
-  const hasRundown = event.rundownItems.length > 0;
-  const hasBudget = event.budgetItems.length > 0;
-  const quranVerse = getEventExtra(event.extras, EVENT_EXTRA_KEYS.quranVerse, quranVerseSchema);
-  const paymentExtra = getEventExtra(event.extras, EVENT_EXTRA_KEYS.paymentInfo, paymentInfoSchema);
-  const paymentInfo = paymentExtra
-    ? {
-        bank: paymentExtra.bank,
-        accountNumber: paymentExtra.account_number,
-        accountName: paymentExtra.account_name,
-        deadline: paymentExtra.deadline,
-      }
-    : undefined;
+  const typeLabel = EVENT_TYPE_LABEL[event.eventType] ?? EVENT_TYPE_LABEL.other;
   const anchors = isCinema ? CINEMA_ANCHORS : STORY_ANCHORS;
+  const extras = parseEventExtras(event.extras);
 
   return (
     <article className="pb-24">
       {isCinema ? (
         <EventHero event={event} status={status} />
       ) : (
-        /* Blok sementara untuk event storytelling — digantikan `<TravelHero />` (M5). */
+        /* Blok sementara untuk event storytelling — `<TravelHero />` belum dibuat. */
         <section id="hero" className="border-b border-border/60">
           <Container size="lg" className="py-24 md:py-32">
             <p className="text-xs uppercase tracking-[0.04em] text-text-subtle">
@@ -159,77 +109,7 @@ export default async function EventPage({ params }: EventPageProps) {
 
       <EventSubNav anchors={anchors} variant={variant} />
 
-      {!isCinema && quranVerse ? (
-        <QuranQuote
-          arabic={quranVerse.arabic}
-          translation={quranVerse.translation}
-          source={quranVerse.source}
-        />
-      ) : null}
-
-      {hasRundown ? (
-        /*
-         * Rundown selalu varian **gelap/cinema** (DESIGN.md §2: "Rundown (gelap, kontras)"),
-         * apa pun tema event-nya.
-         */
-        <section id="rundown" className="scroll-mt-32 border-b border-border/60 py-20 md:py-24">
-          <Container size={isCinema ? "lg" : "md"}>
-            <h2 className="font-display text-3xl text-text md:text-4xl">Rundown</h2>
-
-            <div className="mt-8">
-              <RundownTimeline
-                items={event.rundownItems}
-                variant="cinema"
-                highlightNow={status === "live"}
-              />
-            </div>
-          </Container>
-        </section>
-      ) : null}
-
-      {/*
-       * Section biaya — tabel rinci + baris TOTAL (COMPONENTS.md §4.5).
-       * Copy dari CONTENT.md §4.9.
-       */}
-      {hasBudget ? (
-        <section
-          id="biaya"
-          className={cn(
-            "scroll-mt-32 border-b py-20 md:py-24",
-            isCinema
-              ? "border-border/60 bg-background"
-              : "border-story-border bg-story-bg",
-          )}
-        >
-          <Container size={isCinema ? "lg" : "md"}>
-            <h2
-              className={cn(
-                "font-display text-3xl md:text-4xl",
-                isCinema ? "text-text" : "text-story-text",
-              )}
-            >
-              Biaya
-            </h2>
-
-            <p
-              className={cn(
-                "mt-4 max-w-2xl text-base",
-                isCinema ? "text-text-muted" : "text-story-muted",
-              )}
-            >
-              Sudah termasuk semua. Tinggal bawa uang jajan tambahan buat oleh-oleh.
-            </p>
-
-            {/*
-             * `paymentInfo` hanya muncul kalau nilainya sudah nyata —
-             * `paymentInfoSchema` menolak nilai `[PLACEHOLDER: ...]` (CONTENT.md §4.9).
-             */}
-            <div className="mt-8">
-              <BudgetTable items={event.budgetItems} variant={variant} paymentInfo={paymentInfo} />
-            </div>
-          </Container>
-        </section>
-      ) : null}
+      <EventSections event={event} extras={extras} status={status} variant={variant} />
     </article>
   );
 }

@@ -106,8 +106,10 @@ Setiap selesai task di `TASK.md`:
 - **M5-05**: `<BudgetTable />` (tabel `#`/Item/Jumlah, blok TOTAL, kartu info pembayaran) + `paymentInfoSchema` yang **menolak nilai `[PLACEHOLDER: ...]`**; section `#biaya` final menggantikan placeholder M4-08
 - **M5-06**: `<GiftExchangeInfo />` (card `story-orange` 15%, border kiri 4px, ikon `Gift` 32px, daftar aturan dengan ikon `Check`) + `giftExchangeSchema`
 - **M5-07**: `<ParticipantGrid />` (grid 2/3/4 kolom, foto 1:1, tanpa nama) + `<ClosingMessage />` (`id="penutup"`, font script Caveat `story-script`, CTA `story-ghost`)
+- **M5-08**: Integrasi 11 section storytelling di `/[slug]`; modul baru `src/lib/event-content.ts`; komponen baru `<EventSection />` & `<EventSections />`; `parseEventExtras()`; aset tim `lanjalan-1-team.jpg` (konversi dari PNG, 2,4 MB → 293 KB) dipakai di `#peserta` & `#penutup`. **Milestone M5 selesai**
 
 ### Changed
+- **M5-08**: `Page.tsx` `/lanjalan-vol-1` dipecah — susunan section dipindah ke `<EventSections />`, konten non-DB ke `src/lib/event-content.ts` (`page.tsx` 306 → 115 baris). `<ParticipantGrid />` dapat prop `aspect` & `columns: 1`; `<ClosingMessage />` dapat prop `image`. Seed media kini **reset + insert** (bukan cek-keberadaan)
 - **M5-10**: Seed jadi **upsert** (`onConflictDoUpdate`) untuk `rundown_items`, `budget_items`, `event_extras` — perubahan `CONTENT.md` kini benar-benar tersinkron saat seed dijalankan ulang. `users`/`events` tetap `DoNothing` agar kredensial & editan manual tidak tertimpa
 - **CONTENT**: §4.10 — budget dipisah jadi field sendiri (tidak diulang di daftar aturan); §4.7 & §6.2 — note rundown "Petik Stroberi" jadi "Kalau sempat mampir"
 - **PLAN**: `COMPONENTS.md` §3.1 `<EventHero />` — CTA utama dipetakan per `status` (upcoming → "Lihat Rundown", live → "Presensi Sekarang", past → "Lihat Dokumentasi"); "Daftar Sekarang" dihapus karena belum ada alur pendaftaran

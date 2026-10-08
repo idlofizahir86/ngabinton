@@ -496,6 +496,56 @@ type EventMetaBarProps = {
 
 ---
 
+### 3.10 `<EventSection />`
+
+Wrapper section halaman event: latar + border + judul + container.
+
+**Props:**
+```ts
+type EventSectionProps = {
+  id: string;
+  title?: string;
+  description?: string;
+  variant?: 'cinema' | 'storytelling';
+  tone?: 'base' | 'alt' | 'dark';
+  children: React.ReactNode;
+};
+```
+
+**Nada latar (`tone`) mengikuti ritme `DESIGN.md` §2:**
+| Tone | Cinema | Storytelling |
+|---|---|---|
+| `base` | `background` | `story-bg` |
+| `alt` | `background-elevated` | `story-bg-alt` |
+| `dark` | `background` | `background` (section gelap di halaman terang) |
+
+- Container: `lg` (cinema) / `md` (storytelling).
+- `scroll-mt-32` + border bawah; padding `py-20 md:py-24`.
+- Judul `display`; `description` opsional `body` muted.
+
+**Server / Client:** Server.
+
+---
+
+### 3.11 `<EventSections />`
+
+Susunan seluruh section halaman event (urutan + anchor sesuai `ROUTES.md` §2.1).
+Dipakai `page.tsx` supaya file halaman tetap ringkas (`AGENTS.md` §3.2 no. 12).
+
+**Props:**
+```ts
+type EventSectionsProps = {
+  event: EventDetail;
+  extras: ParsedEventExtras;
+  status: EventStatus;
+  variant: 'cinema' | 'storytelling';
+};
+```
+
+**Server / Client:** Server.
+
+---
+
 ## 4. Storytelling Components
 
 Lokasi: `src/components/event/` (tetap di folder yang sama, tapi hanya dipakai di halaman travel).
@@ -681,14 +731,15 @@ Grid foto peserta (collage style).
 ```ts
 type ParticipantGridProps = {
   images: { url: string; alt: string }[];
-  columns?: 2 | 3 | 4;   // default 4 (desktop)
+  columns?: 1 | 2 | 3 | 4;   // default 4 (desktop); `1` untuk 1 gambar kolase lebar penuh
+  aspect?: 'square' | 'video';   // default 'square'
 };
 ```
 
 **Layout:**
 - Grid foto, gap 8px
-- Kolom responsif: 4 (desktop), 3 (tablet), 2 (mobile)
-- Aspect 1:1 atau 4:5
+- Kolom responsif: 4 (desktop), 3 (tablet), 2 (mobile); `1` = satu kolom penuh
+- Aspect `square` (1:1) atau `video` (16:9) — pakai `video` untuk gambar kolase 16:9
 - Radius `md`
 
 **Hover:**
@@ -712,6 +763,8 @@ type ClosingMessageProps = {
   subtitle?: string;
   ctaText?: string;
   ctaHref?: string;
+  image?: string;       // gambar penutup opsional (mis. kolase tim)
+  imageAlt?: string;
 };
 ```
 
