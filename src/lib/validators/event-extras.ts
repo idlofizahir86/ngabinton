@@ -28,6 +28,25 @@ export type QuranVerse = z.infer<typeof quranVerseSchema>;
 /** `pickup_points` — daftar titik jemput transportasi (CONTENT.md §4.6). */
 export const pickupPointsSchema = z.array(z.string().min(1));
 
+/** Nilai yang masih berisi penanda placeholder (mis. `[PLACEHOLDER: BCA / ...]`). */
+const PLACEHOLDER_PATTERN = /\[placeholder/i;
+
+const isRealValue = (value: string) => !PLACEHOLDER_PATTERN.test(value);
+
+/**
+ * `payment_info` — CONTENT.md §4.9.
+ * Nilai yang masih `[PLACEHOLDER: ...]` **ditolak** supaya tidak pernah tampil ke publik
+ * (parse gagal → `getEventExtra` mengembalikan `null` → kartu pembayaran tidak dirender).
+ */
+export const paymentInfoSchema = z.object({
+  bank: z.string().min(1).refine(isRealValue),
+  account_number: z.string().min(1).refine(isRealValue),
+  account_name: z.string().min(1),
+  deadline: z.string().min(1).optional(),
+});
+
+export type PaymentInfoExtra = z.infer<typeof paymentInfoSchema>;
+
 /**
  * Ambil satu extra berdasarkan `key` lalu validasi bentuknya.
  * Mengembalikan `null` kalau extra tidak ada atau bentuknya tidak sesuai.

@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 
+import { BudgetTable } from "@/components/event/budget-table";
 import { EventHero } from "@/components/event/event-hero";
 import { EventSubNav } from "@/components/event/event-sub-nav";
 import { QuranQuote } from "@/components/event/quran-quote";
@@ -10,10 +11,11 @@ import { getEventBySlug } from "@/lib/api/events";
 import { APP_URL } from "@/lib/constants";
 import { cn } from "@/lib/utils/cn";
 import { getEventStatus } from "@/lib/utils/event-status";
-import { formatDate, formatRupiah } from "@/lib/utils/format";
+import { formatDate } from "@/lib/utils/format";
 import {
   EVENT_EXTRA_KEYS,
   getEventExtra,
+  paymentInfoSchema,
   quranVerseSchema,
 } from "@/lib/validators/event-extras";
 
@@ -114,9 +116,16 @@ export default async function EventPage({ params }: EventPageProps) {
   const status = getEventStatus(event);
   const hasRundown = event.rundownItems.length > 0;
   const hasBudget = event.budgetItems.length > 0;
-  const totalBudget =
-    event.budgetItems.find((item) => item.isTotal)?.amount ?? event.price ?? null;
   const quranVerse = getEventExtra(event.extras, EVENT_EXTRA_KEYS.quranVerse, quranVerseSchema);
+  const paymentExtra = getEventExtra(event.extras, EVENT_EXTRA_KEYS.paymentInfo, paymentInfoSchema);
+  const paymentInfo = paymentExtra
+    ? {
+        bank: paymentExtra.bank,
+        accountNumber: paymentExtra.account_number,
+        accountName: paymentExtra.account_name,
+        deadline: paymentExtra.deadline,
+      }
+    : undefined;
   const anchors = isCinema ? CINEMA_ANCHORS : STORY_ANCHORS;
 
   return (
@@ -179,8 +188,8 @@ export default async function EventPage({ params }: EventPageProps) {
       ) : null}
 
       {/*
-       * Section biaya — versi minimal (M4-08). Diisi penuh dengan `<BudgetTable />`
-       * + info pembayaran di M5-05. Copy dari CONTENT.md §4.9.
+       * Section biaya — tabel rinci + baris TOTAL (COMPONENTS.md §4.5).
+       * Copy dari CONTENT.md §4.9.
        */}
       {hasBudget ? (
         <section
@@ -211,21 +220,13 @@ export default async function EventPage({ params }: EventPageProps) {
               Sudah termasuk semua. Tinggal bawa uang jajan tambahan buat oleh-oleh.
             </p>
 
-            {totalBudget !== null ? (
-              <p className="mt-8">
-                <span
-                  className={cn(
-                    "font-display text-4xl md:text-5xl",
-                    isCinema ? "text-text" : "text-story-text",
-                  )}
-                >
-                  {formatRupiah(totalBudget)}
-                </span>
-                <span className={cn("ml-2 text-base", isCinema ? "text-text-muted" : "text-story-muted")}>
-                  / orang
-                </span>
-              </p>
-            ) : null}
+            {/*
+             * `paymentInfo` hanya muncul kalau nilainya sudah nyata —
+             * `paymentInfoSchema` menolak nilai `[PLACEHOLDER: ...]` (CONTENT.md §4.9).
+             */}
+            <div className="mt-8">
+              <BudgetTable items={event.budgetItems} variant={variant} paymentInfo={paymentInfo} />
+            </div>
           </Container>
         </section>
       ) : null}

@@ -14,8 +14,8 @@
 ```yaml
 Status:      🚧 In Progress
 Milestone:   M5 — Storytelling (M0 ✅ · M1 ✅ · M2 ✅ · M3 ✅ · M4 ✅)
-Progress:    43 / 87 tasks
-Terakhir:    M5-04 (2026-10-08)
+Progress:    44 / 87 tasks
+Terakhir:    M5-05 (2026-10-08)
 
 Aturan:
   - Satu task = satu sesi kerja
@@ -363,10 +363,15 @@ Target: section-section khusus event travel.
   - `lib/validators/event-extras.ts`: tambah `pickupPointsSchema` (`z.array(z.string())`)
   - Belum di-wire — integrasi di M5-08
   - Verifikasi: `pnpm typecheck` ✅ · `pnpm lint` ✅ · `pnpm build` ✅ · temp-wire → `id="transportasi"`, mode, deskripsi, label "Titik jemput" + 4 titik, gambar dari `event_media` ✅ · computed style: bg `rgb(239,236,228)` = `#efece4`, padding `32px`, ikon `64×64px` `rgb(245,158,11)`, dot `6px` `rgb(245,158,11)` ✅ · screenshot ✅ lalu dikembalikan
-- [ ] **M5-05** Buat `<BudgetTable />`
+- [x] **M5-05** Buat `<BudgetTable />` ✅ 2026-10-08
   - File: `src/components/event/budget-table.tsx`
   - Tabel + baris total + payment info (opsional)
   - Referensi: `COMPONENTS.md` section 4.5
+  - `<table>` semantik (`#`/`Item`/`Jumlah`), angka `font-mono` + `tabular-nums`; baris `isTotal` dirender sebagai blok ringkasan (`bg-story-bg-alt`, radius `md`, padding tebal); varian cinema/storytelling
+  - Payment info: kartu border-kiri 4px `story-orange` (cinema: `warning`)
+  - **`lib/validators/event-extras.ts`: `paymentInfoSchema` menolak nilai `[PLACEHOLDER: ...]`** → `getEventExtra` kembalikan `null` → kartu tidak dirender sampai data nyata diisi
+  - Section `#biaya` di halaman kini **final** (placeholder M4-08 diganti `<BudgetTable />`); total headline dihapus (sudah ada baris TOTAL; harga juga tampil di meta hero)
+  - Verifikasi: `pnpm typecheck` ✅ · `pnpm lint` ✅ · `pnpm build` ✅ · skrip cek DB → media 5, budget 7, **`paymentInfo` = `null`** (placeholder tertolak) ✅ · SSR HTML: `<table>` + 6 baris + TOTAL `Rp 175.000`, **tanpa** "Info pembayaran" & tanpa teks `PLACEHOLDER` ✅ · computed style: card `rgb(255,255,255)` padding `32px`, total `rgb(239,236,228)` radius `8px` ✅ · temp-wrap paymentInfo nyata → kartu tampil, border 4px `rgb(245,158,11)`, deadline "Sabtu, 10 Oktober 2026" ✅ lalu dikembalikan · screenshot ✅
 - [ ] **M5-06** Buat `<GiftExchangeInfo />`
   - File: `src/components/event/gift-exchange-info.tsx`
   - Card orange, icon gift, rules list
@@ -590,6 +595,8 @@ Task yang muncul setelah planning awal, belum dimasukkan ke milestone.
 | B2 | **Aset foto** — ✅ semua 19 file sudah ditambahkan ke `public/` sesuai `ASSETS.md` (2026-10-08). Sisa: isi `HERO_IMAGE_URL` di `src/app/(public)/page.tsx`, dan sumber path gambar section event (lihat ❓ QUESTION M5-02) | Sedang | 2026-10-08 |
 | B3 | Section **"Momen Kami"** (galeri, `event_media` gallery) & **"Mau Ikutan?"** (`CONTENT.md` §3.5) — belum dikerjakan; tambahkan saat media/data siap | Rendah | 2026-10-08 |
 | B4 | Teks Inggris di UI: note rundown "Petik Stroberi" = `"Optional"` (seed + `CONTENT.md` §4.7/§6.2). Redundan dengan badge "Opsional" dari `is_optional`. Saran: ganti note jadi kalimat Indonesia (mis. "Kalau sempat mampir") — perlu keputusan + `UPDATE` baris rundown (seed idempoten tidak meng-update baris lama) | Sedang | 2026-10-08 |
+| B5 | `media_type` belum punya tipe `narrative` → gambar `narrative-meme.jpg` harus dari konstanta halaman (diputuskan opsi A). Tambah enum `narrative` + migration kalau mau DB-driven penuh | Rendah | 2026-10-08 |
+| B6 | Isi **data nyata** `event_extras.payment_info` (bank, no. rekening, a.n.) — sekarang masih `[PLACEHOLDER: ...]`, sengaja tidak dirender (`paymentInfoSchema`). Butuh `CONTENT.md` §4.9 final + `UPDATE` DB | Tinggi (pra-produksi) | 2026-10-08 |
 
 **Aturan:**
 - Task baru **tidak** langsung dikerjakan.
@@ -655,6 +662,7 @@ Catatan task yang sudah selesai, di luar checklist (untuk audit).
 | 2026-10-08 | M5-09 | Seed `event_media` 5 baris (destination/transport/food×2/participant); idempoten |
 | 2026-10-08 | M5-03 | `<DestinationCard />` + variant tombol `story-primary`/`story-ghost`; gambar dari `event_media`; screenshot lolos |
 | 2026-10-08 | M5-04 | `<TransportCard />` (+`pickupPointsSchema`); computed style cocok DESIGN §7.9; screenshot lolos |
+| 2026-10-08 | M5-05 | `<BudgetTable />` (+`paymentInfoSchema` tolak placeholder); `#biaya` final; screenshot lolos |
 | 2026-10-08 | M0-06 | 8 tabel + 4 enum + relations ditulis di `schema.ts` (252 baris); typecheck lolos |
 | 2026-10-08 | M0-04 | 13 dependency runtime + 3 dev terpasang; `pnpm.onlyBuiltDependencies` diset; @types/bcryptjs dihapus |
 | 2026-10-08 | M0-05 | `drizzle.config.ts` + `lib/db/client.ts` (prepare:false) + `schema.ts` kosong; script `db:*` ditambah |
