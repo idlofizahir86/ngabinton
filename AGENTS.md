@@ -42,7 +42,7 @@ Jangan ganti, tambah, atau kurangi tanpa instruksi eksplisit dari manusia.
 | Validasi | **Zod** | Semua input user wajib |
 | Animasi | **Framer Motion** (kalau perlu) | Maksimum 1–2 komponen |
 | Icons | **lucide-react** | Jangan campur dengan icon set lain |
-| Realtime | **Supabase Realtime** | Counter kehadiran (admin QR) |
+| Realtime | **Server SSE** + polling fallback | Counter kehadiran (admin QR) — TANPA Supabase Realtime |
 | File Storage | **Supabase Storage** | Poster & foto event |
 | Rate Limit | **Upstash Redis** | Login & submit presensi |
 | Image Processing | **`sharp`** | Konversi WebP (server) |

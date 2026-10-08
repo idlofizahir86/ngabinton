@@ -1,26 +1,82 @@
 @import "tailwindcss";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
+/* ============================================================
+   Token desain NGABINTON — sumber kebenaran: DESIGN.md
+   Cinema = default (gelap). Storytelling dipakai via utility `story-*`.
+   ============================================================ */
+@theme {
+  /* Warna — Cinema (DESIGN.md §3.1) */
+  --color-background: #141414;
+  --color-background-elevated: #232323;
+  --color-surface: #1f1f1f;
+  --color-surface-hover: #2d2d2d;
+  --color-border: #404040;
+  --color-border-strong: #808080;
+  --color-text: #ffffff;
+  --color-text-secondary: #e5e5e5;
+  --color-text-muted: #b3b3b3;
+  --color-text-subtle: #808080;
+
+  /* Warna — Storytelling (DESIGN.md §3.2) */
+  --color-story-bg: #f7f5ef;
+  --color-story-bg-alt: #efece4;
+  --color-story-surface: #ffffff;
+  --color-story-border: #e5e0d5;
+  --color-story-text: #1a1a1a;
+  --color-story-text-secondary: #3d3d3d;
+  --color-story-muted: #6b6b6b;
+  --color-story-teal: #2a7d92;
+  --color-story-orange: #f59e0b;
+  --color-story-script: #c2410c;
+
+  /* Aksen & status (DESIGN.md §3.3) */
+  --color-primary: #e50914;
+  --color-on-primary: #ffffff;
+  --color-live: #22c55e;
+  --color-warning: #f59e0b;
+  --color-danger: #ef4444;
+
+  /* Font (DESIGN.md §4.1) — var() diisi oleh next/font di <html> */
+  --font-display: var(--font-anton), Impact, sans-serif;
+  --font-body: var(--font-inter), system-ui, sans-serif;
+  --font-script: var(--font-caveat), "Brush Script MT", cursive;
+  --font-arabic: var(--font-noto-arabic), serif;
+  --font-mono: var(--font-jetbrains), ui-monospace, monospace;
+
+  /* Radius (DESIGN.md §5.4) */
+  --radius-sm: 4px;
+  --radius-md: 8px;
+  --radius-lg: 12px;
+  --radius-xl: 20px;
+  --radius-pill: 999px;
+
+  /* Shadow (DESIGN.md §5.5) */
+  --shadow-card: 0 4px 24px rgba(0, 0, 0, 0.45);
+  --shadow-card-hover: 0 12px 40px rgba(0, 0, 0, 0.65);
+  --shadow-elevated: 0 8px 32px rgba(0, 0, 0, 0.55);
+  --shadow-focus: 0 0 0 2px #141414, 0 0 0 4px #e50914;
+  --shadow-story: 0 2px 12px rgba(0, 0, 0, 0.06);
+
+  /* Motion (DESIGN.md §6) */
+  --ease-brand: cubic-bezier(0.32, 0.72, 0, 1);
+  --ease-brand-out: cubic-bezier(0.16, 1, 0.3, 1);
 }
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
-}
-
+/* Base */
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background-color: var(--color-background);
+  color: var(--color-text);
+  font-family: var(--font-body);
+}
+
+/* Hormati prefers-reduced-motion (DESIGN.md §6 & §8.4) */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 150ms !important;
+    scroll-behavior: auto !important;
+  }
 }

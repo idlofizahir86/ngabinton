@@ -153,7 +153,7 @@ Semua Server Action ditaruh di `src/actions/`. Satu file per domain.
 
 | Action | Input | Output | Efek |
 |---|---|---|---|
-| `loginAction` | `FormData { username, password }` | `{ ok: true } \| { error: string }` | Set cookie session, redirect `/admin` |
+| `loginAction` | `(prevState, FormData { username, password })` | `{ error: string \| null }` | Set cookie session, redirect `/admin` |
 | `logoutAction` | — | — | Clear cookie, redirect `/login` |
 | `changePasswordAction` | `FormData { oldPassword, newPassword }` | `{ ok: true } \| { error }` | Update hash di DB |
 
@@ -378,7 +378,7 @@ Redirect dikelola di `next.config.ts` (untuk redirect statis) atau di Server Act
 
 ## 7. Middleware
 
-**File:** `middleware.ts` (root)
+**File:** `src/middleware.ts` (root `src/` — project memakai `src-dir`)
 
 **Matcher:**
 ```ts

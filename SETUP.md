@@ -153,14 +153,11 @@ Ganti `[YOUR-PASSWORD]` dengan password DB yang kamu set di step 3.1.
 
 Bucket ini untuk poster & foto event.
 
-### 3.5 Enable Realtime
+### 3.5 Realtime — TIDAK DIPAKAI
 
-1. Masuk ke **Database** → **Replication**
-2. Cari tabel `attendances`
-3. Toggle **"Enable Realtime"** → ON
-4. Ulangi untuk tabel `attendance_sessions`
+Counter kehadiran memakai **Server-Sent Events** (`/api/attendance/stream/[sessionId]`), bukan Supabase Realtime — lihat `ARCHITECTURE.md` ADR-010. Jadi **tidak perlu** mengaktifkan Realtime di dashboard.
 
-Ini untuk counter kehadiran realtime di halaman admin QR.
+> Tambahan (keamanan): aktifkan **RLS tanpa policy** di semua tabel `public` supaya anon key tidak bisa membaca data via PostgREST/Realtime. (Sudah dilakukan pada setup awal.)
 
 ---
 

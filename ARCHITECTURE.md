@@ -21,7 +21,7 @@ Auth:             JWT cookie (jose) + bcryptjs
 Validation:       Zod
 QR Generate:      qrcode (server)
 QR Scan:          html5-qrcode (client)
-Realtime:         Supabase Realtime
+Realtime:         Server SSE + polling fallback (TANPA Supabase Realtime)
 File Storage:     Supabase Storage
 Rate Limit:       Upstash Redis
 Image Processing: sharp (server, WebP)
@@ -127,7 +127,7 @@ Butuh: Postgres, file storage (poster/foto), realtime (counter kehadiran), dan c
 
 ---
 
-### ADR-005: Realtime via Supabase Channels (bukan polling)
+### ADR-005: Realtime via Supabase Channels (bukan polling) — ⛔ SUPERSEDED by ADR-010
 
 **Konteks:**
 Di halaman admin QR presensi, counter "X orang sudah hadir" harus update otomatis tanpa refresh.
@@ -225,6 +225,27 @@ Butuh rate limit untuk endpoint publik (login, submit presensi) dan konversi gam
 
 ---
 
+### ADR-010: Counter kehadiran via server stream (SSE), bukan Supabase Realtime
+
+**Konteks:**
+Counter "X orang sudah hadir" di halaman admin QR butuh update mendekati realtime. ADR-005 memilih Supabase Realtime (WebSocket) — tapi auth kita custom (JWT cookie, ADR-002), **bukan** Supabase Auth, sehingga Supabase tidak mengenali admin.
+
+**Keputusan:**
+- Pakai **Server-Sent Events** via Route Handler `GET /api/attendance/stream/[sessionId]` (admin-protected, cek `getSession()`).
+- Fallback: polling JSON tiap 10 detik kalau SSE gagal.
+- **Supabase Realtime tidak dipakai**; tabel presensi tidak disertakan di publication `supabase_realtime`. RLS diaktifkan (tanpa policy).
+
+**Alasan:**
+- Menghindari kebocoran data: Realtime + anon key + RLS nonaktif membuat siapa pun bisa membaca `attendances` (nama, no. HP). Menutupnya butuh Realtime Authorization / Supabase Auth — terlalu berat untuk kebutuhan ini.
+- Satu jalur data (server) → proteksi memakai session admin yang sudah ada.
+
+**Konsekuensi:**
+- SSE di Vercel serverless dibatasi `maxDuration` → koneksi putus & `EventSource` reconnect otomatis; fallback polling menutup celah ini.
+- Tidak perlu `REPLICA IDENTITY`/logical replication.
+- Kalau nanti butuh realtime client-native, evaluasi ulang dengan Realtime Authorization.
+
+---
+
 ## 2. Struktur Folder
 
 ```
@@ -249,7 +270,6 @@ ngabinton/
 ├── postcss.config.mjs
 ├── tailwind.config.ts
 ├── tsconfig.json
-├── middleware.ts               # proteksi /admin/*
 ├── drizzle.config.ts
 ├── public/
 │   ├── events/
@@ -272,6 +292,7 @@ ngabinton/
 │   └── hash-password.ts        # util generate bcrypt hash
 └── src/
     ├── app/
+    ├── middleware.ts          # proteksi /admin/* (harus di src/ karena pakai src-dir)
     │   ├── layout.tsx          # root layout, font, metadata
     │   ├── globals.css         # tailwind + CSS variables
     │   ├── not-found.tsx
@@ -379,7 +400,8 @@ ngabinton/
     │   ├── api/                # wrapper fetch data internal
     │   │   ├── events.ts
     │   │   ├── attendances.ts
-    │   │   └── sessions.ts
+    │   │   ├── sessions.ts
+    │   │   └── users.ts
     │   ├── auth/
     │   │   ├── jwt.ts          # sign/verify session
     │   │   ├── password.ts     # bcrypt wrapper

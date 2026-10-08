@@ -63,6 +63,27 @@ Setiap selesai task di `TASK.md`:
 
 ### Added
 - **PLAN**: Aset referensi brand `_ref/` (logo + desain jersey NGABINTON)
+- **M0-01**: Scaffold Next.js 15.5.27 + TypeScript (strict) + Tailwind CSS v4.3.3 + pnpm (App Router, `src/`); script `typecheck`; `.gitignore` mengizinkan `.env.example`
+- **M0-02**: Supabase project aktif; kredensial di `.env.local`; verifikasi konektivitas DB/REST/Upstash lolos
+- **M0-03**: `AUTH_SECRET` di-generate; `DATABASE_URL` diperbaiki ke transaction pooler (6543) + `sslmode=require`
+- **M0-04**: Dependency runtime & dev terpasang (drizzle, postgres, jose, bcryptjs, qrcode, html5-qrcode, zod, date-fns, lucide-react, supabase-js, upstash, sharp; drizzle-kit, tsx); `pnpm.onlyBuiltDependencies` diset
+- **M0-05**: `drizzle.config.ts` + `src/lib/db/client.ts` (postgres.js, `prepare: false`) + `src/lib/db/schema.ts` (kosong); script `db:*` di `package.json`
+- **M0-06**: 8 tabel + 4 enum + relations didefinisikan di `src/lib/db/schema.ts` (252 baris)
+- **M0-07**: Migration `drizzle/0000_wise_squadron_supreme.sql` digenerate & di-push ke Supabase (8 tabel + 4 enum)
+- **M0-02**: Storage bucket `public` dibuat via SQL; **Realtime dibatalkan** — counter kehadiran pakai Server SSE (ADR-010); RLS diaktifkan di 8 tabel (tanpa policy)
+- **M0-08**: `scripts/seed.ts` (idempoten) + `scripts/hash-password.ts`; admin + event fixture `lanjalan-vol-1` (rundown 6, budget 6+TOTAL, extras 5) ter-seed
+- **M1-01**: `src/lib/auth/jwt.ts` — `signSession`/`verifySession` (jose, HS256, exp 7 hari)
+- **M1-02**: `src/lib/auth/password.ts` — `hashPassword`/`comparePassword` (bcryptjs, cost 10)
+- **M1-03**: `src/lib/auth/session.ts` — `getSession`/`setSessionCookie`/`clearSessionCookie` (cookie `session`)
+- **M1-04**: `loginAction` + `lib/validators/auth.ts` + `lib/api/users.ts`; signature `useActionState` diselaraskan di RULES/ROUTES
+- **M1-05**: Halaman `/login` + `LoginForm`; primitives `Button`/`Input`/`Label`; `cn` helper
+- **M2-01/02/03**: Font `next/font`, token desain Tailwind v4 `@theme`, komponen `<Container />` (ditarik ke depan untuk M1-05)
+- **M1-06**: `src/lib/auth/rate-limit.ts` (Upstash Redis, 5/5 menit/IP) + integrasi di `loginAction` (fail closed)
+- **M1-07**: `src/middleware.ts` proteksi `/admin/*` (redirect `/login?redirect=...`); `src/lib/constants.ts`; param `redirect` diaktifkan end-to-end
+- **M1-08**: `logoutAction` (clear cookie + redirect `/login`) — milestone M1 selesai
+- **M2-04**: `<Navbar />` (transparan→solid saat scroll, Sheet mobile) + primitif `<Sheet />`
+- **M2-05**: `<Footer />` (3 kolom + baris bawah)
+- **M2-06**: Layout `(public)` (Navbar+Footer) + landing dipindah ke `app/(public)/` — milestone M2 selesai
 
 ### Changed
 - **PLAN**: Resolusi konflik `.md` pra-M0 — tanggal event `2026-10-10`, rate limit login 5 menit, logger `lib/utils/logger.ts`, stack tambah Upstash Redis + `sharp` + `@dnd-kit`, fixture event cukup 1 travel, seed M0-08 sekalian fixture, peserta via AI-generated (aturan hijab/base layer/jersey)

@@ -47,9 +47,11 @@ Prinsip:
 9. Login gagal → **jangan** log password (bahkan hash-nya).
 10. Login gagal → log IP hash + timestamp untuk audit.
 
-**Server Action signature:**
+**Server Action signature** (dipakai dengan `useActionState`):
 ```ts
-loginAction(formData: FormData): Promise<{ ok: true } | { error: string }>
+loginAction(prevState: LoginState, formData: FormData): Promise<LoginState>
+// LoginState = { error: string | null }
+// Sukses → set cookie session + redirect("/admin") (tidak mengembalikan nilai)
 ```
 
 **Response codes:**

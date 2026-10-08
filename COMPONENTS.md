@@ -17,7 +17,7 @@ Kategori:
   event:        9 komponen
   storytelling: 8 komponen
   presensi:     7 komponen
-  admin:        5 komponen
+  admin:        6 komponen
   ui:           12 primitives (shadcn)
 
 Aturan:
@@ -887,7 +887,7 @@ type AttendanceTableProps = {
 | 6 | Aksi | 80px |
 
 **Realtime:**
-- Subscribe ke Supabase Realtime channel `attendances:{sessionId}`
+- Stream via Server-Sent Events `GET /api/attendance/stream/[sessionId]` (admin-protected)
 - Insert baru → prepend ke list + highlight 1.5s dengan `rgba(34,197,94,0.15)`
 
 **Filter:**
@@ -920,11 +920,11 @@ type AttendanceCounterProps = {
 - Kalau ada quota: progress bar tipis di bawah + teks "42 / 50"
 
 **Realtime:**
-- Subscribe Supabase Realtime → update count + nama terakhir yang absen
+- Stream via Server-Sent Events `GET /api/attendance/stream/[sessionId]` → update count + nama terakhir yang absen
 - Tampilkan nama terakhir dengan fade-in
 
 **Fallback:**
-- Kalau subscribe gagal >5s, fallback ke polling `GET /api/attendance/stream/[sessionId]?mode=polling` setiap 10s.
+- Kalau SSE gagal >5s, fallback ke polling `GET /api/attendance/stream/[sessionId]?mode=polling` setiap 10s.
 
 **Server / Client:** Client.
 
@@ -1080,6 +1080,31 @@ type FileUploadProps = {
 **Aturan:**
 - Max 5MB
 - Format: JPG, PNG, WebP
+
+**Server / Client:** Client.
+
+---
+
+### 6.6 `<LoginForm />`
+
+Form login admin.
+
+**Props:**
+```ts
+type LoginFormProps = {
+  redirectTo?: string;   // tujuan setelah login sukses (dari param redirect)
+};
+```
+
+**Isi (CONTENT.md §5.1):**
+- Field `username` — placeholder "username"
+- Field `password` — placeholder "••••••••"
+- Tombol "Masuk" (disabled + "Memuat..." saat pending)
+- Pesan error auth dengan `aria-live="polite"`
+
+**Cara kerja:**
+- Pakai `useActionState` (React 19) + Server Action `loginAction`
+- Sukses → Server Action redirect ke `/admin`
 
 **Server / Client:** Client.
 

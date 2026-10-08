@@ -13,9 +13,9 @@
 
 ```yaml
 Status:      🚧 In Progress
-Milestone:   M0 — Setup
-Progress:    0 / 87 tasks
-Terakhir:    —
+Milestone:   M3 — Landing (M0 ✅ · M1 ✅ · M2 ✅)
+Progress:    22 / 87 tasks
+Terakhir:    M2-06
 
 Aturan:
   - Satu task = satu sesi kerja
@@ -59,43 +59,54 @@ Aturan:
 
 ---
 
-## M0 — Setup 🚧
+## M0 — Setup ✅ (selesai 2026-10-08)
 
 Target: fondasi project siap, DB connect, seed admin.
 
-- [ ] **M0-01** Init Next.js 15 + TypeScript + pnpm
-  - Command: `pnpm create next-app@latest ngabinton --typescript --tailwind --app --src-dir --import-alias "@/*"`
-  - Hapus boilerplate default
-- [ ] **M0-02** Setup Supabase project
-  - Buat project di [supabase.com](https://supabase.com)
-  - Copy `DATABASE_URL` (pooler), `SUPABASE_URL`, `SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY`
-- [ ] **M0-03** Setup `.env.local` + `.env.example`
-  - Isi semua env var dari `SETUP.md` section 5
-  - Generate `AUTH_SECRET` dengan `openssl rand -base64 32`
-- [ ] **M0-04** Install dependencies
-  ```bash
-  pnpm add drizzle-orm postgres jose bcryptjs qrcode html5-qrcode zod date-fns lucide-react \
-    @supabase/supabase-js @upstash/redis @upstash/ratelimit sharp
-  pnpm add -D drizzle-kit @types/bcryptjs @types/qrcode tsx
-  # @dnd-kit (editor rundown) baru perlu saat M7:
-  # pnpm add @dnd-kit/core @dnd-kit/sortable
-  ```
-- [ ] **M0-05** Setup Drizzle config + schema kosong
-  - Buat `drizzle.config.ts`
-  - Buat `src/lib/db/client.ts`
-  - Buat `src/lib/db/schema.ts` (import semua tabel — masih kosong)
-- [ ] **M0-06** Tulis semua tabel di `schema.ts`
-  - Referensi: `SCHEMA.md` section 3
-  - 8 tabel: `users`, `events`, `rundown_items`, `budget_items`, `event_media`, `event_extras`, `attendance_sessions`, `attendances`
-  - Plus 4 enum
-- [ ] **M0-07** Generate & apply migration pertama
-  - `pnpm drizzle-kit generate`
-  - `pnpm drizzle-kit push`
-- [ ] **M0-08** Seed admin + fixture event
-  - Buat `scripts/seed.ts`
-  - Seed: 1 admin user + event `lanjalan-vol-1` + rundown (6 item) + budget (6 item + baris TOTAL) + extras
-  - Jalankan `pnpm tsx scripts/seed.ts`
-  - Verifikasi: tabel `users` ada 1 baris; tabel `events` ada `lanjalan-vol-1`
+- [x] **M0-01** Init Next.js 15 + TypeScript + pnpm ✅ 2026-10-08
+  - Dipasang via `create-next-app@15` (bukan `@latest` — versi itu kini memasang Next 16)
+  - Hasil: Next **15.5.27** · React **19.1.0** · Tailwind **v4.3.3** · pnpm · App Router + `src/`
+  - Boilerplate default dihapus: `page.tsx` (blank), `layout.tsx` (`lang="id"`, metadata brand, Geist dibuang), `globals.css` (bersih, token di M2-02), 5 SVG di `public/` dihapus, `README.md` diganti
+  - Tambahan: script `typecheck`; `.gitignore` += `!.env.example`
+  - Verifikasi: `pnpm typecheck` ✅ · `pnpm lint` ✅ · `pnpm build` ✅
+- [x] **M0-02** Setup Supabase project ✅ 2026-10-08
+  - Project Supabase (pooler `aws-0-ap-southeast-2`, free) + kredensial tersimpan di `.env.local`
+  - ⚠️ Region terpasang **Sydney (ap-southeast-2)**, bukan Singapore — catatan kecil, tidak blokir
+  - ✅ Storage bucket `public` (Public = ON) + Realtime enabled untuk `attendances` & `attendance_sessions` — dijalankan via SQL (2026-10-08)
+  - Verifikasi: DB TCP reachable ✅ · Supabase REST terjangkau ✅ · Upstash `PONG` ✅
+- [x] **M0-03** Setup `.env.local` + `.env.example` ✅ 2026-10-08
+  - `.env.example` sudah lengkap (template)
+  - `AUTH_SECRET` di-generate (32 byte → base64, 44 char)
+  - `DATABASE_URL` dinormalkan ke pooler transaction **6543** + `sslmode=require`
+  - 8 env var wajib terverifikasi terisi (nilai tidak ditampilkan)
+- [x] **M0-04** Install dependencies ✅ 2026-10-08
+  - Runtime: `drizzle-orm` 0.45.3 · `postgres` 3.4.9 · `jose` 6.2.12 · `bcryptjs` 3.0.3 · `qrcode` 1.5.4 · `html5-qrcode` 2.3.8 · `zod` 4.6.5 · `date-fns` 4.4.0 · `lucide-react` 1.52.0 · `@supabase/supabase-js` 2.117.3 · `@upstash/redis` 1.39.0 · `@upstash/ratelimit` 2.2.0 · `sharp` 0.35.5
+  - Dev: `drizzle-kit` 0.31.11 · `@types/qrcode` 1.5.6 · `tsx` 4.23.15
+  - ⚠️ **`@types/bcryptjs` dibatalkan** — stub deprecated; bcryptjs 3.x sudah punya tipe sendiri
+  - `package.json` += `pnpm.onlyBuiltDependencies` (`esbuild`, `sharp`, `unrs-resolver`) — pnpm 10 memblokir build script secara default
+  - `@dnd-kit/*` ditunda ke M7
+  - Verifikasi: drizzle-kit/tsx/sharp berfungsi ✅ · `pnpm typecheck` ✅ · `pnpm lint` ✅
+- [x] **M0-05** Setup Drizzle config + schema kosong ✅ 2026-10-08
+  - `drizzle.config.ts` — dialect `postgresql`, schema `./src/lib/db/schema.ts`, out `./drizzle`; memuat `.env.local` via `process.loadEnvFile` (drizzle-kit tak baca `.env.local` otomatis)
+  - `src/lib/db/client.ts` — drizzle + `postgres` (postgres.js), `prepare: false` (wajib untuk transaction pooler 6543), cache koneksi di dev via `globalThis`
+  - `src/lib/db/schema.ts` — kosong dulu (tabel diisi M0-06)
+  - `package.json` += script `db:generate` / `db:push` / `db:migrate` / `db:studio` / `db:seed`
+  - Verifikasi: `pnpm typecheck` ✅ · config memuat `DATABASE_URL` ✅
+- [x] **M0-06** Tulis semua tabel di `schema.ts` ✅ 2026-10-08
+  - 8 tabel + 4 enum + relations (`SCHEMA.md` §3 & §4); file **252 baris** (< 300)
+  - Callback index pakai form **array** `(t) => [...]` (form objek deprecated di drizzle-orm 0.45)
+  - Index unik parcial `attendances_session_phone_unique` via `.where(sql\`phone IS NOT NULL\`)`
+  - Deviasi kecil: index unik `session_code` & `slug`/`username` dipasang via `.unique()` pada kolom
+  - Verifikasi: `pnpm typecheck` ✅
+- [x] **M0-07** Generate & apply migration pertama ✅ 2026-10-08
+  - `pnpm db:generate` → `drizzle/0000_wise_squadron_supreme.sql` (8 tabel, 4 enum, FK cascade, index + unique parcial)
+  - `pnpm exec drizzle-kit push --force` → `[✓] Changes applied` (prompt interaktif di-bypass via `--force`)
+  - Verifikasi: 8 tabel ada di Supabase + 4 enum (`user_role`, `event_type`, `event_theme`, `media_type`)
+- [x] **M0-08** Seed admin + fixture event ✅ 2026-10-08
+  - `scripts/seed.ts` (idempoten) + `scripts/hash-password.ts`
+  - Env dimuat via `process.loadEnvFile` sebelum dynamic import `lib/db/client`
+  - Hasil: admin 1 · event `lanjalan-vol-1` (travel/storytelling, published+featured) · rundown 6 · budget 7 (6+TOTAL) · extras 5 key (`quran_verse`, `narrative`, `gift_exchange`, `pickup_points`, `payment_info`)
+  - Verifikasi: dijalankan 2x → run ke-2 skip (idempoten) ✅; hitung baris DB sesuai ✅
 
 **Catatan M0:**
 - Belum ada UI apapun. Fokus fondasi.
@@ -103,44 +114,52 @@ Target: fondasi project siap, DB connect, seed admin.
 
 ---
 
-## M1 — Auth
+## M1 — Auth ✅ (selesai 2026-10-08)
 
 Target: admin bisa login & logout, dashboard protected.
 
-- [ ] **M1-01** Buat `lib/auth/jwt.ts`
-  - `signSession(payload)` → string
-  - `verifySession(token)` → payload \| null
-  - Referensi: `RULES.md` section 1.2
-- [ ] **M1-02** Buat `lib/auth/password.ts`
-  - `hashPassword(plain)` → string
-  - `comparePassword(plain, hash)` → boolean
-- [ ] **M1-03** Buat `lib/auth/session.ts`
-  - `getSession()` → payload \| null (baca dari cookie)
-  - `setSessionCookie(token)`
-  - `clearSessionCookie()`
-- [ ] **M1-04** Buat `actions/auth.ts` — `loginAction`
-  - Validasi Zod
-  - Query user by username
-  - `comparePassword`
-  - Sign JWT + set cookie
-  - Update `last_login_at`
-  - Rate limit check (skip dulu, implement di M1-06)
-- [ ] **M1-05** Buat halaman `/login`
-  - File: `app/(admin)/login/page.tsx`
-  - Form: username + password + tombol "Masuk"
-  - Pakai `useFormState` untuk handle response
-  - Referensi: `CONTENT.md` section 5.1
-- [ ] **M1-06** Setup rate limit login (Upstash Redis)
-  - Buat `lib/auth/rate-limit.ts`
-  - Limit: 5 percobaan / 15 menit / IP
-  - Referensi: `RULES.md` section 9
-- [ ] **M1-07** Buat `middleware.ts`
-  - Matcher: `/admin/:path*`
-  - Verify JWT, redirect ke `/login` kalau invalid
-  - Referensi: `RULES.md` section 1.3
-- [ ] **M1-08** Buat `actions/auth.ts` — `logoutAction`
-  - Clear cookie
-  - Redirect `/login`
+- [x] **M1-01** Buat `lib/auth/jwt.ts` ✅ 2026-10-08
+  - `signSession(payload)` → JWT HS256 (exp 7 hari) · `verifySession(token)` → payload \| `null`
+  - Edge-compatible (hanya `jose`, tanpa API Node) — aman untuk `middleware.ts`
+  - Tipe `SessionPayload` & `SessionRole` di-export dari modul ini
+  - Durasi 7 hari inline di modul (bukan `lib/constants.ts` — file itu belum dibuat)
+  - Verifikasi: `pnpm typecheck` ✅ · round-trip token valid ✅ · token diubah → `null` ✅ · string acak → `null` ✅
+- [x] **M1-02** Buat `lib/auth/password.ts` ✅ 2026-10-08
+  - `hashPassword(plain)` / `comparePassword(plain, hash)` via `bcryptjs`, cost **10**
+  - Catatan: modul ini Node-only (bukan edge) → jangan dipakai di middleware
+  - Verifikasi: `pnpm typecheck` ✅ · hash `$2b$10$` (len 60) ✅ · compare benar=`true`, salah=`false` ✅
+- [x] **M1-03** Buat `lib/auth/session.ts` ✅ 2026-10-08
+  - `getSession()` → `SessionPayload | null` (baca cookie `session` + verify)
+  - `setSessionCookie(token)` / `clearSessionCookie()` — HttpOnly, SameSite=Lax, Path=/, Secure di production, maxAge 7 hari
+  - `SESSION_COOKIE_NAME` di-export
+  - Verifikasi: `pnpm typecheck` ✅ · `pnpm build` ✅ (uji cookie runtime menyusul di M1-05/M1-07)
+- [x] **M1-04** Buat `actions/auth.ts` — `loginAction` ✅ 2026-10-08
+  - Tambah `src/lib/validators/auth.ts` (Zod) & `src/lib/api/users.ts` (`getUserByUsername`)
+  - Alur: validasi → cari user → `comparePassword` → cek `isActive` → `signSession` → set cookie → update `last_login_at` → `redirect("/admin")`
+  - Signature `(prevState, formData)` untuk `useActionState`; sukses = redirect (tidak return `{ ok: true }`) → `RULES.md` §1.1 & `ROUTES.md` §3.1 diselaraskan
+  - Pesan error seragam: "Username atau password salah." · akun nonaktif → "Akun dinonaktifkan. Hubungi superadmin."
+  - Rate limit BELUM di sini (M1-06)
+  - Verifikasi: `pnpm typecheck` ✅ · `pnpm build` ✅ · lookup user + `comparePassword` vs data seed ✅
+- [x] **M1-05** Buat halaman `/login` ✅ 2026-10-08
+  - File: `app/(admin)/login/page.tsx` (server) + `components/admin/login-form.tsx` (client)
+  - Form: username + password + tombol "Masuk" (CONTENT.md §5.1); error via `aria-live`
+  - Pakai **`useActionState`** (bukan `useFormState` yang deprecated) + `Button`/`Input`/`Label`
+  - Verifikasi: `pnpm typecheck` ✅ · `pnpm build` ✅ · GET `/login` → 200 + berisi "Masuk Admin" & field ✅
+  - Catatan: login sukses redirect ke `/admin` yang masih 404 sampai M7 (sesuai catatan TASK.md)
+- [x] **M1-06** Setup rate limit login (Upstash Redis) ✅ 2026-10-08
+  - `src/lib/auth/rate-limit.ts` — `checkLoginRateLimit(ip)` (slidingWindow 5/5 menit, prefix `ratelimit:login`) + `getClientIp()`
+  - Dipasang di `loginAction` (dicek SEBELUM validasi kredensial)
+  - **Fail closed**: kalau Upstash tak bisa diakses → login ditolak ("Layanan sedang sibuk...") sesuai prinsip `RULES.md` §0 — bisa diubah kalau Anda mau fail-open
+  - Verifikasi: `pnpm typecheck` ✅ · `pnpm build` ✅ · uji 6 percobaan → #1–#5 lolos, #6 diblokir ✅
+- [x] **M1-07** Buat `middleware.ts` ✅ 2026-10-08
+  - ⚠️ Ditaruh di **`src/middleware.ts`** (bukan root) — project memakai `src-dir`, kalau di root middleware tidak dijalankan (sempat 404). `ROUTES.md`/`ARCHITECTURE.md` diperbarui
+  - Matcher `/admin/:path*`; verify JWT (edge-safe); invalid → redirect `/login?redirect={path}` + hapus cookie basi
+  - Sekalian aktifkan param `redirect` end-to-end: `constants.ts` (SESSION_COOKIE_NAME), page baca `searchParams`, form kirim hidden field, action validasi path internal (`safeRedirectPath`)
+  - Verifikasi: `pnpm build` ✅ (`ƒ Middleware 39.3 kB`) · `/admin` & `/admin/events` → **307** ke `/login?redirect=...` ✅ · `/login` → 200 ✅
+  - ⚠️ Build memunculkan warning edge soal `CompressionStream` dari `jose` (path JWE yang tidak kita pakai) — tidak mengganggu
+- [x] **M1-08** Buat `actions/auth.ts` — `logoutAction` ✅ 2026-10-08
+  - Clear cookie session → redirect `/login`
+  - Verifikasi: `pnpm typecheck` ✅ · `pnpm build` ✅ (uji klik menyusul di M7 saat tombol Keluar dibuat)
 
 **Catatan M1:**
 - Setelah M1, akses `/admin` (belum ada halaman) akan redirect ke `/login`.
@@ -148,33 +167,33 @@ Target: admin bisa login & logout, dashboard protected.
 
 ---
 
-## M2 — Layout
+## M2 — Layout ✅ (selesai 2026-10-08)
 
 Target: kerangka visual (navbar, footer, container) siap dipakai.
 
-- [ ] **M2-01** Setup font di `app/layout.tsx`
-  - Anton (display), Inter (body), Caveat (script), Noto Naskh Arabic, JetBrains Mono
-  - Pakai `next/font/google`
-- [ ] **M2-02** Setup token warna di `globals.css`
-  - CSS variables untuk semua token di `DESIGN.md` section 0
-  - Map ke Tailwind via `@theme` (Tailwind v4)
-- [ ] **M2-03** Buat `<Container />`
-  - File: `src/components/layout/container.tsx`
-  - Props: `size` (sm/md/lg/xl/full), `as`
-  - Referensi: `COMPONENTS.md` section 2.1
-- [ ] **M2-04** Buat `<Navbar />`
-  - File: `src/components/layout/navbar.tsx`
-  - Behavior: transparan → solid saat scroll > 40px
-  - Menu: Event, Arsip, Tentang, Kontak, Masuk
-  - Client Component
-  - Referensi: `COMPONENTS.md` section 2.2
-- [ ] **M2-05** Buat `<Footer />`
-  - File: `src/components/layout/footer.tsx`
-  - 3 kolom: brand, navigasi, sosial
-  - Referensi: `COMPONENTS.md` section 2.3
-- [ ] **M2-06** Buat layout `(public)`
-  - File: `app/(public)/layout.tsx`
-  - Bungkus dengan `<Navbar />` + `<Footer />`
+- [x] **M2-01** Setup font di `app/layout.tsx` ✅ 2026-10-08 *(ditarik ke depan untuk M1-05)*
+  - Anton (display), Inter (body), Caveat (script), Noto Naskh Arabic, JetBrains Mono via `next/font/google`
+  - Variabel `--font-*` dipasang di `<html>` dan dipetakan di `globals.css` (`@theme`)
+- [x] **M2-02** Setup token warna di `globals.css` ✅ 2026-10-08 *(ditarik ke depan untuk M1-05)*
+  - Semua token DESIGN.md §3–§6 (cinema + storytelling, aksen, radius, shadow, motion) via Tailwind v4 `@theme`
+  - Base `body` + blok `prefers-reduced-motion`
+- [x] **M2-03** Buat `<Container />` ✅ 2026-10-08 *(ditarik ke depan untuk M1-05)*
+  - File: `src/components/layout/container.tsx` — props `size` (sm/md/lg/xl/full), `as`, `className`
+- [x] **M2-04** Buat `<Navbar />` ✅ 2026-10-08
+  - File: `src/components/layout/navbar.tsx` (client) — transparan → solid setelah scroll ≥ 40px (`background-elevated` + `shadow-card`)
+  - Menu: Event, Arsip, Tentang, Kontak, Masuk (`ROUTES.md` §9.1); mobile: hamburger → `<Sheet side="top">` + ikon Masuk
+  - Logo = wordmark teks (Anton 24px, `font-display`) — belum perlu aset SVG (`public/brand/logo.svg` belum ada)
+  - Tambahan: primitif **`src/components/ui/sheet.tsx`** (drawer sederhana tanpa Radix) sesuai `COMPONENTS.md` §7.1
+  - Verifikasi: `pnpm typecheck` ✅ · `pnpm build` ✅ (uji visual menyusul di M2-06 saat dipakai layout publik)
+- [x] **M2-05** Buat `<Footer />` ✅ 2026-10-08
+  - File: `src/components/layout/footer.tsx` (Server) — 3 kolom: brand, navigasi, sosial + baris bawah
+  - Teks dari `CONTENT.md` §2.2; tautan sosial masih placeholder (`CONTENT.md` §8)
+  - ⚠️ Lucide v1 **tidak punya icon brand** (Instagram dll) → pakai icon generik (`Camera`, `MessageCircle`, `Mail`)
+  - Verifikasi: `pnpm typecheck` ✅ · `pnpm build` ✅
+- [x] **M2-06** Buat layout `(public)` ✅ 2026-10-08
+  - File: `src/app/(public)/layout.tsx` — bungkus `<Navbar />` + `<Footer />`
+  - Landing `src/app/page.tsx` dipindah ke `src/app/(public)/page.tsx` (kalau tidak, route `/` bentrok)
+  - Verifikasi: `pnpm build` ✅ · GET `/` → navbar+footer ada ✅ · GET `/login` → tidak ada footer publik ✅
 
 **Catatan M2:**
 - Setelah M2, buka `/` akan tampil navbar + footer, konten masih blank.
@@ -391,7 +410,7 @@ Target: admin bisa buka sesi presensi & generate QR.
   - Referensi: `ROUTES.md` section 4.4
 - [ ] **M8-07** Buat `<AttendanceCounter />`
   - File: `src/components/presensi/attendance-counter.tsx`
-  - Realtime via Supabase Realtime
+  - Data via **SSE** `/api/attendance/stream/[sessionId]` + fallback polling (bukan Supabase Realtime — `ARCHITECTURE.md` ADR-010)
   - Referensi: `COMPONENTS.md` section 5.7
 
 **Catatan M8:**
@@ -406,7 +425,7 @@ Target: admin bisa lihat & export daftar hadir.
 - [ ] **M9-01** Buat halaman `app/(admin)/admin/events/[id]/attendance/page.tsx`
 - [ ] **M9-02** Buat `<AttendanceTable />`
   - File: `src/components/presensi/attendance-table.tsx`
-  - Realtime + filter + search
+  - SSE + filter + search (bukan Supabase Realtime)
   - Referensi: `COMPONENTS.md` section 5.6
 - [ ] **M9-03** Buat `actions/attendance.ts` — `deleteAttendanceAction`
 - [ ] **M9-04** Buat Route Handler `/api/attendance/export/[sessionId]`
@@ -495,7 +514,7 @@ Task yang muncul setelah planning awal, belum dimasukkan ke milestone.
 
 | ID | Task | Prioritas | Ditambahkan |
 |---|---|---|---|
-| — | (kosong) | — | — |
+| B1 | `POST /api/auth/logout` (route handler, `ROUTES.md` §4.1) — apakah perlu, atau cukup `logoutAction` saja? Kalau tak perlu, hapus dari `ROUTES.md` | Rendah | 2026-10-08 |
 
 **Aturan:**
 - Task baru **tidak** langsung dikerjakan.
@@ -520,9 +539,30 @@ Catatan task yang sudah selesai, di luar checklist (untuk audit).
 
 | Tanggal | Task | Catatan |
 |---|---|---|
-| — | — | — |
+| 2026-10-08 | M0-01 | Next.js 15.5.27 + TypeScript + Tailwind v4 + pnpm; boilerplate dibersihkan; typecheck/lint/build lolos |
 
+| 2026-10-08 | M0-02 | Supabase project + kredensial di `.env.local`; verifikasi konektivitas DB/REST/Upstash lolos |
+| 2026-10-08 | M0-03 | `.env.local` lengkap; `AUTH_SECRET` di-generate; `DATABASE_URL` → pooler 6543 + `sslmode=require` |
 ---
+| 2026-10-08 | M0-07 | Migration `0000_wise_squadron_supreme.sql` di-generate & di-push; 8 tabel + 4 enum terverifikasi di Supabase |
+| 2026-10-08 | M0-08 | Seed idempoten: admin + event fixture + rundown/budget/extras; verifikasi baris DB sesuai |
+| 2026-10-08 | M1-01 | `lib/auth/jwt.ts` (signSession/verifySession, HS256, 7 hari); round-trip & tamper test lolos |
+| 2026-10-08 | M1-02 | `lib/auth/password.ts` (bcryptjs cost 10); hash/compare test lolos |
+| 2026-10-08 | M1-03 | `lib/auth/session.ts` (getSession/setSessionCookie/clearSessionCookie); typecheck+build lolos |
+| 2026-10-08 | M1-04 | `actions/auth.ts` loginAction + validators/auth + api/users; signature diselaraskan; typecheck/build & uji DB lolos |
+| 2026-10-08 | M1-05 | Halaman `/login` + `LoginForm` + `Button`/`Input`/`Label`; GET /login → 200 |
+| 2026-10-08 | M2-01 | Font Anton/Inter/Caveat/Noto Naskh Arabic/JetBrains Mono di `layout.tsx` (ditarik ke depan) |
+| 2026-10-08 | M2-02 | Token desain di `globals.css` via Tailwind v4 `@theme` (ditarik ke depan) |
+| 2026-10-08 | M2-03 | `<Container />` (ditarik ke depan) |
+| 2026-10-08 | M1-06 | `lib/auth/rate-limit.ts` (Upstash, 5/5 menit/IP) + integrasi loginAction; uji 6x lolos |
+| 2026-10-08 | M1-07 | `src/middleware.ts` proteksi /admin/*; param `redirect` diaktifkan end-to-end; 307 terverifikasi |
+| 2026-10-08 | M1-08 | `logoutAction` (clear cookie + redirect /login); milestone M1 ✅ selesai |
+| 2026-10-08 | M2-04 | `<Navbar />` + primitif `<Sheet />`; typecheck/build lolos |
+| 2026-10-08 | M2-05 | `<Footer />` (3 kolom + baris bawah); typecheck/build lolos |
+| 2026-10-08 | M2-06 | Layout `(public)` + landing dipindah ke route group; milestone M2 ✅ selesai |
+| 2026-10-08 | M0-06 | 8 tabel + 4 enum + relations ditulis di `schema.ts` (252 baris); typecheck lolos |
+| 2026-10-08 | M0-04 | 13 dependency runtime + 3 dev terpasang; `pnpm.onlyBuiltDependencies` diset; @types/bcryptjs dihapus |
+| 2026-10-08 | M0-05 | `drizzle.config.ts` + `lib/db/client.ts` (prepare:false) + `schema.ts` kosong; script `db:*` ditambah |
 
 ## 6. Pertanyaan Terbuka
 
@@ -534,6 +574,7 @@ Pertanyaan yang butuh jawaban dari manusia sebelum task bisa lanjut.
 | Q3 | Nomor rekening PIC pembayaran? | M5-05 | 🟡 Placeholder diisi (`CONTENT.md` §4.9) — ganti nilai final sebelum M11 |
 | Q4 | Link Google Maps Walini & Pawon? | M5-03, M5-08 | ✅ Walini & Pawon (`CONTENT.md` §4.5 & §4.8) |
 | Q5 | Foto hero, destinasi, transport, peserta? | M5-01 s/d M5-07 | ✅ AI-generated (`BRAND.md` §7.4, `CONTENT.md` §10) |
+| Q6 | ~~Realtime `attendances` aktif tanpa RLS~~ | M8-07 | ✅ Diputuskan: **server SSE + polling fallback**, tanpa Supabase Realtime (`ARCHITECTURE.md` ADR-010). Publication Realtime dilepas + RLS diaktifkan |
 | Q5 | Foto hero, destinasi, transport, peserta? | M5-01 s/d M5-07 | ⏳ Menunggu |
 
 **Aturan:**
