@@ -13,9 +13,9 @@
 
 ```yaml
 Status:      🚧 In Progress
-Milestone:   M3 — Landing (M0 ✅ · M1 ✅ · M2 ✅)
-Progress:    28 / 87 tasks
-Terakhir:    M3-06 (2026-10-08)
+Milestone:   M4 — Event Public (M0 ✅ · M1 ✅ · M2 ✅ · M3 ✅)
+Progress:    29 / 87 tasks
+Terakhir:    M3-07
 
 Aturan:
   - Satu task = satu sesi kerja
@@ -200,7 +200,7 @@ Target: kerangka visual (navbar, footer, container) siap dipakai.
 
 ---
 
-## M3 — Landing
+## M3 — Landing ✅ (selesai 2026-10-08)
 
 Target: landing page dengan hero + carousel event.
 
@@ -233,10 +233,13 @@ Target: landing page dengan hero + carousel event.
   - Refactor `ui/button.tsx`: ekspor `buttonClass()` agar CTA berbentuk `<Link>` memakai kelas tombol yang sama
   - ⚠️ Foto hero **belum ada**: dijaga konstanta `HERO_IMAGE_URL = null` (latar `surface` + overlay). Isi path-nya saat aset tersedia (lihat Backlog B2)
   - Verifikasi: `pnpm typecheck` ✅ · `pnpm build` ✅ · GET `/` → judul/tagline/CTA/meta/overlay ada ✅
-- [ ] **M3-07** Buat section carousel di landing
-  - "Event Mendatang" (carousel)
-  - "Arsip Lan Jalan" (carousel, filter travel + past)
-  - "Momen Kami" (grid galeri — skip kalau belum ada media)
+- [x] **M3-07** Buat section carousel di landing ✅ 2026-10-08
+  - "Event Mendatang" (carousel, `id="events"` untuk CTA hero) ✅
+  - "Arsip Lan Jalan" (carousel travel + past; section **disembunyikan bila kosong**) ✅
+  - Tambah `getPastTravelEvents()` di `lib/api/events.ts` (tanpa fallback fixture)
+  - "Momen Kami" (galeri) **di-skip** — belum ada media; lihat Backlog B3
+  - Landing jadi `async` + `export const revalidate = 60` (ISR)
+  - Verifikasi: `pnpm typecheck` ✅ · `pnpm build` ✅ (ISR 1m) · GET `/` → hero + Event Mendatang + kartu ada, Arsip tersembunyi ✅
 
 **Catatan M3:**
 - Setelah M3, landing page sudah bisa dilihat publik.
@@ -521,6 +524,7 @@ Task yang muncul setelah planning awal, belum dimasukkan ke milestone.
 |---|---|---|---|
 | B1 | `POST /api/auth/logout` (route handler, `ROUTES.md` §4.1) — apakah perlu, atau cukup `logoutAction` saja? Kalau tak perlu, hapus dari `ROUTES.md` | Rendah | 2026-10-08 |
 | B2 | Aset **foto hero landing** (AI-generated, jersey NGABINTON) — taruh di `public/` lalu isi `HERO_IMAGE_URL` di `src/app/(public)/page.tsx` (juga untuk event: hero/transport/Pawon/peserta) | Sedang | 2026-10-08 |
+| B3 | Section **"Momen Kami"** (galeri, `event_media` gallery) & **"Mau Ikutan?"** (`CONTENT.md` §3.5) — belum dikerjakan; tambahkan saat media/data siap | Rendah | 2026-10-08 |
 
 **Aturan:**
 - Task baru **tidak** langsung dikerjakan.
@@ -571,6 +575,7 @@ Catatan task yang sudah selesai, di luar checklist (untuk audit).
 | 2026-10-08 | M3-03 | `<EventCard />` + `format.ts` + `event-status.ts` + `EventStatusBadge` (M3-05 ditarik ke depan) |
 | 2026-10-08 | M3-04 | `<EventCarousel />` (scroll+snap, panah hover, fade tepi); smoke-test render lolos |
 | 2026-10-08 | M3-06 | Hero landing (display title, 2 CTA, overlay gradient); `buttonClass()` diekspor |
+| 2026-10-08 | M3-07 | Section landing (Event Mendatang + Arsip) + `getPastTravelEvents`; ISR 60s. **Milestone M3 ✅** |
 | 2026-10-08 | M0-06 | 8 tabel + 4 enum + relations ditulis di `schema.ts` (252 baris); typecheck lolos |
 | 2026-10-08 | M0-04 | 13 dependency runtime + 3 dev terpasang; `pnpm.onlyBuiltDependencies` diset; @types/bcryptjs dihapus |
 | 2026-10-08 | M0-05 | `drizzle.config.ts` + `lib/db/client.ts` (prepare:false) + `schema.ts` kosong; script `db:*` ditambah |

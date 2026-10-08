@@ -2,7 +2,7 @@
  * Query baca untuk event — semua akses DB baca lewat `lib/api/`
  * (ARCHITECTURE.md §2 aturan folder 4). Referensi: SCHEMA.md §5.2.
  */
-import { and, asc, eq, gt } from "drizzle-orm";
+import { and, asc, desc, eq, gt, lt } from "drizzle-orm";
 
 import { db } from "@/lib/db/client";
 import { events } from "@/lib/db/schema";
@@ -33,4 +33,26 @@ export async function getUpcomingEvents(limit: number = DEFAULT_LIMIT): Promise<
 
   const existing = await db.select({ id: events.id }).from(events).limit(1);
   return existing.length === 0 ? eventFixtures.slice(0, limit) : rows;
+}
+
+/**
+ * Arsip travel: `event_type = 'travel'`, published, dan `starts_at` sudah lewat,
+ * diurutkan dari yang paling baru.
+ *
+ * Catatan: **tanpa** fallback fixture (fixture bukan event masa lalu) —
+ * kalau kosong, section arsip disembunyikan (CONTENT.md §3.3).
+ */
+export async function getPastTravelEvents(limit: number = DEFAULT_LIMIT): Promise<Event[]> {
+  return db
+    .select()
+    .from(events)
+    .where(
+      and(
+        eq(events.isPublished, true),
+        eq(events.eventType, "travel"),
+        lt(events.startsAt, new Date()),
+      ),
+    )
+    .orderBy(desc(events.startsAt))
+    .limit(limit);
 }
