@@ -14,8 +14,8 @@
 ```yaml
 Status:      🚧 In Progress
 Milestone:   M3 — Landing (M0 ✅ · M1 ✅ · M2 ✅)
-Progress:    26 / 87 tasks
-Terakhir:    M3-03 (+ M3-05 ditarik ke depan)
+Progress:    27 / 87 tasks
+Terakhir:    M3-04 (2026-10-08)
 
 Aturan:
   - Satu task = satu sesi kerja
@@ -220,11 +220,10 @@ Target: landing page dengan hero + carousel event.
   - Ketergantungan yang ikut ditarik ke depan: `src/lib/utils/format.ts` (`formatDate`/`formatTime`/`formatRupiah` via `Intl` + tz **Asia/Jakarta**) & `src/lib/utils/event-status.ts` (`getEventStatus`)
   - Verifikasi: `pnpm typecheck` ✅ · `pnpm build` ✅ · uji format dengan `TZ=UTC` tetap WIB-correct ✅
   - ⚠️ a11y: `text-primary` pada badge `upcoming` kontrasnya rendah (DESIGN.md §8.1) — ditinjau di M10-06
-- [ ] **M3-04** Buat `<EventCarousel />`
-  - File: `src/components/event/event-carousel.tsx`
-  - Horizontal scroll + snap
-  - Panah navigasi saat hover (desktop)
-  - Referensi: `COMPONENTS.md` section 3.4
+- [x] **M3-04** Buat `<EventCarousel />` ✅ 2026-10-08
+  - File: `src/components/event/event-carousel.tsx` (client) — scroll horizontal + `snap-x snap-mandatory`, panah saat hover (≥ md), gradient fade tepi 48px, empty state
+  - Panah muncul hanya kalau kartu ≥ 3 (`MIN_CARDS_FOR_ARROWS`); scrollbar disembunyikan
+  - Verifikasi: `pnpm typecheck` ✅ · `pnpm build` ✅ · smoke-test render di landing sementara → judul/link/kartu/tanggal WIB/badge/snap semua ada ✅ (landing dikembalikan ke placeholder setelah tes)
 - [x] **M3-05** Buat `<EventStatusBadge />` ✅ 2026-10-08 *(ditarik ke depan untuk M3-03)*
   - File: `src/components/event/event-status-badge.tsx` — varian `upcoming` / `live` (dot pulse) / `past`, selalu ada teks (a11y)
   - Referensi: `COMPONENTS.md` §3.5
@@ -568,6 +567,7 @@ Catatan task yang sudah selesai, di luar checklist (untuk audit).
 | 2026-10-08 | M3-01 | `lib/types/event.ts` + `lib/fixtures/events.ts` (1 travel fixture) |
 | 2026-10-08 | M3-02 | `lib/api/events.ts` `getUpcomingEvents` (+fallback fixture); uji DB lolos |
 | 2026-10-08 | M3-03 | `<EventCard />` + `format.ts` + `event-status.ts` + `EventStatusBadge` (M3-05 ditarik ke depan) |
+| 2026-10-08 | M3-04 | `<EventCarousel />` (scroll+snap, panah hover, fade tepi); smoke-test render lolos |
 | 2026-10-08 | M0-06 | 8 tabel + 4 enum + relations ditulis di `schema.ts` (252 baris); typecheck lolos |
 | 2026-10-08 | M0-04 | 13 dependency runtime + 3 dev terpasang; `pnpm.onlyBuiltDependencies` diset; @types/bcryptjs dihapus |
 | 2026-10-08 | M0-05 | `drizzle.config.ts` + `lib/db/client.ts` (prepare:false) + `schema.ts` kosong; script `db:*` ditambah |

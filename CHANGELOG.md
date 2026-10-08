@@ -87,6 +87,7 @@ Setiap selesai task di `TASK.md`:
 - **M3-01**: `src/lib/types/event.ts` (tipe dari schema) + `src/lib/fixtures/events.ts` (fixture 1 travel)
 - **M3-02**: `src/lib/api/events.ts` — `getUpcomingEvents` (dengan fallback fixture saat DB kosong)
 - **M3-03**: `<EventCard />`; `src/lib/utils/format.ts` (Intl, WIB) & `event-status.ts`; `<EventStatusBadge />` (M3-05)
+- **M3-04**: `<EventCarousel />` (scroll+snap, panah hover, gradient fade tepi, empty state)
 
 ### Changed
 - **PLAN**: Resolusi konflik `.md` pra-M0 — tanggal event `2026-10-10`, rate limit login 5 menit, logger `lib/utils/logger.ts`, stack tambah Upstash Redis + `sharp` + `@dnd-kit`, fixture event cukup 1 travel, seed M0-08 sekalian fixture, peserta via AI-generated (aturan hijab/base layer/jersey)
