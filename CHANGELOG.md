@@ -107,12 +107,15 @@ Setiap selesai task di `TASK.md`:
 - **M5-06**: `<GiftExchangeInfo />` (card `story-orange` 15%, border kiri 4px, ikon `Gift` 32px, daftar aturan dengan ikon `Check`) + `giftExchangeSchema`
 
 ### Changed
+- **M5-10**: Seed jadi **upsert** (`onConflictDoUpdate`) untuk `rundown_items`, `budget_items`, `event_extras` — perubahan `CONTENT.md` kini benar-benar tersinkron saat seed dijalankan ulang. `users`/`events` tetap `DoNothing` agar kredensial & editan manual tidak tertimpa
+- **CONTENT**: §4.10 — budget dipisah jadi field sendiri (tidak diulang di daftar aturan); §4.7 & §6.2 — note rundown "Petik Stroberi" jadi "Kalau sempat mampir"
 - **PLAN**: `COMPONENTS.md` §3.1 `<EventHero />` — CTA utama dipetakan per `status` (upcoming → "Lihat Rundown", live → "Presensi Sekarang", past → "Lihat Dokumentasi"); "Daftar Sekarang" dihapus karena belum ada alur pendaftaran
 - **PLAN**: Resolusi konflik `.md` pra-M0 — tanggal event `2026-10-10`, rate limit login 5 menit, logger `lib/utils/logger.ts`, stack tambah Upstash Redis + `sharp` + `@dnd-kit`, fixture event cukup 1 travel, seed M0-08 sekalian fixture, peserta via AI-generated (aturan hijab/base layer/jersey)
 - **PLAN**: Semua `[TBD]` di `CONTENT.md` diisi — kuota (placeholder), info pembayaran (placeholder PIC Bu Triii), Maps Pawon, foto (AI-generated), sosmed (placeholder), checklist §10 ditutup
 - **PLAN**: Melengkapi `SCHEMA.md` yang terpotong — kode tabel `attendance_sessions`, tabel `attendances` (§3.8), Relations (§4), Query Helpers (§5); memperbaiki referensi section `ARCHITECTURE.md` → `RULES.md`/`SETUP.md` di `TASK.md`; merapikan §7 `CONTENT.md`
 
 ### Fixed
+- **M5-10**: **B4** — teks Inggris "Optional" di note rundown diganti "Kalau sempat mampir" (badge "Opsional" tetap dari `is_optional`); **B7** — baris budget tidak lagi tampil dua kali di `#kado` (dihapus dari `gift_exchange.rules`)
 - **M5-01**: Kontras `#rundown` — varian storytelling (teks `story-text` hampir hitam) sempat dipakai di atas latar gelap sehingga judul tak terbaca. Sekarang `#rundown` selalu varian cinema + teks putih (`DESIGN.md` §2: "Rundown (gelap, kontras)"); `#biaya` (storytelling) diberi latar `story-bg`
 
 ### Security

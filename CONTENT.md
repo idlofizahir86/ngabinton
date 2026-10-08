@@ -190,7 +190,7 @@
 | 06.00 – 08.30 | Perjalanan menuju Walini Hot Spring | Plus penjemputan di beberapa titik |
 | 08.30 – 12.15 | Eksplore Walini Hot Spring | Berendam dll |
 | 12.15 – 14.30 | Makan siang di Pawon Kang Bima | Sekalian tukar kado (10K–15K) |
-| 14.30 – 15.30 | Petik Stroberi | *Optional* |
+| 14.30 – 15.30 | Petik Stroberi | Kalau sempat mampir |
 | 15.30 – 18.00 | Perjalanan pulang | Ke rumah masing-masing yaa |
 
 ### 4.8 Section Makan Siang (#makan)
@@ -227,8 +227,8 @@
 - **Judul:** "Tukar Kado"
 - **Deskripsi:**
   > "Bawa satu kado, budget Rp 10.000 – Rp 15.000. Unisex, jadi nggak perlu bingung mau cowok atau cewek. Ditukar saat makan siang di Pawon Kang Bima."
+- **Budget:** Rp 10.000 – Rp 15.000 (`budget_min`/`budget_max` — dirender terpisah, **jangan** diulang di `rules`)
 - **Aturan:**
-  - Budget: Rp 10.000 – Rp 15.000
   - Unisex (bebas gender)
   - Wajib bawa 1 kado per orang
   - Ditukar saat makan siang
@@ -353,7 +353,7 @@ export const rundownItems = [
   { time: "06.00 – 08.30", title: "Perjalanan menuju Walini Hot Spring", note: "Plus penjemputan di beberapa titik" },
   { time: "08.30 – 12.15", title: "Eksplore Walini Hot Spring", note: "Berendam dll" },
   { time: "12.15 – 14.30", title: "Makan siang di Pawon Kang Bima", note: "Sekalian tukar kado (10K–15K)" },
-  { time: "14.30 – 15.30", title: "Petik Stroberi", note: "Optional" },
+  { time: "14.30 – 15.30", title: "Petik Stroberi", note: "Kalau sempat mampir" },
   { time: "15.30 – 18.00", title: "Perjalanan pulang", note: "Ke rumah masing-masing yaa" },
 ];
 ```

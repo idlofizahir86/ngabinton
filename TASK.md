@@ -14,8 +14,8 @@
 ```yaml
 Status:      🚧 In Progress
 Milestone:   M5 — Storytelling (M0 ✅ · M1 ✅ · M2 ✅ · M3 ✅ · M4 ✅)
-Progress:    45 / 87 tasks
-Terakhir:    M5-06 (2026-10-08)
+Progress:    46 / 87 tasks
+Terakhir:    M5-10 (2026-10-08)
 
 Aturan:
   - Satu task = satu sesi kerja
@@ -395,6 +395,13 @@ Target: section-section khusus event travel.
   - `scripts/seed.ts` §6: 5 baris (destination, transport, food ×2, participant) — hero/cover tidak diduplikasi (SCHEMA.md §3.5)
   - Idempoten lewat cek keberadaan (tabel tidak punya unique constraint)
   - Verifikasi: `pnpm tsx scripts/seed.ts` → "✅ Media: 5 item", re-run → "↷ Media sudah ada" ✅
+- [x] **M5-10** Seed jadi **upsert** + perbaikan konten (B4 & B7) ✅ 2026-10-08
+  - Task baru (disetujui user 2026-10-08, "oke boleh rekomendasi anda")
+  - `rundown_items`, `budget_items`, `event_extras` → `onConflictDoUpdate` (`sql\`excluded.*\``) supaya perubahan `CONTENT.md` benar-benar sinkron saat seed dijalankan ulang
+  - `users` & `events` tetap `onConflictDoNothing` (kredensial/editan manual tidak tertimpa); `event_media` tetap cek-keberadaan (tak ada unique key)
+  - **B4**: note rundown "Petik Stroberi" `"Optional"` → `"Kalau sempat mampir"` (Indonesia; badge "Opsional" tetap dari `is_optional`) — `CONTENT.md` §4.7 & §6.2 disinkronkan
+  - **B7**: hapus `"Budget Rp 10.000 – Rp 15.000"` dari `gift_exchange.rules` (budget sudah dirender terpisah) — `CONTENT.md` §4.10 jadi "**Budget:** …" + 3 aturan
+  - Verifikasi: `pnpm tsx scripts/seed.ts` ✅ (upsert) · cek DB: note rundown = "Kalau sempat mampir", `gift_exchange.rules` = 3 item ✅
 
 **Catatan M5:**
 - Setelah M5, halaman `/lanjalan-vol-1` sudah lengkap secara visual.
@@ -599,10 +606,10 @@ Task yang muncul setelah planning awal, belum dimasukkan ke milestone.
 | B1 | `POST /api/auth/logout` (route handler, `ROUTES.md` §4.1) — apakah perlu, atau cukup `logoutAction` saja? Kalau tak perlu, hapus dari `ROUTES.md` | Rendah | 2026-10-08 |
 | B2 | **Aset foto** — ✅ semua 19 file sudah ditambahkan ke `public/` sesuai `ASSETS.md` (2026-10-08). Sisa: isi `HERO_IMAGE_URL` di `src/app/(public)/page.tsx`, dan sumber path gambar section event (lihat ❓ QUESTION M5-02) | Sedang | 2026-10-08 |
 | B3 | Section **"Momen Kami"** (galeri, `event_media` gallery) & **"Mau Ikutan?"** (`CONTENT.md` §3.5) — belum dikerjakan; tambahkan saat media/data siap | Rendah | 2026-10-08 |
-| B4 | Teks Inggris di UI: note rundown "Petik Stroberi" = `"Optional"` (seed + `CONTENT.md` §4.7/§6.2). Redundan dengan badge "Opsional" dari `is_optional`. Saran: ganti note jadi kalimat Indonesia (mis. "Kalau sempat mampir") — perlu keputusan + `UPDATE` baris rundown (seed idempoten tidak meng-update baris lama) | Sedang | 2026-10-08 |
+| B4 | Teks Inggris di UI: note rundown "Petik Stroberi" = `"Optional"` — ✅ **diselesaikan di M5-10** (jadi "Kalau sempat mampir") | — | 2026-10-08 |
 | B5 | `media_type` belum punya tipe `narrative` → gambar `narrative-meme.jpg` harus dari konstanta halaman (diputuskan opsi A). Tambah enum `narrative` + migration kalau mau DB-driven penuh | Rendah | 2026-10-08 |
 | B6 | Isi **data nyata** `event_extras.payment_info` (bank, no. rekening, a.n.) — sekarang masih `[PLACEHOLDER: ...]`, sengaja tidak dirender (`paymentInfoSchema`). Butuh `CONTENT.md` §4.9 final + `UPDATE` DB | Tinggi (pra-produksi) | 2026-10-08 |
-| B7 | **Duplikasi baris budget** di `#kado`: `gift_exchange.rules[0]` = "Budget Rp 10.000 – Rp 15.000" padahal budget sudah dirender terpisah dari `budget_min/max`. Saran: hapus entri itu dari `CONTENT.md` §4.10 + seed. ⚠️ seed idempoten tidak meng-update baris → butuh `UPDATE` (atau ubah seed jadi upsert) | Sedang | 2026-10-08 |
+| B7 | **Duplikasi baris budget** di `#kado` — ✅ **diselesaikan di M5-10** | — | 2026-10-08 |
 
 **Aturan:**
 - Task baru **tidak** langsung dikerjakan.
@@ -670,6 +677,7 @@ Catatan task yang sudah selesai, di luar checklist (untuk audit).
 | 2026-10-08 | M5-04 | `<TransportCard />` (+`pickupPointsSchema`); computed style cocok DESIGN §7.9; screenshot lolos |
 | 2026-10-08 | M5-05 | `<BudgetTable />` (+`paymentInfoSchema` tolak placeholder); `#biaya` final; screenshot lolos |
 | 2026-10-08 | M5-06 | `<GiftExchangeInfo />` (+`giftExchangeSchema`); computed style cocok DESIGN §7.12; screenshot lolos |
+| 2026-10-08 | M5-10 | Seed **upsert** (rundown/budget/extras) + perbaikan konten B4 (note Indonesia) & B7 (budget duplikat); DB tersinkron |
 | 2026-10-08 | M0-06 | 8 tabel + 4 enum + relations ditulis di `schema.ts` (252 baris); typecheck lolos |
 | 2026-10-08 | M0-04 | 13 dependency runtime + 3 dev terpasang; `pnpm.onlyBuiltDependencies` diset; @types/bcryptjs dihapus |
 | 2026-10-08 | M0-05 | `drizzle.config.ts` + `lib/db/client.ts` (prepare:false) + `schema.ts` kosong; script `db:*` ditambah |

@@ -4,7 +4,7 @@
  * Referensi: CONTENT.md §4 & §6, SETUP.md §7.
  */
 import bcrypt from "bcryptjs";
-import { eq } from "drizzle-orm";
+import { eq, sql } from "drizzle-orm";
 
 const SLUG = "lanjalan-vol-1";
 
@@ -88,6 +88,10 @@ async function main() {
   // ------------------------------------------------------------
   // 3) Rundown (6 item) — CONTENT.md §4.7
   // ------------------------------------------------------------
+  // Konten (rundown/budget/extras) di-**upsert** supaya perubahan `CONTENT.md`
+  // benar-benar tersinkron ke DB saat seed dijalankan ulang.
+  // `users` & `events` tetap `onConflictDoNothing` agar kredensial/editan manual
+  // tidak tertimpa.
   await db
     .insert(rundownItems)
     .values([
@@ -95,11 +99,19 @@ async function main() {
       { eventId, order: 1, time: "06.00 – 08.30", title: "Perjalanan menuju Walini Hot Spring", note: "Plus penjemputan di beberapa titik" },
       { eventId, order: 2, time: "08.30 – 12.15", title: "Eksplore Walini Hot Spring", note: "Berendam dll" },
       { eventId, order: 3, time: "12.15 – 14.30", title: "Makan siang di Pawon Kang Bima", note: "Sekalian tukar kado (10K–15K)" },
-      { eventId, order: 4, time: "14.30 – 15.30", title: "Petik Stroberi", note: "Optional", isOptional: true },
+      { eventId, order: 4, time: "14.30 – 15.30", title: "Petik Stroberi", note: "Kalau sempat mampir", isOptional: true },
       { eventId, order: 5, time: "15.30 – 18.00", title: "Perjalanan pulang", note: "Ke rumah masing-masing yaa" },
     ])
-    .onConflictDoNothing({ target: [rundownItems.eventId, rundownItems.order] });
-  console.log("✅ Rundown: 6 item");
+    .onConflictDoUpdate({
+      target: [rundownItems.eventId, rundownItems.order],
+      set: {
+        time: sql`excluded.time`,
+        title: sql`excluded.title`,
+        note: sql`excluded.note`,
+        isOptional: sql`excluded.is_optional`,
+      },
+    });
+  console.log("✅ Rundown: 6 item (upsert)");
 
   // ------------------------------------------------------------
   // 4) Budget (6 item + TOTAL) — CONTENT.md §4.9
@@ -115,8 +127,15 @@ async function main() {
       { eventId, order: 5, label: "Lain-lain", amount: 15000 },
       { eventId, order: 6, label: "TOTAL", amount: 175000, isTotal: true },
     ])
-    .onConflictDoNothing({ target: [budgetItems.eventId, budgetItems.order] });
-  console.log("✅ Budget: 6 item + TOTAL");
+    .onConflictDoUpdate({
+      target: [budgetItems.eventId, budgetItems.order],
+      set: {
+        label: sql`excluded.label`,
+        amount: sql`excluded.amount`,
+        isTotal: sql`excluded.is_total`,
+      },
+    });
+  console.log("✅ Budget: 6 item + TOTAL (upsert)");
 
   // ------------------------------------------------------------
   // 5) Extras (5 key) — CONTENT.md §4.3, §4.4, §4.6, §4.9, §4.10
@@ -150,7 +169,6 @@ async function main() {
           budget_min: 10000,
           budget_max: 15000,
           rules: [
-            "Budget Rp 10.000 – Rp 15.000",
             "Unisex (bebas gender)",
             "Wajib bawa 1 kado per orang",
             "Ditukar saat makan siang",
@@ -173,8 +191,14 @@ async function main() {
         },
       },
     ])
-    .onConflictDoNothing({ target: [eventExtras.eventId, eventExtras.key] });
-  console.log("✅ Extras: 5 key");
+    .onConflictDoUpdate({
+      target: [eventExtras.eventId, eventExtras.key],
+      set: {
+        value: sql`excluded.value`,
+        updatedAt: sql`now()`,
+      },
+    });
+  console.log("✅ Extras: 5 key (upsert)");
 
   // ------------------------------------------------------------
   // 6) Media (5 item) — SCHEMA.md §3.5 & ASSETS.md §2
