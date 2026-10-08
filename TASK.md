@@ -14,8 +14,8 @@
 ```yaml
 Status:      🚧 In Progress
 Milestone:   M5 — Storytelling (M0 ✅ · M1 ✅ · M2 ✅ · M3 ✅ · M4 ✅)
-Progress:    41 / 87 tasks
-Terakhir:    M5-09 (2026-10-08)
+Progress:    42 / 87 tasks
+Terakhir:    M5-03 (2026-10-08)
 
 Aturan:
   - Satu task = satu sesi kerja
@@ -346,10 +346,14 @@ Target: section-section khusus event travel.
   - Verifikasi: `pnpm typecheck` ✅ · `pnpm lint` ✅ · `pnpm build` ✅ · temp-wire → `id="narasi"`, judul, body, gambar + alt, aset `narrative-meme.jpg` → 200 `image/jpeg` (589 KB) ✅ · screenshot: layout 60/40 sesuai ✅ lalu dikembalikan
   - ℹ️ Aset `public/` sudah lengkap (19 file, 14,15 MB) sesuai `ASSETS.md` — 404 gambar sebelumnya kini teratasi
   - ❓ QUESTION: sumber path gambar per section belum ada di DB (`event_media` kosong; `media_type` tak punya `narrative`). Perlu keputusan di M5-08 (seed `event_media` vs konstanta per-event)
-- [ ] **M5-03** Buat `<DestinationCard />`
+- [x] **M5-03** Buat `<DestinationCard />` ✅ 2026-10-08
   - File: `src/components/event/destination-card.tsx`
   - Card full-width, gambar kiri, konten kanan
   - Referensi: `COMPONENTS.md` section 4.3
+  - `<article>` `bg-story-surface` radius `lg` + `shadow-story`; grid `md:grid-cols-2`; mobile satu kolom (gambar atas). Region `caption` uppercase `story-teal`, durasi badge `story-bg-alt`, tombol "Buka di Maps" (`story-ghost`)
+  - `ui/button.tsx`: tambah variant **`story-primary`** (`bg-story-teal`) & **`story-ghost`** (`border-story-border` + `story-text`) sesuai DESIGN §7.16 — varian `ghost` cinema berteks putih (tak terbaca di latar terang). Didokumentasikan di `COMPONENTS.md` §7.2
+  - Belum di-wire — integrasi di M5-08
+  - Verifikasi: `pnpm typecheck` ✅ · `pnpm lint` ✅ · `pnpm build` ✅ · temp-wire → `id="destinasi"`, region/nama/deskripsi/durasi/Maps ada ✅ · gambar dari **DB `event_media`** (`dest-walini.jpg`) → 200 `image/jpeg` ✅ · computed style: card `rgb(255,255,255)` + radius `12px`, tombol `story-ghost` teks gelap `rgb(26,26,26)` border `rgb(229,224,213)` ✅ · screenshot ✅ lalu dikembalikan
 - [ ] **M5-04** Buat `<TransportCard />`
   - File: `src/components/event/transport-card.tsx`
   - Icon kendaraan + list titik jemput
@@ -644,6 +648,7 @@ Catatan task yang sudah selesai, di luar checklist (untuk audit).
 | 2026-10-08 | M5-01 | `<QuranQuote />` + `lib/validators/event-extras.ts`; wire `#pembuka`; **fix kontras** rundown/biaya (varian storytelling di latar gelap) |
 | 2026-10-08 | M5-02 | `<StoryNarrative />` (grid 60/40, `direction`); aset `public/` lengkap 19 file |
 | 2026-10-08 | M5-09 | Seed `event_media` 5 baris (destination/transport/food×2/participant); idempoten |
+| 2026-10-08 | M5-03 | `<DestinationCard />` + variant tombol `story-primary`/`story-ghost`; gambar dari `event_media`; screenshot lolos |
 | 2026-10-08 | M0-06 | 8 tabel + 4 enum + relations ditulis di `schema.ts` (252 baris); typecheck lolos |
 | 2026-10-08 | M0-04 | 13 dependency runtime + 3 dev terpasang; `pnpm.onlyBuiltDependencies` diset; @types/bcryptjs dihapus |
 | 2026-10-08 | M0-05 | `drizzle.config.ts` + `lib/db/client.ts` (prepare:false) + `schema.ts` kosong; script `db:*` ditambah |

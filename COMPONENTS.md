@@ -579,7 +579,7 @@ type DestinationCardProps = {
 **Layout:**
 - Card full-width, background `story-surface`, radius `lg`, `shadow-story`
 - Gambar kiri (50%), konten kanan (50%)
-- Konten: nama destinasi (`heading`), region (`caption` uppercase `story-teal`), deskripsi (`body`), durasi (badge kecil), tombol "Buka di Maps" (ghost kecil) kalau ada `mapsUrl`
+- Konten: nama destinasi (`heading`), region (`caption` uppercase `story-teal`), deskripsi (`body`), durasi (badge kecil), tombol "Buka di Maps" (ghost kecil **`story-ghost`**) kalau ada `mapsUrl`
 
 **Mobile:**
 - Satu kolom: gambar di atas, konten di bawah.
@@ -1155,7 +1155,7 @@ Lokasi: `src/components/ui/`
 ### 7.2 Variant `<Button />`
 
 ```ts
-type ButtonVariant = 'primary' | 'ghost' | 'outline' | 'danger';
+type ButtonVariant = 'primary' | 'ghost' | 'outline' | 'danger' | 'story-primary' | 'story-ghost';
 type ButtonSize = 'sm' | 'md' | 'lg' | 'icon';
 ```
 
@@ -1165,6 +1165,11 @@ type ButtonSize = 'sm' | 'md' | 'lg' | 'icon';
 | `ghost` | transparan | `text` | `border-strong` | bg `surface-hover` |
 | `outline` | transparan | `text` | `border-strong` | bg `surface-hover` |
 | `danger` | transparan | `danger` | `danger` | bg `danger` 10% |
+| `story-primary` | `story-teal` | `on-primary` | — | brightness 1.1 |
+| `story-ghost` | transparan | `story-text` | `story-border` | bg `story-bg-alt` |
+
+> Varian `story-*` **wajib** dipakai di section berlatar terang (`story-bg`/`story-surface`) —
+> varian cinema (`ghost`) memakai teks putih sehingga tak terbaca di latar terang (DESIGN.md §7.16).
 
 **Size:**
 | Size | Padding | Font |
