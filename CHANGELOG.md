@@ -91,6 +91,7 @@ Setiap selesai task di `TASK.md`:
 - **M3-06**: Hero landing (judul display, tagline, 2 CTA, overlay gradient); `buttonClass()` di `ui/button.tsx`
 - **M3-07**: Section landing (Event Mendatang + Arsip Lan Jalan), `getPastTravelEvents`, ISR 60s; **milestone M3 selesai**
 - **M4-01**: `getEventBySlug` (relasi lengkap) + tipe `EventDetail` di `src/lib/api/events.ts`
+- **M4-02**: Halaman `/[slug]` — fetch + `notFound()` + `generateMetadata` (title/description/OG), ISR 60s; `APP_URL` + `metadataBase` untuk resolve OG absolut
 
 ### Changed
 - **PLAN**: Resolusi konflik `.md` pra-M0 — tanggal event `2026-10-10`, rate limit login 5 menit, logger `lib/utils/logger.ts`, stack tambah Upstash Redis + `sharp` + `@dnd-kit`, fixture event cukup 1 travel, seed M0-08 sekalian fixture, peserta via AI-generated (aturan hijab/base layer/jersey)

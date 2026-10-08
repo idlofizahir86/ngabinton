@@ -8,6 +8,7 @@ import {
 } from "next/font/google";
 
 import "./globals.css";
+import { APP_URL } from "@/lib/constants";
 
 // Font brand — lihat DESIGN.md §4.1. Variabel dipakai di globals.css (@theme).
 const anton = Anton({ variable: "--font-anton", weight: "400", subsets: ["latin"] });
@@ -17,6 +18,8 @@ const notoArabic = Noto_Naskh_Arabic({ variable: "--font-noto-arabic", subsets: 
 const jetbrainsMono = JetBrains_Mono({ variable: "--font-jetbrains", subsets: ["latin"] });
 
 export const metadata: Metadata = {
+  // Basis URL absolut untuk resolve OG/Twitter image (RULES.md §6.3).
+  metadataBase: new URL(APP_URL ?? "http://localhost:3000"),
   title: "NGABINTON",
   description:
     "Komunitas badminton mingguan yang suka kumpul, main bareng, dan sesekali jalan-jalan. Ngobrol, ngaji, ngabinton.",
