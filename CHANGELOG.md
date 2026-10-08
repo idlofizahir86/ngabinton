@@ -105,6 +105,7 @@ Setiap selesai task di `TASK.md`:
 - **M5-04**: `<TransportCard />` (ikon kendaraan, daftar titik jemput dengan dot `story-orange`, foto 16:9) + `pickupPointsSchema`
 - **M5-05**: `<BudgetTable />` (tabel `#`/Item/Jumlah, blok TOTAL, kartu info pembayaran) + `paymentInfoSchema` yang **menolak nilai `[PLACEHOLDER: ...]`**; section `#biaya` final menggantikan placeholder M4-08
 - **M5-06**: `<GiftExchangeInfo />` (card `story-orange` 15%, border kiri 4px, ikon `Gift` 32px, daftar aturan dengan ikon `Check`) + `giftExchangeSchema`
+- **M5-07**: `<ParticipantGrid />` (grid 2/3/4 kolom, foto 1:1, tanpa nama) + `<ClosingMessage />` (`id="penutup"`, font script Caveat `story-script`, CTA `story-ghost`)
 
 ### Changed
 - **M5-10**: Seed jadi **upsert** (`onConflictDoUpdate`) untuk `rundown_items`, `budget_items`, `event_extras` — perubahan `CONTENT.md` kini benar-benar tersinkron saat seed dijalankan ulang. `users`/`events` tetap `DoNothing` agar kredensial & editan manual tidak tertimpa

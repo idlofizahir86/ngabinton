@@ -14,8 +14,8 @@
 ```yaml
 Status:      🚧 In Progress
 Milestone:   M5 — Storytelling (M0 ✅ · M1 ✅ · M2 ✅ · M3 ✅ · M4 ✅)
-Progress:    46 / 87 tasks
-Terakhir:    M5-10 (2026-10-08)
+Progress:    47 / 87 tasks
+Terakhir:    M5-07 (2026-10-08)
 
 Aturan:
   - Satu task = satu sesi kerja
@@ -381,10 +381,16 @@ Target: section-section khusus event travel.
   - Belum di-wire — integrasi di M5-08
   - Verifikasi: `pnpm typecheck` ✅ · `pnpm lint` ✅ · `pnpm build` ✅ · temp-wire → `id="kado"`, judul, budget `Rp 10.000 – Rp 15.000`, 4 rules, ikon gift + 4 check ✅ · computed style: bg `story-orange` alpha `0.15`, border 4px `rgb(245,158,11)`, padding `24px`, radius `8px`, ikon `32×32` `rgb(245,158,11)` ✅ · screenshot ✅ lalu dikembalikan
   - ❗ TEMUAN: baris budget **muncul dua kali** — sekali dari prop `budget` dan sekali sebagai `rules[0]` ("Budget Rp 10.000 – Rp 15.000"). Sumber: `CONTENT.md` §4.10 + seed. Dicatat di Backlog **B7**
-- [ ] **M5-07** Buat `<ParticipantGrid />` + `<ClosingMessage />`
+- [x] **M5-07** Buat `<ParticipantGrid />` + `<ClosingMessage />` ✅ 2026-10-08
   - File: `src/components/event/participant-grid.tsx`
   - File: `src/components/event/closing-message.tsx`
   - Referensi: `COMPONENTS.md` section 4.7 & 4.8
+  - `ParticipantGrid`: grid gap 8px, kolom 2 (mobile) / 3 (tablet) / `columns` (desktop, default 4), foto `aspect-square` radius `md` + hover CSS `scale-[1.03]`, **tanpa nama** (privacy RULES §5.3); kosong → `null`
+  - `ClosingMessage`: `<section id="penutup">` latar `story-bg`, teks font `script` (Caveat) `story-script` center, subtitle opsional `story-muted`, CTA `story-ghost`
+  - Belum di-wire — integrasi di M5-08
+  - Verifikasi: `pnpm typecheck` ✅ · `pnpm lint` ✅ · `pnpm build` ✅ · temp-wire (4 foto galeri) → `id="peserta"` + judul + 4 item; `id="penutup"` + "See you in the ANGKOT!" + tombol "Lihat Event Lain" → `/arsip` ✅ · computed style: grid `4 kolom` gap `8px` radius `8px`; font `Caveat` warna `rgb(194,65,12)` size `60px`; bg `rgb(247,245,239)` ✅ · screenshot ✅ lalu dikembalikan
+  - ⚠️ Catatan untuk M5-08: aset `participants-collage.jpg` adalah **satu** gambar kolase 1:1 → dirender sebagai 1 sel grid akan terlihat kecil; pertimbangkan lebar penuh atau `columns={2}`
+  - ⚠️ Konflik `.md` (dicatat, tidak memblokir): `DESIGN.md` §2 menyebut "Presensi & Penutup (gelap)", tapi §7.14 (spesifik komponen) menyebut penutup berlatar `story-bg` (terang). Dipakai §7.14 → butuh `SectionTransition` saat #absen (M6) selesai
 - [ ] **M5-08** Integrasi storytelling section di `/[slug]`
   - Urutan: `#pembuka` → `#narasi` → `#destinasi` → `#transportasi` → `#rundown` → `#makan` → `#biaya` → `#kado` → `#peserta` → `#absen` → `#penutup`
   - Referensi: `DESIGN.md` section 2 (ritme gelap-terang)
@@ -678,6 +684,7 @@ Catatan task yang sudah selesai, di luar checklist (untuk audit).
 | 2026-10-08 | M5-05 | `<BudgetTable />` (+`paymentInfoSchema` tolak placeholder); `#biaya` final; screenshot lolos |
 | 2026-10-08 | M5-06 | `<GiftExchangeInfo />` (+`giftExchangeSchema`); computed style cocok DESIGN §7.12; screenshot lolos |
 | 2026-10-08 | M5-10 | Seed **upsert** (rundown/budget/extras) + perbaikan konten B4 (note Indonesia) & B7 (budget duplikat); DB tersinkron |
+| 2026-10-08 | M5-07 | `<ParticipantGrid />` + `<ClosingMessage />`; computed style cocok DESIGN §7.13/§7.14; screenshot lolos |
 | 2026-10-08 | M0-06 | 8 tabel + 4 enum + relations ditulis di `schema.ts` (252 baris); typecheck lolos |
 | 2026-10-08 | M0-04 | 13 dependency runtime + 3 dev terpasang; `pnpm.onlyBuiltDependencies` diset; @types/bcryptjs dihapus |
 | 2026-10-08 | M0-05 | `drizzle.config.ts` + `lib/db/client.ts` (prepare:false) + `schema.ts` kosong; script `db:*` ditambah |
