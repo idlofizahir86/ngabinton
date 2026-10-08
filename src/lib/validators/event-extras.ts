@@ -48,6 +48,19 @@ export const paymentInfoSchema = z.object({
 export type PaymentInfoExtra = z.infer<typeof paymentInfoSchema>;
 
 /**
+ * `gift_exchange` — CONTENT.md §4.10.
+ * `rules` sebaiknya **tanpa** baris budget (budget ditampilkan terpisah dari
+ * `budget_min`/`budget_max`) — lihat Backlog B7 di TASK.md.
+ */
+export const giftExchangeSchema = z.object({
+  budget_min: z.number().int().nonnegative(),
+  budget_max: z.number().int().nonnegative(),
+  rules: z.array(z.string().min(1)),
+});
+
+export type GiftExchangeExtra = z.infer<typeof giftExchangeSchema>;
+
+/**
  * Ambil satu extra berdasarkan `key` lalu validasi bentuknya.
  * Mengembalikan `null` kalau extra tidak ada atau bentuknya tidak sesuai.
  */
