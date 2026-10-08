@@ -95,6 +95,7 @@ Setiap selesai task di `TASK.md`:
 - **M4-03**: `<EventHero />` (varian cinema) + `<EventMetaBar />` (M4-04, ditarik ke depan); `getVolumeLabel` diekstrak ke `src/lib/utils/event-label.ts`; halaman `/[slug]` memilih hero berdasarkan `theme`
 - **M4-05**: `<RundownTimeline />` (varian cinema + storytelling, `highlightNow`, badge "Opsional")
 - **M4-06**: `<EventSubNav />` (client, sticky `top-16`, scroll-spy IntersectionObserver, sembunyi di hero & `#absen`); `html { scroll-behavior: smooth }` di `globals.css`
+- **M4-07**: Section `#rundown` di halaman `/[slug]` (wire `<RundownTimeline />` + `<EventSubNav />`, anchor `#hero`/`#rundown`)
 
 ### Changed
 - **PLAN**: `COMPONENTS.md` §3.1 `<EventHero />` — CTA utama dipetakan per `status` (upcoming → "Lihat Rundown", live → "Presensi Sekarang", past → "Lihat Dokumentasi"); "Daftar Sekarang" dihapus karena belum ada alur pendaftaran

@@ -2,9 +2,12 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 
 import { EventHero } from "@/components/event/event-hero";
+import { EventSubNav } from "@/components/event/event-sub-nav";
+import { RundownTimeline } from "@/components/event/rundown-timeline";
 import { Container } from "@/components/layout/container";
 import { getEventBySlug } from "@/lib/api/events";
 import { APP_URL } from "@/lib/constants";
+import { cn } from "@/lib/utils/cn";
 import { getEventStatus } from "@/lib/utils/event-status";
 import { formatDate } from "@/lib/utils/format";
 
@@ -29,6 +32,16 @@ const EVENT_TYPE_LABEL: Record<string, string> = {
   gathering: "Kumpul",
   other: "Event",
 };
+
+/**
+ * Anchor sub-nav yang **sudah ada** di halaman (ROUTES.md §2.1).
+ * Bertambah saat section storytelling (M5) & presensi (M6) menyusul.
+ * Konstanta modul agar identitas array stabil (dipakai sebagai dep `useEffect`).
+ */
+const EVENT_ANCHORS = [
+  { id: "hero", label: "Awal" },
+  { id: "rundown", label: "Rundown" },
+];
 
 /**
  * Metadata SEO per event (RULES.md §6.3).
@@ -64,8 +77,8 @@ export async function generateMetadata({ params }: EventPageProps): Promise<Meta
  * Halaman event publik `/[slug]` — ROUTES.md §2.
  *
  * Hero cinema memakai `<EventHero />` (M4-03); event storytelling masih memakai
- * blok sementara sampai `<TravelHero />` (M5). Section rundown (#rundown, M4-07),
- * biaya (#biaya, M4-08), dst. menyusul.
+ * blok sementara sampai `<TravelHero />` (M5). Section `#rundown` (M4-07),
+ * `#biaya` (M4-08), dst. menyusul.
  */
 export default async function EventPage({ params }: EventPageProps) {
   const { slug } = await params;
@@ -76,12 +89,15 @@ export default async function EventPage({ params }: EventPageProps) {
   }
 
   const typeLabel = EVENT_TYPE_LABEL[event.eventType] ?? EVENT_TYPE_LABEL.other;
-  const isCinemaHero = event.theme === "cinema";
+  const isCinema = event.theme === "cinema";
+  const variant = isCinema ? "cinema" : "storytelling";
+  const status = getEventStatus(event);
+  const hasRundown = event.rundownItems.length > 0;
 
   return (
     <article className="pb-24">
-      {isCinemaHero ? (
-        <EventHero event={event} status={getEventStatus(event)} />
+      {isCinema ? (
+        <EventHero event={event} status={status} />
       ) : (
         /* Blok sementara untuk event storytelling — digantikan `<TravelHero />` (M5). */
         <section id="hero" className="border-b border-border/60">
@@ -106,6 +122,37 @@ export default async function EventPage({ params }: EventPageProps) {
           </Container>
         </section>
       )}
+
+      <EventSubNav anchors={EVENT_ANCHORS} variant={variant} />
+
+      {hasRundown ? (
+        <section
+          id="rundown"
+          className={cn(
+            "scroll-mt-32 py-20 md:py-24",
+            isCinema ? "border-b border-border/60" : "border-b border-story-border",
+          )}
+        >
+          <Container size={isCinema ? "lg" : "md"}>
+            <h2
+              className={cn(
+                "font-display text-3xl md:text-4xl",
+                isCinema ? "text-text" : "text-story-text",
+              )}
+            >
+              Rundown
+            </h2>
+
+            <div className="mt-8">
+              <RundownTimeline
+                items={event.rundownItems}
+                variant={variant}
+                highlightNow={status === "live"}
+              />
+            </div>
+          </Container>
+        </section>
+      ) : null}
     </article>
   );
 }
