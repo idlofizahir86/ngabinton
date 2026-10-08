@@ -14,8 +14,8 @@
 ```yaml
 Status:      🚧 In Progress
 Milestone:   M4 — Event Public (M0 ✅ · M1 ✅ · M2 ✅ · M3 ✅)
-Progress:    36 / 87 tasks
-Terakhir:    M4-07 (2026-10-08)
+Progress:    37 / 87 tasks
+Terakhir:    M4-08 (2026-10-08)
 
 Aturan:
   - Satu task = satu sesi kerja
@@ -298,8 +298,12 @@ Target: halaman `/[slug]` dengan hero, rundown, biaya.
   - `<EventSubNav anchors={EVENT_ANCHORS} variant />` dipasang setelah hero; `EVENT_ANCHORS` = `#hero` ("Awal") + `#rundown` ("Rundown") — bertambah di M4-08/M5/M6
   - Verifikasi: `pnpm typecheck` ✅ · `pnpm lint` ✅ · `pnpm build` ✅ · SSR HTML `/lanjalan-vol-1` memuat `id="rundown"`, judul, 6 item, badge Opsional, sub-nav + anchor `#rundown` ✅ · screenshot: timeline render benar ✅
   - Catatan: sub-nav masih belum terlihat di halaman ini karena halaman masih pendek (hero belum keluar dari band aktif). Akan muncul saat section M5/M6 menambah tinggi halaman; mekanikanya sudah diuji di M4-06
-- [ ] **M4-08** Buat section `#biaya` (placeholder)
+- [x] **M4-08** Buat section `#biaya` (placeholder) ✅ 2026-10-08
   - Diisi penuh di M5-05 setelah `<BudgetTable />` siap
+  - Versi minimal: judul "Biaya" + deskripsi (CONTENT §4.9) + total (`budgetItems.is_total` → fallback `event.price`) sebagai "Rp X / orang"; disembunyikan bila `budgetItems` kosong; varian cinema/storytelling
+  - Anchor `#biaya` ditambahkan ke `EVENT_ANCHORS`
+  - Verifikasi: `pnpm typecheck` ✅ · `pnpm lint` ✅ · `pnpm build` ✅ · SSR HTML → `id="biaya"`, judul, deskripsi, `Rp 175.000`, anchor ✅ · a11y snapshot: section "Biaya" + total tampil ✅
+  - Temuan: note rundown "Optional" (Inggris) — dicatat di Backlog **B4**
 - [ ] **M4-09** Buat `app/(public)/arsip/page.tsx`
   - Grid semua event past
   - Referensi: `CONTENT.md` section 3.3
@@ -549,6 +553,7 @@ Task yang muncul setelah planning awal, belum dimasukkan ke milestone.
 | B1 | `POST /api/auth/logout` (route handler, `ROUTES.md` §4.1) — apakah perlu, atau cukup `logoutAction` saja? Kalau tak perlu, hapus dari `ROUTES.md` | Rendah | 2026-10-08 |
 | B2 | Aset **foto hero landing** (AI-generated, jersey NGABINTON) — taruh di `public/` lalu isi `HERO_IMAGE_URL` di `src/app/(public)/page.tsx` (juga untuk event: hero/transport/Pawon/peserta) | Sedang | 2026-10-08 |
 | B3 | Section **"Momen Kami"** (galeri, `event_media` gallery) & **"Mau Ikutan?"** (`CONTENT.md` §3.5) — belum dikerjakan; tambahkan saat media/data siap | Rendah | 2026-10-08 |
+| B4 | Teks Inggris di UI: note rundown "Petik Stroberi" = `"Optional"` (seed + `CONTENT.md` §4.7/§6.2). Redundan dengan badge "Opsional" dari `is_optional`. Saran: ganti note jadi kalimat Indonesia (mis. "Kalau sempat mampir") — perlu keputusan + `UPDATE` baris rundown (seed idempoten tidak meng-update baris lama) | Sedang | 2026-10-08 |
 
 **Aturan:**
 - Task baru **tidak** langsung dikerjakan.
@@ -607,6 +612,7 @@ Catatan task yang sudah selesai, di luar checklist (untuk audit).
 | 2026-10-08 | M4-05 | `<RundownTimeline />` (cinema + storytelling, `highlightNow`); smoke render lolos |
 | 2026-10-08 | M4-06 | `<EventSubNav />` (sticky scroll-spy, sembunyi di hero/`#absen`); uji browser lolos |
 | 2026-10-08 | M4-07 | Section `#rundown` (wire `RundownTimeline` + `EventSubNav`) di halaman `/[slug]`; SSR + screenshot lolos |
+| 2026-10-08 | M4-08 | Section `#biaya` versi minimal + anchor `#biaya`; SSR + a11y snapshot lolos |
 | 2026-10-08 | M0-06 | 8 tabel + 4 enum + relations ditulis di `schema.ts` (252 baris); typecheck lolos |
 | 2026-10-08 | M0-04 | 13 dependency runtime + 3 dev terpasang; `pnpm.onlyBuiltDependencies` diset; @types/bcryptjs dihapus |
 | 2026-10-08 | M0-05 | `drizzle.config.ts` + `lib/db/client.ts` (prepare:false) + `schema.ts` kosong; script `db:*` ditambah |
