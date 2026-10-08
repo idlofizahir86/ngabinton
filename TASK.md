@@ -14,8 +14,8 @@
 ```yaml
 Status:      🚧 In Progress
 Milestone:   M4 — Event Public (M0 ✅ · M1 ✅ · M2 ✅ · M3 ✅)
-Progress:    29 / 87 tasks
-Terakhir:    M3-07
+Progress:    30 / 87 tasks
+Terakhir:    M4-01 (2026-10-08)
 
 Aturan:
   - Satu task = satu sesi kerja
@@ -251,9 +251,10 @@ Target: landing page dengan hero + carousel event.
 
 Target: halaman `/[slug]` dengan hero, rundown, biaya.
 
-- [ ] **M4-01** Buat `lib/api/events.ts` — `getEventBySlug`
-  - Include relasi: rundown, budgets, media, extras
-  - Referensi: `SCHEMA.md` section 5.1
+- [x] **M4-01** Buat `lib/api/events.ts` — `getEventBySlug` ✅ 2026-10-08
+  - `db.query.events.findFirst` dengan relasi: `rundownItems`, `budgetItems`, `media`, `extras`, `sessions` (hanya `is_active = true`)
+  - Hanya `is_published = true`; tidak ada → `null`. Tipe `EventDetail` diekspor
+  - Verifikasi: `pnpm typecheck` ✅ · uji DB → rundown 6 · budget 7 · media 0 · extras 5 · sessions 0 ✅ · slug tak ada → `null` ✅
 - [ ] **M4-02** Buat `app/(public)/[slug]/page.tsx`
   - Fetch event by slug, `notFound()` kalau tidak ada / unpublished
   - Generate metadata (title, description, OG)
@@ -576,6 +577,7 @@ Catatan task yang sudah selesai, di luar checklist (untuk audit).
 | 2026-10-08 | M3-04 | `<EventCarousel />` (scroll+snap, panah hover, fade tepi); smoke-test render lolos |
 | 2026-10-08 | M3-06 | Hero landing (display title, 2 CTA, overlay gradient); `buttonClass()` diekspor |
 | 2026-10-08 | M3-07 | Section landing (Event Mendatang + Arsip) + `getPastTravelEvents`; ISR 60s. **Milestone M3 ✅** |
+| 2026-10-08 | M4-01 | `getEventBySlug` (+relasi) & tipe `EventDetail`; uji DB lolos |
 | 2026-10-08 | M0-06 | 8 tabel + 4 enum + relations ditulis di `schema.ts` (252 baris); typecheck lolos |
 | 2026-10-08 | M0-04 | 13 dependency runtime + 3 dev terpasang; `pnpm.onlyBuiltDependencies` diset; @types/bcryptjs dihapus |
 | 2026-10-08 | M0-05 | `drizzle.config.ts` + `lib/db/client.ts` (prepare:false) + `schema.ts` kosong; script `db:*` ditambah |

@@ -5,7 +5,13 @@
 import { and, asc, desc, eq, gt, lt } from "drizzle-orm";
 
 import { db } from "@/lib/db/client";
-import { events } from "@/lib/db/schema";
+import {
+  attendanceSessions,
+  budgetItems,
+  eventMedia,
+  events,
+  rundownItems,
+} from "@/lib/db/schema";
 import { eventFixtures } from "@/lib/fixtures/events";
 import type { Event } from "@/lib/types/event";
 
@@ -56,3 +62,26 @@ export async function getPastTravelEvents(limit: number = DEFAULT_LIMIT): Promis
     .orderBy(desc(events.startsAt))
     .limit(limit);
 }
+
+/**
+ * Event publik berdasarkan slug + relasi lengkap (SCHEMA.md §5.1).
+ * Hanya event `is_published = true`; kalau tidak ada → `null`.
+ * Sesi yang diambil hanya yang `is_active = true` (maks 1).
+ */
+export async function getEventBySlug(slug: string) {
+  const event = await db.query.events.findFirst({
+    where: and(eq(events.slug, slug), eq(events.isPublished, true)),
+    with: {
+      rundownItems: { orderBy: [asc(rundownItems.order)] },
+      budgetItems: { orderBy: [asc(budgetItems.order)] },
+      media: { orderBy: [asc(eventMedia.order)] },
+      extras: true,
+      sessions: { where: eq(attendanceSessions.isActive, true), limit: 1 },
+    },
+  });
+
+  return event ?? null;
+}
+
+/** Bentuk lengkap event (dengan relasi) hasil `getEventBySlug`. */
+export type EventDetail = NonNullable<Awaited<ReturnType<typeof getEventBySlug>>>;
