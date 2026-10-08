@@ -14,8 +14,8 @@
 ```yaml
 Status:      🚧 In Progress
 Milestone:   M4 — Event Public (M0 ✅ · M1 ✅ · M2 ✅ · M3 ✅)
-Progress:    33 / 87 tasks
-Terakhir:    M4-04 (2026-10-08)
+Progress:    34 / 87 tasks
+Terakhir:    M4-05 (2026-10-08)
 
 Aturan:
   - Satu task = satu sesi kerja
@@ -276,10 +276,13 @@ Target: halaman `/[slug]` dengan hero, rundown, biaya.
   - File: `src/components/event/event-meta-bar.tsx` (server)
   - Format: tanggal · waktu · lokasi · biaya; `variant` cinema/storytelling; item kosong dibuang
   - Referensi: `COMPONENTS.md` section 3.9
-- [ ] **M4-05** Buat `<RundownTimeline />` variant cinema
-  - File: `src/components/event/rundown-timeline.tsx`
+- [x] **M4-05** Buat `<RundownTimeline />` variant cinema ✅ 2026-10-08
+  - File: `src/components/event/rundown-timeline.tsx` (server)
   - Kolom kiri waktu, dot, kolom kanan aktivitas
   - Referensi: `COMPONENTS.md` section 3.7
+  - `variant` cinema/storytelling (token `story-*`), `highlightNow` menyorot item yang sedang berjalan (perkiraan jam WIB), badge "Opsional" untuk `is_optional`
+  - Belum di-wire ke halaman — section `#rundown` menyusul di M4-07
+  - Verifikasi: `pnpm typecheck` ✅ · `pnpm lint` ✅ · `pnpm build` ✅ · smoke render (temp) → 200 + `<ol>`, item, waktu, catatan, badge, dot ada ✅ lalu dikembalikan
 - [ ] **M4-06** Buat `<EventSubNav />`
   - File: `src/components/event/event-sub-nav.tsx`
   - Sticky, scroll-spy, anchor list
@@ -592,6 +595,7 @@ Catatan task yang sudah selesai, di luar checklist (untuk audit).
 | 2026-10-08 | M4-02 | Halaman `/[slug]` (fetch + notFound + generateMetadata, ISR 60s); `APP_URL` + `metadataBase`; 200/404 terverifikasi |
 | 2026-10-08 | M4-03 | `<EventHero />` (cinema) + `getVolumeLabel` bersama; halaman pilih hero by theme; smoke render lolos |
 | 2026-10-08 | M4-04 | `<EventMetaBar />` (ditarik ke depan, dipakai EventHero) |
+| 2026-10-08 | M4-05 | `<RundownTimeline />` (cinema + storytelling, `highlightNow`); smoke render lolos |
 | 2026-10-08 | M0-06 | 8 tabel + 4 enum + relations ditulis di `schema.ts` (252 baris); typecheck lolos |
 | 2026-10-08 | M0-04 | 13 dependency runtime + 3 dev terpasang; `pnpm.onlyBuiltDependencies` diset; @types/bcryptjs dihapus |
 | 2026-10-08 | M0-05 | `drizzle.config.ts` + `lib/db/client.ts` (prepare:false) + `schema.ts` kosong; script `db:*` ditambah |

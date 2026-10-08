@@ -93,6 +93,7 @@ Setiap selesai task di `TASK.md`:
 - **M4-01**: `getEventBySlug` (relasi lengkap) + tipe `EventDetail` di `src/lib/api/events.ts`
 - **M4-02**: Halaman `/[slug]` — fetch + `notFound()` + `generateMetadata` (title/description/OG), ISR 60s; `APP_URL` + `metadataBase` untuk resolve OG absolut
 - **M4-03**: `<EventHero />` (varian cinema) + `<EventMetaBar />` (M4-04, ditarik ke depan); `getVolumeLabel` diekstrak ke `src/lib/utils/event-label.ts`; halaman `/[slug]` memilih hero berdasarkan `theme`
+- **M4-05**: `<RundownTimeline />` (varian cinema + storytelling, `highlightNow`, badge "Opsional")
 
 ### Changed
 - **PLAN**: `COMPONENTS.md` §3.1 `<EventHero />` — CTA utama dipetakan per `status` (upcoming → "Lihat Rundown", live → "Presensi Sekarang", past → "Lihat Dokumentasi"); "Daftar Sekarang" dihapus karena belum ada alur pendaftaran
