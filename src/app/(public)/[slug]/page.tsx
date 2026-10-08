@@ -1,9 +1,11 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 
+import { EventHero } from "@/components/event/event-hero";
 import { Container } from "@/components/layout/container";
 import { getEventBySlug } from "@/lib/api/events";
 import { APP_URL } from "@/lib/constants";
+import { getEventStatus } from "@/lib/utils/event-status";
 import { formatDate } from "@/lib/utils/format";
 
 /** Halaman event di-render ulang tiap 60 detik (ROUTES.md §1.1). */
@@ -61,9 +63,9 @@ export async function generateMetadata({ params }: EventPageProps): Promise<Meta
 /**
  * Halaman event publik `/[slug]` — ROUTES.md §2.
  *
- * Tahap M4-02: fetch + `notFound()` + metadata saja. Section `#hero` di sini
- * bersifat sementara dan akan digantikan `<EventHero />` (M4-03), dilanjutkan
- * rundown (M4-05/M4-07), biaya (M4-08), dst.
+ * Hero cinema memakai `<EventHero />` (M4-03); event storytelling masih memakai
+ * blok sementara sampai `<TravelHero />` (M5). Section rundown (#rundown, M4-07),
+ * biaya (#biaya, M4-08), dst. menyusul.
  */
 export default async function EventPage({ params }: EventPageProps) {
   const { slug } = await params;
@@ -74,30 +76,36 @@ export default async function EventPage({ params }: EventPageProps) {
   }
 
   const typeLabel = EVENT_TYPE_LABEL[event.eventType] ?? EVENT_TYPE_LABEL.other;
+  const isCinemaHero = event.theme === "cinema";
 
   return (
     <article className="pb-24">
-      <section id="hero" className="border-b border-border/60">
-        <Container size="lg" className="py-24 md:py-32">
-          <p className="text-xs uppercase tracking-[0.04em] text-text-subtle">
-            {typeLabel} · {formatDate(event.startsAt)}
-          </p>
-
-          <h1 className="mt-3 font-display text-[40px] leading-[1.05] tracking-[-0.02em] text-text md:text-[64px]">
-            {event.title}
-          </h1>
-
-          {event.subtitle ? (
-            <p className="mt-4 max-w-2xl text-lg font-semibold text-text-secondary md:text-xl">
-              {event.subtitle}
+      {isCinemaHero ? (
+        <EventHero event={event} status={getEventStatus(event)} />
+      ) : (
+        /* Blok sementara untuk event storytelling — digantikan `<TravelHero />` (M5). */
+        <section id="hero" className="border-b border-border/60">
+          <Container size="lg" className="py-24 md:py-32">
+            <p className="text-xs uppercase tracking-[0.04em] text-text-subtle">
+              {typeLabel} · {formatDate(event.startsAt)}
             </p>
-          ) : null}
 
-          {event.description ? (
-            <p className="mt-3 max-w-2xl text-base text-text-muted">{event.description}</p>
-          ) : null}
-        </Container>
-      </section>
+            <h1 className="mt-3 font-display text-[40px] leading-[1.05] tracking-[-0.02em] text-text md:text-[64px]">
+              {event.title}
+            </h1>
+
+            {event.subtitle ? (
+              <p className="mt-4 max-w-2xl text-lg font-semibold text-text-secondary md:text-xl">
+                {event.subtitle}
+              </p>
+            ) : null}
+
+            {event.description ? (
+              <p className="mt-3 max-w-2xl text-base text-text-muted">{event.description}</p>
+            ) : null}
+          </Container>
+        </section>
+      )}
     </article>
   );
 }

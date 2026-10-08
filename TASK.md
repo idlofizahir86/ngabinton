@@ -14,8 +14,8 @@
 ```yaml
 Status:      🚧 In Progress
 Milestone:   M4 — Event Public (M0 ✅ · M1 ✅ · M2 ✅ · M3 ✅)
-Progress:    31 / 87 tasks
-Terakhir:    M4-02 (2026-10-08)
+Progress:    33 / 87 tasks
+Terakhir:    M4-04 (2026-10-08)
 
 Aturan:
   - Satu task = satu sesi kerja
@@ -263,12 +263,18 @@ Target: halaman `/[slug]` dengan hero, rundown, biaya.
   - Tambahan pendukung: `APP_URL` di `src/lib/constants.ts` + `metadataBase` di `src/app/layout.tsx` (agar OG image ter-resolve absolut)
   - Verifikasi: `pnpm typecheck` ✅ · `pnpm lint` ✅ · `pnpm build` ✅ · GET `/lanjalan-vol-1` → 200 (title/subtitle/meta title cocok) · slug tak ada → 404 ✅
   - Catatan: section `#hero` masih blok sementara, digantikan `<EventHero />` di M4-03. `public/og/default.jpg` belum ada (aset user, Backlog B2)
-- [ ] **M4-03** Buat `<EventHero />` (cinema variant)
-  - File: `src/components/event/event-hero.tsx`
+- [x] **M4-03** Buat `<EventHero />` (cinema variant) ✅ 2026-10-08
+  - File: `src/components/event/event-hero.tsx` (server)
   - Referensi: `COMPONENTS.md` section 3.1
-- [ ] **M4-04** Buat `<EventMetaBar />`
-  - File: `src/components/event/event-meta-bar.tsx`
-  - Format: tanggal · waktu · lokasi · biaya
+  - Latar `hero_image_url` + overlay gradient; badge volume (`getVolumeLabel`); judul display; meta bar; CTA per status
+  - CTA (RULES §2.3): `upcoming` → "Lihat Rundown" `#rundown` · `live` → "Presensi Sekarang" `/{slug}/absen` + pulse · `past` → "Lihat Dokumentasi" `#peserta`; ghost "Lihat Rundown"
+  - `getVolumeLabel` diekstrak ke `src/lib/utils/event-label.ts` (dipakai EventCard + EventHero, hilangkan duplikasi)
+  - Halaman `/[slug]` kini memilih hero: `theme === "cinema"` → `<EventHero />`; storytelling tetap blok sementara (TravelHero di M5)
+  - Verifikasi: `pnpm typecheck` ✅ · `pnpm lint` ✅ · `pnpm build` ✅ · smoke render (branch cinema dipaksa sementara) → 200 + badge/CTA/meta/gambar hero semua ada ✅, lalu dikembalikan
+  - ❗ QUESTION: CTA `upcoming` semula "Daftar Sekarang" (COMPONENTS §3.1) — belum ada alur pendaftaran di stack ini, jadi diarahkan ke `#rundown`. Perlu konfirmasi apakah perlu fitur daftar (mis. WhatsApp) atau tetap pakai rundown
+- [x] **M4-04** Buat `<EventMetaBar />` ✅ 2026-10-08 (ditarik ke depan — dipakai `<EventHero />`)
+  - File: `src/components/event/event-meta-bar.tsx` (server)
+  - Format: tanggal · waktu · lokasi · biaya; `variant` cinema/storytelling; item kosong dibuang
   - Referensi: `COMPONENTS.md` section 3.9
 - [ ] **M4-05** Buat `<RundownTimeline />` variant cinema
   - File: `src/components/event/rundown-timeline.tsx`
@@ -584,6 +590,8 @@ Catatan task yang sudah selesai, di luar checklist (untuk audit).
 | 2026-10-08 | M3-07 | Section landing (Event Mendatang + Arsip) + `getPastTravelEvents`; ISR 60s. **Milestone M3 ✅** |
 | 2026-10-08 | M4-01 | `getEventBySlug` (+relasi) & tipe `EventDetail`; uji DB lolos |
 | 2026-10-08 | M4-02 | Halaman `/[slug]` (fetch + notFound + generateMetadata, ISR 60s); `APP_URL` + `metadataBase`; 200/404 terverifikasi |
+| 2026-10-08 | M4-03 | `<EventHero />` (cinema) + `getVolumeLabel` bersama; halaman pilih hero by theme; smoke render lolos |
+| 2026-10-08 | M4-04 | `<EventMetaBar />` (ditarik ke depan, dipakai EventHero) |
 | 2026-10-08 | M0-06 | 8 tabel + 4 enum + relations ditulis di `schema.ts` (252 baris); typecheck lolos |
 | 2026-10-08 | M0-04 | 13 dependency runtime + 3 dev terpasang; `pnpm.onlyBuiltDependencies` diset; @types/bcryptjs dihapus |
 | 2026-10-08 | M0-05 | `drizzle.config.ts` + `lib/db/client.ts` (prepare:false) + `schema.ts` kosong; script `db:*` ditambah |

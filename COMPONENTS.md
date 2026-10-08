@@ -234,8 +234,17 @@ type EventHeroProps = {
 - Badge volume di kiri atas (mis. "VOL. 12")
 - Judul: `display` font Anton
 - Metadata bar: tanggal · waktu · lokasi · biaya (dipisah `·`)
-- CTA: "Daftar Sekarang" (primary) atau "Presensi Sekarang" (primary + pulse dot) sesuai status
-- Tombol ghost: "Lihat Rundown" → scroll `#rundown`
+- CTA utama menyesuaikan `status` (`RULES.md` §2.3):
+
+  | Status | Tombol | Target |
+  |---|---|---|
+  | `upcoming` | "Lihat Rundown" (primary) | `#rundown` |
+  | `live` | "Presensi Sekarang" (primary + pulse dot) | `/{slug}/absen` |
+  | `past` | "Lihat Dokumentasi" (primary) | `#peserta` |
+
+  > `upcoming` **tidak** memakai "Daftar Sekarang" karena stack ini belum punya
+  > alur pendaftaran (lihat `TASK.md` ❓ QUESTION).
+- Tombol ghost: "Lihat Rundown" → scroll `#rundown`; disembunyikan bila CTA utama sudah mengarah ke `#rundown`.
 
 **Aturan:**
 - Hanya dipakai untuk event dengan `event_type = 'badminton'` atau `'gathering'`.

@@ -92,8 +92,10 @@ Setiap selesai task di `TASK.md`:
 - **M3-07**: Section landing (Event Mendatang + Arsip Lan Jalan), `getPastTravelEvents`, ISR 60s; **milestone M3 selesai**
 - **M4-01**: `getEventBySlug` (relasi lengkap) + tipe `EventDetail` di `src/lib/api/events.ts`
 - **M4-02**: Halaman `/[slug]` — fetch + `notFound()` + `generateMetadata` (title/description/OG), ISR 60s; `APP_URL` + `metadataBase` untuk resolve OG absolut
+- **M4-03**: `<EventHero />` (varian cinema) + `<EventMetaBar />` (M4-04, ditarik ke depan); `getVolumeLabel` diekstrak ke `src/lib/utils/event-label.ts`; halaman `/[slug]` memilih hero berdasarkan `theme`
 
 ### Changed
+- **PLAN**: `COMPONENTS.md` §3.1 `<EventHero />` — CTA utama dipetakan per `status` (upcoming → "Lihat Rundown", live → "Presensi Sekarang", past → "Lihat Dokumentasi"); "Daftar Sekarang" dihapus karena belum ada alur pendaftaran
 - **PLAN**: Resolusi konflik `.md` pra-M0 — tanggal event `2026-10-10`, rate limit login 5 menit, logger `lib/utils/logger.ts`, stack tambah Upstash Redis + `sharp` + `@dnd-kit`, fixture event cukup 1 travel, seed M0-08 sekalian fixture, peserta via AI-generated (aturan hijab/base layer/jersey)
 - **PLAN**: Semua `[TBD]` di `CONTENT.md` diisi — kuota (placeholder), info pembayaran (placeholder PIC Bu Triii), Maps Pawon, foto (AI-generated), sosmed (placeholder), checklist §10 ditutup
 - **PLAN**: Melengkapi `SCHEMA.md` yang terpotong — kode tabel `attendance_sessions`, tabel `attendances` (§3.8), Relations (§4), Query Helpers (§5); memperbaiki referensi section `ARCHITECTURE.md` → `RULES.md`/`SETUP.md` di `TASK.md`; merapikan §7 `CONTENT.md`

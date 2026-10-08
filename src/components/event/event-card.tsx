@@ -4,6 +4,7 @@ import Link from "next/link";
 import { EventStatusBadge } from "@/components/event/event-status-badge";
 import type { Event } from "@/lib/types/event";
 import { cn } from "@/lib/utils/cn";
+import { getVolumeLabel } from "@/lib/utils/event-label";
 import { getEventStatus } from "@/lib/utils/event-status";
 import { formatDate } from "@/lib/utils/format";
 
@@ -12,12 +13,6 @@ const SIZE_CLASSES: Record<"sm" | "md" | "lg", string> = {
   md: "w-[280px]",
   lg: "w-[360px]",
 };
-
-/** Ambil label volume dari judul (mis. "Vol. 1") — tidak ada kolom khusus di schema. */
-function getVolumeLabel(title: string): string | null {
-  const match = title.match(/vol\.?\s*(\d+)/i);
-  return match ? `Vol. ${match[1]}` : null;
-}
 
 export type EventCardProps = {
   event: Event;
