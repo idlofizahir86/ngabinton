@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 
 import { EventHero } from "@/components/event/event-hero";
 import { EventSubNav } from "@/components/event/event-sub-nav";
+import { QuranQuote } from "@/components/event/quran-quote";
 import { RundownTimeline } from "@/components/event/rundown-timeline";
 import { Container } from "@/components/layout/container";
 import { getEventBySlug } from "@/lib/api/events";
@@ -10,6 +11,11 @@ import { APP_URL } from "@/lib/constants";
 import { cn } from "@/lib/utils/cn";
 import { getEventStatus } from "@/lib/utils/event-status";
 import { formatDate, formatRupiah } from "@/lib/utils/format";
+import {
+  EVENT_EXTRA_KEYS,
+  getEventExtra,
+  quranVerseSchema,
+} from "@/lib/validators/event-extras";
 
 /** Halaman event di-render ulang tiap 60 detik (ROUTES.md §1.1). */
 export const revalidate = 60;
@@ -38,8 +44,21 @@ const EVENT_TYPE_LABEL: Record<string, string> = {
  * Bertambah saat section storytelling (M5) & presensi (M6) menyusul.
  * Konstanta modul agar identitas array stabil (dipakai sebagai dep `useEffect`).
  */
-const EVENT_ANCHORS = [
+/**
+ * Anchor sub-nav yang **sudah ada** di halaman (ROUTES.md §2.1).
+ * Bertambah saat section storytelling (M5) & presensi (M6) menyusul.
+ * Konstanta modul agar identitas array stabil (dipakai sebagai dep `useEffect`).
+ */
+const CINEMA_ANCHORS = [
   { id: "hero", label: "Awal" },
+  { id: "rundown", label: "Rundown" },
+  { id: "biaya", label: "Biaya" },
+];
+
+/** Anchor tambahan untuk event storytelling (varian travel). */
+const STORY_ANCHORS = [
+  { id: "hero", label: "Awal" },
+  { id: "pembuka", label: "Pembuka" },
   { id: "rundown", label: "Rundown" },
   { id: "biaya", label: "Biaya" },
 ];
@@ -97,6 +116,8 @@ export default async function EventPage({ params }: EventPageProps) {
   const hasBudget = event.budgetItems.length > 0;
   const totalBudget =
     event.budgetItems.find((item) => item.isTotal)?.amount ?? event.price ?? null;
+  const quranVerse = getEventExtra(event.extras, EVENT_EXTRA_KEYS.quranVerse, quranVerseSchema);
+  const anchors = isCinema ? CINEMA_ANCHORS : STORY_ANCHORS;
 
   return (
     <article className="pb-24">
@@ -127,30 +148,29 @@ export default async function EventPage({ params }: EventPageProps) {
         </section>
       )}
 
-      <EventSubNav anchors={EVENT_ANCHORS} variant={variant} />
+      <EventSubNav anchors={anchors} variant={variant} />
+
+      {!isCinema && quranVerse ? (
+        <QuranQuote
+          arabic={quranVerse.arabic}
+          translation={quranVerse.translation}
+          source={quranVerse.source}
+        />
+      ) : null}
 
       {hasRundown ? (
-        <section
-          id="rundown"
-          className={cn(
-            "scroll-mt-32 py-20 md:py-24",
-            isCinema ? "border-b border-border/60" : "border-b border-story-border",
-          )}
-        >
+        /*
+         * Rundown selalu varian **gelap/cinema** (DESIGN.md §2: "Rundown (gelap, kontras)"),
+         * apa pun tema event-nya.
+         */
+        <section id="rundown" className="scroll-mt-32 border-b border-border/60 py-20 md:py-24">
           <Container size={isCinema ? "lg" : "md"}>
-            <h2
-              className={cn(
-                "font-display text-3xl md:text-4xl",
-                isCinema ? "text-text" : "text-story-text",
-              )}
-            >
-              Rundown
-            </h2>
+            <h2 className="font-display text-3xl text-text md:text-4xl">Rundown</h2>
 
             <div className="mt-8">
               <RundownTimeline
                 items={event.rundownItems}
-                variant={variant}
+                variant="cinema"
                 highlightNow={status === "live"}
               />
             </div>
@@ -166,8 +186,10 @@ export default async function EventPage({ params }: EventPageProps) {
         <section
           id="biaya"
           className={cn(
-            "scroll-mt-32 py-20 md:py-24",
-            isCinema ? "border-b border-border/60" : "border-b border-story-border",
+            "scroll-mt-32 border-b py-20 md:py-24",
+            isCinema
+              ? "border-border/60 bg-background"
+              : "border-story-border bg-story-bg",
           )}
         >
           <Container size={isCinema ? "lg" : "md"}>

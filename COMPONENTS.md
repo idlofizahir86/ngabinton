@@ -504,6 +504,8 @@ Lokasi: `src/components/event/` (tetap di folder yang sama, tapi hanya dipakai d
 
 Section ayat Al-Quran + terjemahan.
 
+> Section ini **memiliki `id="pembuka"`** (ROUTES.md §2.1) dan latar `story-bg`.
+
 **Props:**
 ```ts
 type QuranQuoteProps = {

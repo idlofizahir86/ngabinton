@@ -98,6 +98,7 @@ Setiap selesai task di `TASK.md`:
 - **M4-07**: Section `#rundown` di halaman `/[slug]` (wire `<RundownTimeline />` + `<EventSubNav />`, anchor `#hero`/`#rundown`)
 - **M4-08**: Section `#biaya` versi minimal (judul + deskripsi + total `/ orang`) & anchor `#biaya`; full version menyusul di M5-05 (`<BudgetTable />`)
 - **M4-09**: Halaman `/arsip` (ISR 300s) — grid semua event lewat via `getPastEvents`; `EventCard` dapat ukuran `fill` untuk grid. **Milestone M4 selesai**
+- **M5-01**: `<QuranQuote />` (`id="pembuka"`, ayat RTL + terjemahan + source) & `src/lib/validators/event-extras.ts` (Zod `quranVerseSchema`, `getEventExtra()`)
 
 ### Changed
 - **PLAN**: `COMPONENTS.md` §3.1 `<EventHero />` — CTA utama dipetakan per `status` (upcoming → "Lihat Rundown", live → "Presensi Sekarang", past → "Lihat Dokumentasi"); "Daftar Sekarang" dihapus karena belum ada alur pendaftaran
@@ -106,7 +107,7 @@ Setiap selesai task di `TASK.md`:
 - **PLAN**: Melengkapi `SCHEMA.md` yang terpotong — kode tabel `attendance_sessions`, tabel `attendances` (§3.8), Relations (§4), Query Helpers (§5); memperbaiki referensi section `ARCHITECTURE.md` → `RULES.md`/`SETUP.md` di `TASK.md`; merapikan §7 `CONTENT.md`
 
 ### Fixed
-- _(belum ada)_
+- **M5-01**: Kontras `#rundown` — varian storytelling (teks `story-text` hampir hitam) sempat dipakai di atas latar gelap sehingga judul tak terbaca. Sekarang `#rundown` selalu varian cinema + teks putih (`DESIGN.md` §2: "Rundown (gelap, kontras)"); `#biaya` (storytelling) diberi latar `story-bg`
 
 ### Security
 - _(belum ada)_

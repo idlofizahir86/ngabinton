@@ -14,8 +14,8 @@
 ```yaml
 Status:      🚧 In Progress
 Milestone:   M5 — Storytelling (M0 ✅ · M1 ✅ · M2 ✅ · M3 ✅ · M4 ✅)
-Progress:    38 / 87 tasks
-Terakhir:    M4-09 (2026-10-08)
+Progress:    39 / 87 tasks
+Terakhir:    M5-01 (2026-10-08)
 
 Aturan:
   - Satu task = satu sesi kerja
@@ -323,10 +323,20 @@ Target: halaman `/[slug]` dengan hero, rundown, biaya.
 
 Target: section-section khusus event travel.
 
-- [ ] **M5-01** Buat `<QuranQuote />`
-  - File: `src/components/event/quran-quote.tsx`
+- [x] **M5-01** Buat `<QuranQuote />` ✅ 2026-10-08
+  - File: `src/components/event/quran-quote.tsx` (server)
   - Font arabic, RTL, terjemahan + source
   - Referensi: `COMPONENTS.md` section 4.1
+  - `<figure>` + `<figcaption>`, `lang="ar"` + `dir="rtl"`, `lang` Indonesia untuk terjemahan; latar `story-bg`; `id="pembuka"`; padding 64/96px; source dengan garis kecil kiri-kanan
+  - Baru: `src/lib/validators/event-extras.ts` — `EVENT_EXTRA_KEYS`, `quranVerseSchema` (Zod) + `getEventExtra()` (parse `jsonb` yang bertipe `unknown`, AGENTS §4.2)
+  - Di-wire ke halaman (varian storytelling) + anchor `#pembuka` (`STORY_ANCHORS`); `CINEMA_ANCHORS` tanpa `#pembuka`
+  - Verifikasi: `pnpm typecheck` ✅ · `pnpm lint` ✅ · `pnpm build` ✅ · SSR HTML → `id="pembuka"`, `dir="rtl"`, `lang="ar"`, arab, terjemahan, "Q.S Al Mulk : 15", `font-arabic`, anchor ✅ · screenshot: ayat + rundown + biaya terbaca ✅
+  - Sub-nav kini **terlihat** di `/lanjalan-vol-1` (halaman lebih tinggi) ✅
+
+- [x] **FIX (ditemukan saat M5-01)** Kontras section 🔴 2026-10-08
+  - Bug dari M4-07/M4-08: `#rundown` memakai varian **storytelling** (teks `story-text` hampir hitam) padahal latarnya gelap → judul tak terbaca
+  - Perbaikan: `#rundown` selalu varian **cinema** + teks putih (DESIGN.md §2: "Rundown (gelap, kontras)"); `#biaya` (varian storytelling) diberi latar `bg-story-bg`
+  - Bukti: computed style → judul rundown `rgb(255,255,255)`, dot `rgb(229,9,20)`, `#biaya` bg `rgb(247,245,239)` ✅
 - [ ] **M5-02** Buat `<StoryNarrative />`
   - File: `src/components/event/story-narrative.tsx`
   - Dua kolom, gambar bisa kiri/kanan
@@ -619,6 +629,7 @@ Catatan task yang sudah selesai, di luar checklist (untuk audit).
 | 2026-10-08 | M4-07 | Section `#rundown` (wire `RundownTimeline` + `EventSubNav`) di halaman `/[slug]`; SSR + screenshot lolos |
 | 2026-10-08 | M4-08 | Section `#biaya` versi minimal + anchor `#biaya`; SSR + a11y snapshot lolos |
 | 2026-10-08 | M4-09 | Halaman `/arsip` (grid `getPastEvents`, `EventCard size="fill"`); ISR 300s. **Milestone M4 ✅** |
+| 2026-10-08 | M5-01 | `<QuranQuote />` + `lib/validators/event-extras.ts`; wire `#pembuka`; **fix kontras** rundown/biaya (varian storytelling di latar gelap) |
 | 2026-10-08 | M0-06 | 8 tabel + 4 enum + relations ditulis di `schema.ts` (252 baris); typecheck lolos |
 | 2026-10-08 | M0-04 | 13 dependency runtime + 3 dev terpasang; `pnpm.onlyBuiltDependencies` diset; @types/bcryptjs dihapus |
 | 2026-10-08 | M0-05 | `drizzle.config.ts` + `lib/db/client.ts` (prepare:false) + `schema.ts` kosong; script `db:*` ditambah |
