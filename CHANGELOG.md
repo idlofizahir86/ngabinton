@@ -102,6 +102,7 @@ Setiap selesai task di `TASK.md`:
 - **M5-02**: `<StoryNarrative />` (blok narasi grid 60/40, `direction` kiri/kanan, gambar `aspect-video` + `shadow-story`)
 - **M5-09**: Seed `event_media` (5 baris: destination, transport, food ×2, participant) supaya gambar section event tersedia dari DB; aset `public/` (19 file) masuk repo
 - **M5-03**: `<DestinationCard />` (gambar kiri/konten kanan, region `story-teal`, badge durasi, tombol "Buka di Maps"); `<Button />` dapat variant **`story-primary`** & **`story-ghost`** (DESIGN §7.16)
+- **M5-04**: `<TransportCard />` (ikon kendaraan, daftar titik jemput dengan dot `story-orange`, foto 16:9) + `pickupPointsSchema`
 
 ### Changed
 - **PLAN**: `COMPONENTS.md` §3.1 `<EventHero />` — CTA utama dipetakan per `status` (upcoming → "Lihat Rundown", live → "Presensi Sekarang", past → "Lihat Dokumentasi"); "Daftar Sekarang" dihapus karena belum ada alur pendaftaran

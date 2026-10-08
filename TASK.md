@@ -14,8 +14,8 @@
 ```yaml
 Status:      🚧 In Progress
 Milestone:   M5 — Storytelling (M0 ✅ · M1 ✅ · M2 ✅ · M3 ✅ · M4 ✅)
-Progress:    42 / 87 tasks
-Terakhir:    M5-03 (2026-10-08)
+Progress:    43 / 87 tasks
+Terakhir:    M5-04 (2026-10-08)
 
 Aturan:
   - Satu task = satu sesi kerja
@@ -354,10 +354,15 @@ Target: section-section khusus event travel.
   - `ui/button.tsx`: tambah variant **`story-primary`** (`bg-story-teal`) & **`story-ghost`** (`border-story-border` + `story-text`) sesuai DESIGN §7.16 — varian `ghost` cinema berteks putih (tak terbaca di latar terang). Didokumentasikan di `COMPONENTS.md` §7.2
   - Belum di-wire — integrasi di M5-08
   - Verifikasi: `pnpm typecheck` ✅ · `pnpm lint` ✅ · `pnpm build` ✅ · temp-wire → `id="destinasi"`, region/nama/deskripsi/durasi/Maps ada ✅ · gambar dari **DB `event_media`** (`dest-walini.jpg`) → 200 `image/jpeg` ✅ · computed style: card `rgb(255,255,255)` + radius `12px`, tombol `story-ghost` teks gelap `rgb(26,26,26)` border `rgb(229,224,213)` ✅ · screenshot ✅ lalu dikembalikan
-- [ ] **M5-04** Buat `<TransportCard />`
+- [x] **M5-04** Buat `<TransportCard />` ✅ 2026-10-08
   - File: `src/components/event/transport-card.tsx`
   - Icon kendaraan + list titik jemput
   - Referensi: `COMPONENTS.md` section 4.4
+  - `bg-story-bg-alt` radius `lg` padding 32px (DESIGN §7.9); ikon 64px; list titik jemput dengan dot `story-orange` 6px; foto 16:9
+  - Ikon dipilih dari nama moda (heuristik `Bus`/`Car`); **satu aksen saja** (`story-orange` untuk ikon + dot) mengikuti DESIGN §3 "tidak ada dua warna aksen dalam satu komponen"
+  - `lib/validators/event-extras.ts`: tambah `pickupPointsSchema` (`z.array(z.string())`)
+  - Belum di-wire — integrasi di M5-08
+  - Verifikasi: `pnpm typecheck` ✅ · `pnpm lint` ✅ · `pnpm build` ✅ · temp-wire → `id="transportasi"`, mode, deskripsi, label "Titik jemput" + 4 titik, gambar dari `event_media` ✅ · computed style: bg `rgb(239,236,228)` = `#efece4`, padding `32px`, ikon `64×64px` `rgb(245,158,11)`, dot `6px` `rgb(245,158,11)` ✅ · screenshot ✅ lalu dikembalikan
 - [ ] **M5-05** Buat `<BudgetTable />`
   - File: `src/components/event/budget-table.tsx`
   - Tabel + baris total + payment info (opsional)
@@ -649,6 +654,7 @@ Catatan task yang sudah selesai, di luar checklist (untuk audit).
 | 2026-10-08 | M5-02 | `<StoryNarrative />` (grid 60/40, `direction`); aset `public/` lengkap 19 file |
 | 2026-10-08 | M5-09 | Seed `event_media` 5 baris (destination/transport/food×2/participant); idempoten |
 | 2026-10-08 | M5-03 | `<DestinationCard />` + variant tombol `story-primary`/`story-ghost`; gambar dari `event_media`; screenshot lolos |
+| 2026-10-08 | M5-04 | `<TransportCard />` (+`pickupPointsSchema`); computed style cocok DESIGN §7.9; screenshot lolos |
 | 2026-10-08 | M0-06 | 8 tabel + 4 enum + relations ditulis di `schema.ts` (252 baris); typecheck lolos |
 | 2026-10-08 | M0-04 | 13 dependency runtime + 3 dev terpasang; `pnpm.onlyBuiltDependencies` diset; @types/bcryptjs dihapus |
 | 2026-10-08 | M0-05 | `drizzle.config.ts` + `lib/db/client.ts` (prepare:false) + `schema.ts` kosong; script `db:*` ditambah |

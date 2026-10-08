@@ -25,6 +25,9 @@ export const quranVerseSchema = z.object({
 
 export type QuranVerse = z.infer<typeof quranVerseSchema>;
 
+/** `pickup_points` — daftar titik jemput transportasi (CONTENT.md §4.6). */
+export const pickupPointsSchema = z.array(z.string().min(1));
+
 /**
  * Ambil satu extra berdasarkan `key` lalu validasi bentuknya.
  * Mengembalikan `null` kalau extra tidak ada atau bentuknya tidak sesuai.
