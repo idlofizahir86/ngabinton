@@ -397,9 +397,10 @@ type EventSubNavProps = {
 
 **Behavior:**
 - Muncul setelah scroll melewati hero (IntersectionObserver pada hero).
-- Sticky di bawah navbar utama.
+- Sticky di bawah navbar utama (offset `top-16` — navbar `h-16`).
 - Active state: underline `primary` / `story-teal`.
-- Klik anchor → smooth scroll dengan offset navbar.
+- Klik anchor → smooth scroll dengan offset navbar (butuh `scroll-mt-*` di section).
+- Disembunyikan saat anchor `hero` atau `absen` aktif (ROUTES.md §2.2).
 
 **Mobile:**
 - Horizontal scroll, `snap-x`.

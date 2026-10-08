@@ -63,6 +63,11 @@
 }
 
 /* Base */
+html {
+  /* Smooth scroll untuk anchor sub-nav (ROUTES.md §2.2); dimatikan saat reduced-motion. */
+  scroll-behavior: smooth;
+}
+
 body {
   background-color: var(--color-background);
   color: var(--color-text);

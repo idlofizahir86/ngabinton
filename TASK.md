@@ -14,8 +14,8 @@
 ```yaml
 Status:      🚧 In Progress
 Milestone:   M4 — Event Public (M0 ✅ · M1 ✅ · M2 ✅ · M3 ✅)
-Progress:    34 / 87 tasks
-Terakhir:    M4-05 (2026-10-08)
+Progress:    35 / 87 tasks
+Terakhir:    M4-06 (2026-10-08)
 
 Aturan:
   - Satu task = satu sesi kerja
@@ -283,11 +283,15 @@ Target: halaman `/[slug]` dengan hero, rundown, biaya.
   - `variant` cinema/storytelling (token `story-*`), `highlightNow` menyorot item yang sedang berjalan (perkiraan jam WIB), badge "Opsional" untuk `is_optional`
   - Belum di-wire ke halaman — section `#rundown` menyusul di M4-07
   - Verifikasi: `pnpm typecheck` ✅ · `pnpm lint` ✅ · `pnpm build` ✅ · smoke render (temp) → 200 + `<ol>`, item, waktu, catatan, badge, dot ada ✅ lalu dikembalikan
-- [ ] **M4-06** Buat `<EventSubNav />`
+- [x] **M4-06** Buat `<EventSubNav />` ✅ 2026-10-08
   - File: `src/components/event/event-sub-nav.tsx`
   - Sticky, scroll-spy, anchor list
   - Client Component (IntersectionObserver)
   - Referensi: `COMPONENTS.md` section 3.6
+  - Sticky `top-16` (navbar `h-16`); scroll-spy pilih section paling atas di band aktif (`rootMargin -64px 0 -60%`); sembunyi saat `hero`/`absen` aktif (ROUTES §2.2); underline `primary`/`story-teal`
+  - `globals.css`: tambah `html { scroll-behavior: smooth }` (ROUTES §2.2); sudah dimatikan oleh blok `prefers-reduced-motion`
+  - Belum di-wire — menyusul M4-07
+  - Verifikasi: `pnpm typecheck` ✅ · `pnpm lint` ✅ · `pnpm build` ✅ · uji browser (temp scaffolding) → sembunyi di hero ✅, sticky + aktif "Rundown" di section tengah ✅, sembunyi di `#absen` ✅
 - [ ] **M4-07** Buat section `#rundown` di halaman event
 - [ ] **M4-08** Buat section `#biaya` (placeholder)
   - Diisi penuh di M5-05 setelah `<BudgetTable />` siap
@@ -596,6 +600,7 @@ Catatan task yang sudah selesai, di luar checklist (untuk audit).
 | 2026-10-08 | M4-03 | `<EventHero />` (cinema) + `getVolumeLabel` bersama; halaman pilih hero by theme; smoke render lolos |
 | 2026-10-08 | M4-04 | `<EventMetaBar />` (ditarik ke depan, dipakai EventHero) |
 | 2026-10-08 | M4-05 | `<RundownTimeline />` (cinema + storytelling, `highlightNow`); smoke render lolos |
+| 2026-10-08 | M4-06 | `<EventSubNav />` (sticky scroll-spy, sembunyi di hero/`#absen`); uji browser lolos |
 | 2026-10-08 | M0-06 | 8 tabel + 4 enum + relations ditulis di `schema.ts` (252 baris); typecheck lolos |
 | 2026-10-08 | M0-04 | 13 dependency runtime + 3 dev terpasang; `pnpm.onlyBuiltDependencies` diset; @types/bcryptjs dihapus |
 | 2026-10-08 | M0-05 | `drizzle.config.ts` + `lib/db/client.ts` (prepare:false) + `schema.ts` kosong; script `db:*` ditambah |
