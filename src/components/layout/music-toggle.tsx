@@ -14,17 +14,27 @@ const STORAGE_KEY = "ngabinton:music";
 /** Volume default — cukup sebagai latar, tidak menutupi konten. */
 const VOLUME = 0.45;
 
+/** Interaksi pertama yang dianggap "izin" untuk mulai memutar. */
+const RESUME_EVENTS = ["pointerdown", "keydown", "touchstart", "scroll"] as const;
+
 /**
  * Tombol pemutar lagu di pojok kiri bawah halaman publik.
  *
  * Ditempatkan di layout `(public)` sehingga elemen `<audio>` tidak remount
  * saat pindah halaman (beranda → arsip → halaman event) dan lagu tetap
- * berjalan. Autoplay dibatasi browser, jadi pemutaran pertama selalu
- * menunggu klik pengguna; preferensi klik terakhir disimpan agar kunjungan
- * berikutnya dicoba diputar otomatis.
+ * berjalan.
+ *
+ * Autoplay bersuara diblokir browser, jadi urutannya:
+ * 1. coba `play()` langsung saat mount — berhasil bila browser mengizinkan;
+ * 2. bila ditolak, mulai pada interaksi pertama pengguna di halaman.
+ * Pemilihan terakhir disimpan di `localStorage`: kalau pengguna mematikan
+ * lagu, tidak akan diputar otomatis lagi.
  */
 export function MusicToggle() {
   const audioRef = useRef<HTMLAudioElement>(null);
+  const buttonRef = useRef<HTMLButtonElement>(null);
+  /** Pengguna pernah mematikan lagu → jangan pernah auto-start. */
+  const stoppedByUser = useRef(false);
   const [playing, setPlaying] = useState(false);
   /** Baru render setelah mount agar tidak ada mismatch SSR. */
   const [ready, setReady] = useState(false);
@@ -36,18 +46,49 @@ export function MusicToggle() {
     audio.volume = VOLUME;
     setReady(true);
 
-    let wanted = false;
     try {
-      wanted = window.localStorage.getItem(STORAGE_KEY) === "on";
+      stoppedByUser.current = window.localStorage.getItem(STORAGE_KEY) === "off";
     } catch {
       // localStorage bisa diblokir (private mode) — abaikan.
     }
-    if (!wanted) return;
 
-    audio
-      .play()
-      .then(() => setPlaying(true))
-      .catch(() => setPlaying(false));
+    let cancelled = false;
+
+    const tryPlay = () =>
+      audio
+        .play()
+        .then(() => {
+          if (!cancelled) setPlaying(true);
+          return true;
+        })
+        .catch(() => false);
+
+    const onFirstInteraction = (event: Event) => {
+      // Klik pada tombol ditangani oleh `toggle()`, jangan dobel.
+      if (buttonRef.current?.contains(event.target as Node)) return;
+      void tryPlay().then((played) => {
+        if (played) cleanup();
+      });
+    };
+
+    const cleanup = () =>
+      RESUME_EVENTS.forEach((name) => window.removeEventListener(name, onFirstInteraction));
+
+    if (stoppedByUser.current) {
+      // tidak ada yang perlu dilakukan — biarkan tombol menunggu klik.
+    } else {
+      void tryPlay().then((played) => {
+        if (played || cancelled) return;
+        RESUME_EVENTS.forEach((name) =>
+          window.addEventListener(name, onFirstInteraction, { passive: true }),
+        );
+      });
+    }
+
+    return () => {
+      cancelled = true;
+      cleanup();
+    };
   }, []);
 
   const toggle = useCallback(() => {
@@ -55,6 +96,7 @@ export function MusicToggle() {
     if (!audio) return;
 
     if (audio.paused) {
+      stoppedByUser.current = false;
       audio
         .play()
         .then(() => {
@@ -67,6 +109,7 @@ export function MusicToggle() {
         })
         .catch(() => setPlaying(false));
     } else {
+      stoppedByUser.current = true;
       audio.pause();
       setPlaying(false);
       try {
@@ -84,6 +127,7 @@ export function MusicToggle() {
       <audio ref={audioRef} src={TRACK_SRC} loop preload="none" />
 
       <button
+        ref={buttonRef}
         type="button"
         onClick={toggle}
         aria-label={label}
