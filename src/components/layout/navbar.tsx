@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 
 import { Container } from "@/components/layout/container";
+import { BrandLogo } from "@/components/layout/brand-logo";
 import { Sheet } from "@/components/ui/sheet";
 import { cn } from "@/lib/utils/cn";
 
@@ -47,8 +48,8 @@ export function Navbar({ variant = "public", transparentOnTop = true }: NavbarPr
       )}
     >
       <Container size="full" className="flex h-16 items-center justify-between gap-4">
-        <Link href="/" aria-label="NGABINTON — Beranda" className="font-display text-2xl text-text">
-          NGABINTON
+        <Link href="/" aria-label="NGABINTON — Beranda" className="flex items-center">
+          <BrandLogo decorative priority className="h-7 w-auto" />
         </Link>
 
         {showMenu ? (
@@ -97,7 +98,7 @@ export function Navbar({ variant = "public", transparentOnTop = true }: NavbarPr
       {showMenu ? (
         <Sheet open={menuOpen} onOpenChange={setMenuOpen} side="top" label="Menu">
           <div className="flex h-16 items-center justify-between px-4">
-            <span className="font-display text-2xl text-text">NGABINTON</span>
+            <BrandLogo decorative className="h-7 w-auto" />
             <button
               type="button"
               onClick={() => setMenuOpen(false)}

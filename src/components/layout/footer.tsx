@@ -2,6 +2,7 @@ import { Camera, Mail, MessageCircle } from "lucide-react";
 import Link from "next/link";
 
 import { Container } from "@/components/layout/container";
+import { BrandLogo } from "@/components/layout/brand-logo";
 
 /** Navigasi footer — CONTENT.md §2.2. */
 const NAV_LINKS = [
@@ -25,7 +26,7 @@ export function Footer() {
       <Container size="full" className="py-16">
         <div className="grid gap-12 md:grid-cols-3">
           <div>
-            <p className="font-display text-2xl text-text">NGABINTON</p>
+            <BrandLogo className="h-8 w-auto" />
             <p className="mt-3 max-w-xs text-sm text-text-muted">Ngaji, ngobrol, badminton.</p>
             <p className="mt-1 text-sm text-text-muted">Bandung</p>
           </div>
