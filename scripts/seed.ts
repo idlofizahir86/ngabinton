@@ -254,8 +254,36 @@ async function main() {
       alt: "Nasi liwet dan telor di Pawon Kang Bima",
       order: 1,
     },
+    {
+      eventId,
+      type: "gallery",
+      url: `/gallery/momen-01.jpg`,
+      alt: "Pemanasan di lapangan badminton",
+      order: 0,
+    },
+    {
+      eventId,
+      type: "gallery",
+      url: `/gallery/momen-02.jpg`,
+      alt: "Makan bareng di resto Sunda",
+      order: 1,
+    },
+    {
+      eventId,
+      type: "gallery",
+      url: `/gallery/momen-03.jpg`,
+      alt: "Duduk-duduk di tepi kolam air panas",
+      order: 2,
+    },
+    {
+      eventId,
+      type: "gallery",
+      url: `/gallery/momen-04.jpg`,
+      alt: "Di dalam angkot menuju Ciwidey",
+      order: 3,
+    },
   ]);
-  console.log("✅ Media: 6 item (reset + insert)");
+  console.log("✅ Media: 10 item (reset + insert)");
 
   console.log("✅ Seed selesai");
   process.exit(0);

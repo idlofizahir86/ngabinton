@@ -17,12 +17,26 @@ const caveat = Caveat({ variable: "--font-caveat", subsets: ["latin"] });
 const notoArabic = Noto_Naskh_Arabic({ variable: "--font-noto-arabic", subsets: ["arabic"] });
 const jetbrainsMono = JetBrains_Mono({ variable: "--font-jetbrains", subsets: ["latin"] });
 
+/** Deskripsi brand — dipakai untuk `<meta name="description">` & OG. */
+const SITE_DESCRIPTION =
+  "Komunitas badminton mingguan yang suka kumpul, main bareng, dan sesekali jalan-jalan. Ngobrol, ngaji, ngabinton.";
+
 export const metadata: Metadata = {
   // Basis URL absolut untuk resolve OG/Twitter image (RULES.md §6.3).
   metadataBase: new URL(APP_URL ?? "http://localhost:3000"),
   title: "NGABINTON",
-  description:
-    "Komunitas badminton mingguan yang suka kumpul, main bareng, dan sesekali jalan-jalan. Ngobrol, ngaji, ngabinton.",
+  description: SITE_DESCRIPTION,
+  openGraph: {
+    title: "NGABINTON",
+    description: SITE_DESCRIPTION,
+    siteName: "NGABINTON",
+    locale: "id_ID",
+    type: "website",
+    // OG default (`ASSETS.md` §1) — halaman event menimpanya dengan `cover_image_url`.
+    images: [
+      { url: "/og/default.jpg", width: 1200, height: 630, alt: "Komunitas badminton NGABINTON" },
+    ],
+  },
 };
 
 export default function RootLayout({

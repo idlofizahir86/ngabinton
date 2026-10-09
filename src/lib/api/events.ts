@@ -18,6 +18,9 @@ import type { Event } from "@/lib/types/event";
 /** Batas default jumlah event yang diambil. */
 const DEFAULT_LIMIT = 12;
 
+/** Batas default jumlah foto galeri landing. */
+const GALLERY_LIMIT = 8;
+
 /**
  * Event mendatang: `is_published = true` dan `starts_at` di masa depan,
  * diurutkan dari yang paling dekat.
@@ -75,6 +78,22 @@ export async function getPastEvents(limit: number = DEFAULT_LIMIT): Promise<Even
     .orderBy(desc(events.startsAt))
     .limit(limit);
 }
+
+/**
+ * Foto galeri (`type = 'gallery'`) untuk section "Momen Kami" di landing.
+ * Lintas event; urut `order` di dalam event terbaru (CONTENT.md §3.4).
+ */
+export async function getGalleryMedia(limit: number = GALLERY_LIMIT) {
+  return db
+    .select({ id: eventMedia.id, url: eventMedia.url, alt: eventMedia.alt })
+    .from(eventMedia)
+    .where(eq(eventMedia.type, "gallery"))
+    .orderBy(desc(eventMedia.createdAt), asc(eventMedia.order))
+    .limit(limit);
+}
+
+/** Bentuk satu item galeri hasil `getGalleryMedia`. */
+export type GalleryMedia = Awaited<ReturnType<typeof getGalleryMedia>>[number];
 
 /**
  * Event publik berdasarkan slug + relasi lengkap (SCHEMA.md §5.1).

@@ -2,26 +2,30 @@ import Image from "next/image";
 import Link from "next/link";
 
 import { EventCarousel } from "@/components/event/event-carousel";
+import { ParticipantGrid } from "@/components/event/participant-grid";
 import { Container } from "@/components/layout/container";
 import { buttonClass } from "@/components/ui/button";
-import { getPastTravelEvents, getUpcomingEvents } from "@/lib/api/events";
+import { getGalleryMedia, getPastTravelEvents, getUpcomingEvents } from "@/lib/api/events";
 
 /** Landing di-render ulang tiap 60 detik (ROUTES.md §1.1). */
 export const revalidate = 60;
 
 /**
- * Latar hero landing (foto komunitas) — CONTENT.md §3.1.
- * Aset belum tersedia → biarkan `null` (latar gelap + overlay saja).
- * Saat foto siap, taruh di `public/` lalu isi path-nya, mis. "/brand/hero-community.jpg".
+ * Latar hero landing — CONTENT.md §3.1 (aset `public/brand/hero-community.jpg`, `ASSETS.md` §1).
+ * Set `null` kalau ingin latar gelap polos tanpa foto.
  */
-const HERO_IMAGE_URL: string | null = null;
+const HERO_IMAGE_URL: string | null = "/brand/hero-community.jpg";
 
 /** Metadata hero: jumlah member · tahun berdiri · kota (CONTENT.md §1.1). */
 const HERO_META = ["~20 member", "Sejak 2025", "Bandung"];
 
 /** Landing page — hero (M3-06) + section carousel (M3-07). */
 export default async function Home() {
-  const [upcoming, archive] = await Promise.all([getUpcomingEvents(), getPastTravelEvents()]);
+  const [upcoming, archive, gallery] = await Promise.all([
+    getUpcomingEvents(),
+    getPastTravelEvents(),
+    getGalleryMedia(),
+  ]);
 
   return (
     <>
@@ -75,6 +79,29 @@ export default async function Home() {
           <div id="arsip" className="scroll-mt-20">
             <EventCarousel title="Arsip Lan Jalan" events={archive} seeAllHref="/arsip" />
           </div>
+        ) : null}
+
+        {/* "Momen Kami" — galeri lintas event (CONTENT.md §3.4). Pakai <ParticipantGrid />
+            (grid foto 1:1); <EventMediaGallery /> versi berlightbox (COMPONENTS.md §3.8)
+            belum ada di milestone mana pun. */}
+        {gallery.length > 0 ? (
+          <section id="galeri" className="scroll-mt-20">
+            <Container size="full">
+              <h2 className="text-xl font-semibold text-text md:text-2xl">Momen Kami</h2>
+              <p className="mt-3 max-w-2xl text-sm text-text-muted">
+                Beberapa momen dari kumpul-kumpul kami.
+              </p>
+              <div className="mt-6">
+                <ParticipantGrid
+                  columns={4}
+                  images={gallery.map((item) => ({
+                    url: item.url,
+                    alt: item.alt ?? "Momen komunitas NGABINTON",
+                  }))}
+                />
+              </div>
+            </Container>
+          </section>
         ) : null}
       </div>
     </>
