@@ -85,3 +85,49 @@ body {
     scroll-behavior: auto !important;
   }
 }
+
+/* ============================================================
+   Loading overlay NGABINTON — raket & kok "saling tepok".
+   Dipakai oleh src/app/loading.tsx (App Router Suspense fallback).
+   ============================================================ */
+@keyframes ngabinton-paddle-left {
+  0%,
+  100% {
+    transform: rotate(-16deg);
+  }
+  50% {
+    transform: rotate(-2deg);
+  }
+}
+
+@keyframes ngabinton-paddle-right {
+  0%,
+  100% {
+    transform: rotate(16deg);
+  }
+  50% {
+    transform: rotate(2deg);
+  }
+}
+
+@keyframes ngabinton-fly {
+  0% {
+    transform: translate(-26px, -3px) rotate(-12deg);
+  }
+  100% {
+    transform: translate(26px, -3px) rotate(12deg);
+  }
+}
+
+.ngbt-paddle-left {
+  animation: ngabinton-paddle-left 0.95s var(--ease-brand-out) infinite;
+}
+
+.ngbt-paddle-right {
+  animation: ngabinton-paddle-right 0.95s var(--ease-brand-out) infinite;
+}
+
+.ngbt-fly {
+  animation: ngabinton-fly 0.95s var(--ease-brand-out) infinite alternate;
+}
+
