@@ -2,7 +2,7 @@
  * Query baca untuk sesi bermain, game, peserta, dan daftar anggota.
  * Semua akses DB baca lewat `lib/api/` (ARCHITECTURE.md §2).
  */
-import { and, asc, count, desc, eq, isNull, sql } from "drizzle-orm";
+import { and, asc, count, desc, eq, gte, isNull, sql } from "drizzle-orm";
 
 import { db } from "@/lib/db/client";
 import { matchParticipants, matches, matchSets, playSessions, users } from "@/lib/db/schema";
@@ -83,3 +83,31 @@ export async function getGuests() {
 }
 
 export type GuestSummary = Awaited<ReturnType<typeof getGuests>>[number];
+
+/** Sesi bermain mendatang + daftar RSVP (untuk halaman utama). */
+export async function getUpcomingPlaySessions(limit: number = 5) {
+  return db.query.playSessions.findMany({
+    where: gte(playSessions.playedAt, new Date()),
+    orderBy: [asc(playSessions.playedAt)],
+    limit,
+    with: {
+      rsvps: {
+        with: {
+          user: {
+            columns: {
+              id: true,
+              username: true,
+              displayName: true,
+              nickname: true,
+              avatarKey: true,
+              avatarUrl: true,
+            },
+          },
+        },
+      },
+    },
+  });
+}
+
+export type UpcomingSession = Awaited<ReturnType<typeof getUpcomingPlaySessions>>[number];
+export type SessionRsvpWithUser = UpcomingSession["rsvps"][number];

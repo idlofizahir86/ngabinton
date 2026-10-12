@@ -4,8 +4,11 @@ import Link from "next/link";
 import { EventCarousel } from "@/components/event/event-carousel";
 import { ParticipantGrid } from "@/components/event/participant-grid";
 import { Container } from "@/components/layout/container";
+import { SessionRsvpCard } from "@/components/match/session-rsvp-card";
 import { buttonClass } from "@/components/ui/button";
 import { getGalleryMedia, getPastTravelEvents, getUpcomingEvents } from "@/lib/api/events";
+import { getUpcomingPlaySessions } from "@/lib/api/matches";
+import { getCurrentUser } from "@/lib/auth/guards";
 
 /** Landing di-render ulang tiap 60 detik (ROUTES.md §1.1). */
 export const revalidate = 60;
@@ -21,11 +24,16 @@ const HERO_META = ["~20 member", "Sejak 2025", "Bandung"];
 
 /** Landing page — hero (M3-06) + section carousel (M3-07). */
 export default async function Home() {
-  const [upcoming, archive, gallery] = await Promise.all([
+  const [upcoming, archive, gallery, sessions, user] = await Promise.all([
     getUpcomingEvents(),
     getPastTravelEvents(),
     getGalleryMedia(),
+    getUpcomingPlaySessions(),
+    getCurrentUser(),
   ]);
+
+  const isLoggedIn = Boolean(user);
+  const currentUserId = user?.id ?? null;
 
   return (
     <>
@@ -71,6 +79,33 @@ export default async function Home() {
       </section>
 
       <div className="space-y-24 py-24">
+        <section id="sesi" className="scroll-mt-20">
+          <Container size="full">
+            <h2 className="text-xl font-semibold text-text md:text-2xl">Sesi Mabar Mendatang</h2>
+            <p className="mt-3 max-w-2xl text-sm text-text-muted">
+              Catat rencana hadirmu supaya yang lain tahu siapa saja yang ikut.
+            </p>
+
+            {sessions.length > 0 ? (
+              <div className="mt-6 grid gap-4 lg:grid-cols-2">
+                {sessions.map((session) => (
+                  <SessionRsvpCard
+                    key={session.id}
+                    session={session}
+                    reveal={isLoggedIn}
+                    isLoggedIn={isLoggedIn}
+                    currentUserId={currentUserId}
+                  />
+                ))}
+              </div>
+            ) : (
+              <p className="mt-6 rounded-lg border border-border bg-surface p-6 text-sm text-text-muted">
+                Belum ada jadwal sesi mendatang. Nantikan ya!
+              </p>
+            )}
+          </Container>
+        </section>
+
         <div id="events" className="scroll-mt-20">
           <EventCarousel title="Event Mendatang" events={upcoming} seeAllHref="/arsip" />
         </div>

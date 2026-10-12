@@ -37,3 +37,17 @@ export type MatchSide = (typeof MATCH_SIDES)[number];
 
 /** Suffix password default anggota club: `{username}ngabinton` (`TASK.md`). */
 export const MEMBER_PASSWORD_SUFFIX = "ngabinton";
+
+// ------------------------------------------------------------
+// Polling kehadiran sesi (RULES.md §14)
+// ------------------------------------------------------------
+
+/** Pilihan RSVP. */
+export const RSVP_CHOICES = ["hadir", "skip"] as const;
+export type RsvpChoice = (typeof RSVP_CHOICES)[number];
+
+/** Label tampil tiap pilihan. */
+export const RSVP_LABELS: Record<RsvpChoice, string> = {
+  hadir: "Gass 🔥",
+  skip: "Ga dulu 🥱",
+};

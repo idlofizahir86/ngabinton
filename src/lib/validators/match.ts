@@ -74,6 +74,14 @@ export const playSessionSchema = z.object({
 
 export type PlaySessionInput = z.infer<typeof playSessionSchema>;
 
+/** Polling kehadiran sesi (RULES.md §14). */
+export const rsvpSchema = z.object({
+  sessionId: z.string().uuid("Sesi tidak valid."),
+  choice: z.enum(["hadir", "skip"]),
+});
+
+export type RsvpInput = z.infer<typeof rsvpSchema>;
+
 /** Konversi tamu (baturan) menjadi anggota club. */
 export const convertGuestSchema = z.object({
   guestName: z.string().trim().min(2, "Nama tamu tidak valid.").max(40),
