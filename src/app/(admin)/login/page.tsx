@@ -4,7 +4,7 @@ import { LoginForm } from "@/components/admin/login-form";
 import { Container } from "@/components/layout/container";
 
 export const metadata: Metadata = {
-  title: "Masuk Admin — NGABINTON",
+  title: "Masuk — NGABINTON",
   robots: { index: false },
 };
 
@@ -20,8 +20,10 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
     <main className="flex min-h-screen items-center justify-center py-16">
       <Container size="sm">
         <div className="rounded-lg border border-border bg-surface p-8 shadow-card">
-          <h1 className="text-3xl font-bold text-text">Masuk Admin</h1>
-          <p className="mt-2 text-sm text-text-muted">Khusus pengurus NGABINTON.</p>
+          <h1 className="text-3xl font-bold text-text">Masuk</h1>
+          <p className="mt-2 text-sm text-text-muted">
+            Untuk pengurus dan anggota club NGABINTON.
+          </p>
 
           <div className="mt-8">
             <LoginForm redirectTo={redirectTo} />

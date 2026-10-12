@@ -22,13 +22,13 @@ export function LoginForm({ redirectTo }: LoginFormProps) {
     <form action={formAction} className="flex flex-col gap-6" noValidate>
       {redirectTo ? <input type="hidden" name="redirect" value={redirectTo} /> : null}
       <div className="flex flex-col gap-2">
-        <Label htmlFor="username">Username</Label>
+        <Label htmlFor="identifier">Username atau No. WA</Label>
         <Input
-          id="username"
-          name="username"
+          id="identifier"
+          name="identifier"
           type="text"
           autoComplete="username"
-          placeholder="username"
+          placeholder="username atau 0812..."
           required
           autoFocus
         />

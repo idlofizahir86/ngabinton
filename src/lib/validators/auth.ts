@@ -1,17 +1,16 @@
 /**
  * Validasi form auth.
- * Referensi: `RULES.md` §4.5.
+ * Referensi: `RULES.md` §1.1 (login pakai username **atau** nomor WhatsApp).
  */
 import { z } from "zod";
 
-/** Form login admin. */
+/** Form login — `identifier` boleh username atau nomor WhatsApp. */
 export const loginSchema = z.object({
-  username: z
+  identifier: z
     .string()
     .trim()
-    .min(3, "Username minimal 3 karakter.")
-    .max(50, "Username maksimal 50 karakter.")
-    .regex(/^[a-z0-9_]+$/, "Username hanya boleh huruf kecil, angka, dan underscore."),
+    .min(3, "Minimal 3 karakter.")
+    .max(50, "Maksimal 50 karakter."),
   // Password TIDAK di-trim (spasi bisa jadi bagian dari password).
   password: z.string().min(1, "Password wajib diisi.").max(200, "Password terlalu panjang."),
 });

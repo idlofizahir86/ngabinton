@@ -10,7 +10,7 @@ import { SignJWT, jwtVerify } from "jose";
 /** Durasi session: 7 hari (`RULES.md` §1.2). */
 const SESSION_DURATION = "7d";
 
-export type SessionRole = "admin" | "superadmin";
+export type SessionRole = "admin" | "superadmin" | "member";
 
 /** Payload session yang kita simpan di dalam JWT. */
 export type SessionPayload = {
@@ -52,7 +52,7 @@ export async function verifySession(token: string): Promise<SessionPayload | nul
     if (typeof sub !== "string" || typeof username !== "string") {
       return null;
     }
-    if (role !== "admin" && role !== "superadmin") {
+    if (role !== "admin" && role !== "superadmin" && role !== "member") {
       return null;
     }
 
