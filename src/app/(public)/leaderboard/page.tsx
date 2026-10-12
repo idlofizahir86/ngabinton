@@ -5,7 +5,7 @@ import { LeaderboardTable } from "@/components/leaderboard/leaderboard-table";
 import { Container } from "@/components/layout/container";
 import { buttonClass } from "@/components/ui/button";
 import { getLeaderboard } from "@/lib/api/members";
-import { getSession } from "@/lib/auth/session";
+import { getCurrentUser } from "@/lib/auth/guards";
 import { EXP_LOSS_PER_SET, EXP_WIN_PER_SET } from "@/lib/constants";
 
 export const metadata: Metadata = {
@@ -18,8 +18,8 @@ export const revalidate = 0;
 
 /** Halaman leaderboard EXP — publik, nama disensor untuk tamu (RULES.md §13.3). */
 export default async function LeaderboardPage() {
-  const [rows, session] = await Promise.all([getLeaderboard(), getSession()]);
-  const reveal = Boolean(session);
+  const [rows, user] = await Promise.all([getLeaderboard(), getCurrentUser()]);
+  const reveal = Boolean(user);
 
   return (
     <div className="pb-24 pt-28">
@@ -53,7 +53,7 @@ export default async function LeaderboardPage() {
               <p className="mt-2 text-sm text-text-muted">
                 Pang-Giatna Ngabinton muncul setelah pengurus mencatat sesi &amp; pertandingan.
               </p>
-              {session ? (
+              {user ? (
                 <p className="mt-4">
                   <Link href="/member" className={buttonClass("ghost", "sm")}>
                     Buka area anggota
