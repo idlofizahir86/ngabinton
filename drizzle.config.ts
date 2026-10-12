@@ -15,7 +15,7 @@ if (!url) {
 }
 
 export default {
-  schema: "./src/lib/db/schema.ts",
+  schema: "./src/lib/db/schema",
   out: "./drizzle",
   dialect: "postgresql",
   dbCredentials: { url },

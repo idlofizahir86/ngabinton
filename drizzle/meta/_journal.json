@@ -8,6 +8,20 @@
       "when": 1791427863204,
       "tag": "0000_wise_squadron_supreme",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1791810350858,
+      "tag": "0001_lethal_arachne",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1791812715073,
+      "tag": "0002_mighty_blizzard",
+      "breakpoints": true
     }
   ]
 }

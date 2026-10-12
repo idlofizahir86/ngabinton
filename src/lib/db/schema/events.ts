@@ -1,7 +1,6 @@
 /**
- * Schema Drizzle NGABINTON — seluruh tabel & enum.
- * Sumber kebenaran: `SCHEMA.md` §3 (8 tabel, 4 enum) & §4 (relations).
- * Setiap perubahan skema WAJIB update `SCHEMA.md` dulu.
+ * Tabel event & presensi — SCHEMA.md §3.2–§3.8.
+ * `events` → rundown, budget, media, extras, sesi presensi, kehadiran.
  */
 import { relations, sql } from "drizzle-orm";
 import {
@@ -9,7 +8,6 @@ import {
   index,
   integer,
   jsonb,
-  pgEnum,
   pgTable,
   serial,
   text,
@@ -18,39 +16,9 @@ import {
   uuid,
 } from "drizzle-orm/pg-core";
 
-// ============================================================
-// Enums (SCHEMA.md §2)
-// ============================================================
-export const userRoleEnum = pgEnum("user_role", ["admin", "superadmin"]);
-export const eventTypeEnum = pgEnum("event_type", ["badminton", "travel", "gathering"]);
-export const eventThemeEnum = pgEnum("event_theme", ["cinema", "storytelling"]);
-export const mediaTypeEnum = pgEnum("media_type", [
-  "poster",
-  "destination",
-  "food",
-  "transport",
-  "participant",
-  "gallery",
-]);
+import { eventThemeEnum, eventTypeEnum, mediaTypeEnum } from "./enums";
+import { users } from "./users";
 
-// ============================================================
-// 3.1 users
-// ============================================================
-export const users = pgTable("users", {
-  id: serial("id").primaryKey(),
-  username: text("username").notNull().unique(),
-  passwordHash: text("password_hash").notNull(),
-  displayName: text("display_name").notNull(),
-  role: userRoleEnum("role").notNull().default("admin"),
-  isActive: boolean("is_active").notNull().default(true),
-  lastLoginAt: timestamp("last_login_at", { withTimezone: true }),
-  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
-  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
-});
-
-// ============================================================
-// 3.2 events
-// ============================================================
 export const events = pgTable(
   "events",
   {
@@ -85,9 +53,6 @@ export const events = pgTable(
   ],
 );
 
-// ============================================================
-// 3.3 rundown_items
-// ============================================================
 export const rundownItems = pgTable(
   "rundown_items",
   {
@@ -106,9 +71,6 @@ export const rundownItems = pgTable(
   ],
 );
 
-// ============================================================
-// 3.4 budget_items
-// ============================================================
 export const budgetItems = pgTable(
   "budget_items",
   {
@@ -123,9 +85,6 @@ export const budgetItems = pgTable(
   (t) => [uniqueIndex("budget_event_order_unique").on(t.eventId, t.order)],
 );
 
-// ============================================================
-// 3.5 event_media
-// ============================================================
 export const eventMedia = pgTable(
   "event_media",
   {
@@ -141,9 +100,6 @@ export const eventMedia = pgTable(
   (t) => [index("media_event_type_idx").on(t.eventId, t.type, t.order)],
 );
 
-// ============================================================
-// 3.6 event_extras
-// ============================================================
 export const eventExtras = pgTable(
   "event_extras",
   {
@@ -157,9 +113,6 @@ export const eventExtras = pgTable(
   (t) => [uniqueIndex("extras_event_key_unique").on(t.eventId, t.key)],
 );
 
-// ============================================================
-// 3.7 attendance_sessions
-// ============================================================
 export const attendanceSessions = pgTable(
   "attendance_sessions",
   {
@@ -180,9 +133,6 @@ export const attendanceSessions = pgTable(
   ],
 );
 
-// ============================================================
-// 3.8 attendances
-// ============================================================
 export const attendances = pgTable(
   "attendances",
   {
@@ -206,14 +156,6 @@ export const attendances = pgTable(
     index("attendances_session_name_ip_idx").on(t.sessionId, t.name, t.ipHash),
   ],
 );
-
-// ============================================================
-// Relations (SCHEMA.md §4)
-// ============================================================
-export const usersRelations = relations(users, ({ many }) => ({
-  events: many(events),
-  sessions: many(attendanceSessions),
-}));
 
 export const eventsRelations = relations(events, ({ many, one }) => ({
   rundownItems: many(rundownItems),
@@ -249,4 +191,3 @@ export const attendanceSessionsRelations = relations(attendanceSessions, ({ one,
 export const attendancesRelations = relations(attendances, ({ one }) => ({
   session: one(attendanceSessions, { fields: [attendances.sessionId], references: [attendanceSessions.id] }),
 }));
-
