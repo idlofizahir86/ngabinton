@@ -5,17 +5,9 @@
 import { z } from "zod";
 
 import { MAX_SETS_PER_MATCH, MAX_SET_SCORE } from "@/lib/constants";
+import { optionalText, usernameField } from "@/lib/validators/common";
 
-const optionalText = (max: number) =>
-  z
-    .string()
-    .trim()
-    .max(max)
-    .transform((value) => (value === "" ? null : value))
-    .optional()
-    .transform((value) => value ?? null);
-
-/** Peserta: anggota club (`userId`) atau tamu (`guestName`). */
+/** Peserta: anggota club (`userId`) atau BaturanNgabinton (`guestName`). */
 export const matchParticipantSchema = z
   .object({
     kind: z.enum(["member", "guest"]),
@@ -27,7 +19,7 @@ export const matchParticipantSchema = z
       ctx.addIssue({ code: "custom", message: "Pilih anggota club." });
     }
     if (value.kind === "guest" && (!value.guestName || value.guestName.trim().length < 2)) {
-      ctx.addIssue({ code: "custom", message: "Nama tamu minimal 2 karakter." });
+      ctx.addIssue({ code: "custom", message: "Nama BaturanNgabinton minimal 2 karakter." });
     }
   });
 
@@ -82,15 +74,10 @@ export const rsvpSchema = z.object({
 
 export type RsvpInput = z.infer<typeof rsvpSchema>;
 
-/** Konversi tamu (baturan) menjadi anggota club. */
+/** Konversi BaturanNgabinton menjadi anggota club. */
 export const convertGuestSchema = z.object({
-  guestName: z.string().trim().min(2, "Nama tamu tidak valid.").max(40),
-  username: z
-    .string()
-    .trim()
-    .min(3, "Username minimal 3 karakter.")
-    .max(50, "Username maksimal 50 karakter.")
-    .regex(/^[a-z0-9_]+$/, "Username hanya boleh huruf kecil, angka, dan underscore."),
+  guestName: z.string().trim().min(2, "Nama BaturanNgabinton tidak valid.").max(40),
+  username: usernameField,
   displayName: z.string().trim().min(2, "Nama minimal 2 karakter.").max(60),
   nickname: optionalText(40),
 });

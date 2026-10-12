@@ -2,7 +2,7 @@
 
 import { useActionState } from "react";
 
-import { convertGuestAction } from "@/actions/admin-members";
+import { convertGuestAction } from "@/actions/guests";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -12,7 +12,7 @@ export type GuestConvertFormProps = {
   guestName: string;
 };
 
-/** Form konversi tamu (baturan) menjadi anggota club. */
+/** Form konversi BaturanNgabinton menjadi anggota club. */
 export function GuestConvertForm({ guestName }: GuestConvertFormProps) {
   const [state, formAction, isPending] = useActionState(convertGuestAction, INITIAL_CONVERT_STATE);
 
@@ -54,7 +54,7 @@ export function GuestConvertForm({ guestName }: GuestConvertFormProps) {
       ) : null}
       {state.ok ? (
         <p role="status" className="text-sm text-live">
-          Tamu berhasil menjadi anggota.
+          BaturanNgabinton berhasil menjadi anggota.
         </p>
       ) : null}
 
