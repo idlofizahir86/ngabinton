@@ -101,7 +101,7 @@ export function SessionRsvpCard({
         <RsvpGroup choice="skip" members={skip} reveal={reveal} currentUserId={currentUserId} />
       </div>
 
-      <div className="mt-4 flex flex-wrap items-center justify-between gap-3">
+      <div className="mt-4 flex-wrap items-center justify-between gap-3">
         <div>
           {isLoggedIn ? (
             <RsvpButtons sessionId={session.id} currentChoice={currentChoice} />
