@@ -11,11 +11,36 @@ const TRACK_SRC = "/audio/haha-hihi.mp3";
 /** Kunci localStorage untuk mengingat preferensi antar kunjungan. */
 const STORAGE_KEY = "ngabinton:music";
 
+/** Nilai yang disimpan. */
+const PREF_ON = "on";
+const PREF_OFF = "off";
+
 /** Volume default — cukup sebagai latar, tidak menutupi konten. */
 const VOLUME = 0.45;
 
 /** Interaksi pertama yang dianggap "izin" untuk mulai memutar. */
 const RESUME_EVENTS = ["pointerdown", "keydown", "touchstart", "scroll"] as const;
+
+/** Baca preferensi tersimpan. `null` = belum pernah memilih. */
+function readPreference(): typeof PREF_ON | typeof PREF_OFF | null {
+  try {
+    const value = window.localStorage.getItem(STORAGE_KEY);
+    if (value === PREF_ON) return PREF_ON;
+    if (value === PREF_OFF) return PREF_OFF;
+  } catch {
+    // localStorage bisa diblokir (private mode) — anggap belum memilih.
+  }
+  return null;
+}
+
+/** Simpan preferensi; abaikan bila localStorage tidak tersedia. */
+function writePreference(value: typeof PREF_ON | typeof PREF_OFF) {
+  try {
+    window.localStorage.setItem(STORAGE_KEY, value);
+  } catch {
+    // abaikan
+  }
+}
 
 /**
  * Tombol pemutar lagu di pojok kiri bawah halaman publik.
@@ -27,14 +52,20 @@ const RESUME_EVENTS = ["pointerdown", "keydown", "touchstart", "scroll"] as cons
  * Autoplay bersuara diblokir browser, jadi urutannya:
  * 1. coba `play()` langsung saat mount — berhasil bila browser mengizinkan;
  * 2. bila ditolak, mulai pada interaksi pertama pengguna di halaman.
- * Pemilihan terakhir disimpan di `localStorage`: kalau pengguna mematikan
- * lagu, tidak akan diputar otomatis lagi.
+ *
+ * Preferensi disimpan di `localStorage` (`ngabinton:music`):
+ * - `off` → tidak pernah auto-start (termasuk setelah scroll/klik);
+ * - `on`  → boleh auto-start.
+ * Saat pengguna menekan tombol untuk mematikan, listener auto-resume **dilepas**
+ * supaya lagu tidak menyala sendiri lagi di sesi itu.
  */
 export function MusicToggle() {
   const audioRef = useRef<HTMLAudioElement>(null);
   const buttonRef = useRef<HTMLButtonElement>(null);
   /** Pengguna pernah mematikan lagu → jangan pernah auto-start. */
   const stoppedByUser = useRef(false);
+  /** Melepas listener interaksi pertama (dipanggil saat mute / setelah berhasil play). */
+  const detachResume = useRef<() => void>(() => {});
   const [playing, setPlaying] = useState(false);
   /** Baru render setelah mount agar tidak ada mismatch SSR. */
   const [ready, setReady] = useState(false);
@@ -45,40 +76,36 @@ export function MusicToggle() {
 
     audio.volume = VOLUME;
     setReady(true);
-
-    try {
-      stoppedByUser.current = window.localStorage.getItem(STORAGE_KEY) === "off";
-    } catch {
-      // localStorage bisa diblokir (private mode) — abaikan.
-    }
+    stoppedByUser.current = readPreference() === PREF_OFF;
 
     let cancelled = false;
 
-    const tryPlay = () =>
-      audio
-        .play()
-        .then(() => {
-          if (!cancelled) setPlaying(true);
-          return true;
-        })
-        .catch(() => false);
+    const attemptPlay = () => audio.play().then(() => true).catch(() => false);
 
     const onFirstInteraction = (event: Event) => {
-      // Klik pada tombol ditangani oleh `toggle()`, jangan dobel.
+      // Hormati preferensi "off" — jangan nyalakan lagi setelah di-mute.
+      if (stoppedByUser.current) return;
+      // Klik tombol ditangani `toggle()`, jangan dobel.
       if (buttonRef.current?.contains(event.target as Node)) return;
-      void tryPlay().then((played) => {
-        if (played) cleanup();
+
+      void attemptPlay().then((played) => {
+        if (cancelled || !played) return;
+        setPlaying(true);
+        detachResume.current();
       });
     };
 
-    const cleanup = () =>
+    detachResume.current = () => {
       RESUME_EVENTS.forEach((name) => window.removeEventListener(name, onFirstInteraction));
+    };
 
-    if (stoppedByUser.current) {
-      // tidak ada yang perlu dilakukan — biarkan tombol menunggu klik.
-    } else {
-      void tryPlay().then((played) => {
-        if (played || cancelled) return;
+    if (!stoppedByUser.current) {
+      void attemptPlay().then((played) => {
+        if (cancelled) return;
+        if (played) {
+          setPlaying(true);
+          return;
+        }
         RESUME_EVENTS.forEach((name) =>
           window.addEventListener(name, onFirstInteraction, { passive: true }),
         );
@@ -87,7 +114,8 @@ export function MusicToggle() {
 
     return () => {
       cancelled = true;
-      cleanup();
+      detachResume.current();
+      detachResume.current = () => {};
     };
   }, []);
 
@@ -96,27 +124,19 @@ export function MusicToggle() {
     if (!audio) return;
 
     if (audio.paused) {
+      writePreference(PREF_ON);
       stoppedByUser.current = false;
       audio
         .play()
-        .then(() => {
-          setPlaying(true);
-          try {
-            window.localStorage.setItem(STORAGE_KEY, "on");
-          } catch {
-            // abaikan
-          }
-        })
+        .then(() => setPlaying(true))
         .catch(() => setPlaying(false));
     } else {
       stoppedByUser.current = true;
       audio.pause();
       setPlaying(false);
-      try {
-        window.localStorage.setItem(STORAGE_KEY, "off");
-      } catch {
-        // abaikan
-      }
+      writePreference(PREF_OFF);
+      // Lepas listener auto-resume supaya scroll/klik tidak memutar ulang.
+      detachResume.current();
     }
   }, []);
 
