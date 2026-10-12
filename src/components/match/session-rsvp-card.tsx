@@ -1,10 +1,9 @@
 import Link from "next/link";
 
 import { RsvpButtons } from "@/components/match/rsvp-buttons";
-import { MemberAvatar } from "@/components/member/member-avatar";
+import { RsvpMemberList } from "@/components/match/rsvp-member-list";
 import type { SessionRsvpWithUser, UpcomingSession } from "@/lib/api/matches";
 import { RSVP_LABELS, type RsvpChoice } from "@/lib/constants";
-import { memberLabel } from "@/lib/members/name";
 import { cn } from "@/lib/utils/cn";
 import { formatDateTime } from "@/lib/utils/format";
 
@@ -22,33 +21,14 @@ export function RsvpGroup({
   const isHadir = choice === "hadir";
 
   return (
-    <div className="flex flex-col gap-2 rounded-md border border-border bg-background/40 p-3">
+    <div className="flex flex-col gap-2 rounded-md border border-border bg-background/40 p-3 min-h-[110px]">
       <p className="flex items-center gap-2 text-sm font-semibold">
         <span className={cn(isHadir ? "text-live" : "text-text-muted")}>{RSVP_LABELS[choice]}</span>
         <span className="text-text-subtle">· {members.length}</span>
       </p>
 
       {members.length > 0 ? (
-        <ul className="flex flex-wrap gap-x-3 gap-y-2">
-          {members.map((rsvp) => (
-            <li key={rsvp.id} className="flex items-center gap-2">
-              <MemberAvatar
-                name={rsvp.user.nickname || rsvp.user.displayName}
-                avatarKey={rsvp.user.avatarKey}
-                avatarUrl={rsvp.user.avatarUrl}
-                size="sm"
-              />
-              <span
-                className={cn(
-                  "text-sm",
-                  rsvp.userId === currentUserId ? "font-semibold text-text" : "text-text-secondary",
-                )}
-              >
-                {memberLabel(rsvp.user, reveal)}
-              </span>
-            </li>
-          ))}
-        </ul>
+        <RsvpMemberList members={members} reveal={reveal} currentUserId={currentUserId} />
       ) : (
         <p className="text-xs text-text-subtle">Belum ada.</p>
       )}
@@ -114,6 +94,7 @@ export function SessionRsvpCard({
             </p>
           )}
         </div>
+        <br />
         <Link
           href={`/sesi/${session.id}`}
           className="text-sm text-text-muted transition hover:text-text"
