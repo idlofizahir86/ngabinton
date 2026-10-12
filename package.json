@@ -12,7 +12,8 @@
     "db:push": "drizzle-kit push",
     "db:migrate": "drizzle-kit migrate",
     "db:studio": "drizzle-kit studio",
-    "db:seed": "tsx scripts/seed.ts"
+    "db:seed": "tsx scripts/seed.ts",
+    "db:seed:members": "tsx scripts/seed-members.ts"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.117.3",

@@ -43,3 +43,6 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# seed lokal berisi data anggota — jangan di-commit
+scripts/seed-members.ts
