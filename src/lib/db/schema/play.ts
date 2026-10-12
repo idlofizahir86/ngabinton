@@ -8,7 +8,7 @@
  */
 import { index, integer, pgTable, text, timestamp, uniqueIndex, uuid } from "drizzle-orm/pg-core";
 
-import { matchSideEnum } from "./enums";
+import { matchSideEnum, rsvpChoiceEnum } from "./enums";
 import { users } from "./users";
 
 export const playSessions = pgTable(
@@ -75,4 +75,24 @@ export const matchSets = pgTable(
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   },
   (t) => [uniqueIndex("match_sets_match_number_unique").on(t.matchId, t.setNumber)],
+);
+
+/**
+ * Rencana hadir anggota pada sesi bermain (polling "Gass / Ga dulu").
+ * Satu anggota maksimal satu pilihan per sesi.
+ */
+export const sessionRsvps = pgTable(
+  "session_rsvps",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    sessionId: uuid("session_id").notNull().references(() => playSessions.id, { onDelete: "cascade" }),
+    userId: integer("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+    choice: rsvpChoiceEnum("choice").notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [
+    uniqueIndex("session_rsvps_session_user_unique").on(t.sessionId, t.userId),
+    index("session_rsvps_session_idx").on(t.sessionId, t.choice),
+  ],
 );

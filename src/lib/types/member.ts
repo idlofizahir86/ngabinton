@@ -2,7 +2,7 @@
  * Tipe domain anggota club & permainan.
  * Diturunkan dari schema Drizzle (single source of truth) — AGENTS.md §3.2.
  */
-import type { matchParticipants, matches, matchSets, playSessions, users } from "@/lib/db/schema";
+import type { matchParticipants, matches, matchSets, playSessions, sessionRsvps, users } from "@/lib/db/schema";
 
 export type User = typeof users.$inferSelect;
 
@@ -34,3 +34,4 @@ export type PlaySession = typeof playSessions.$inferSelect;
 export type Match = typeof matches.$inferSelect;
 export type MatchParticipant = typeof matchParticipants.$inferSelect;
 export type MatchSet = typeof matchSets.$inferSelect;
+export type SessionRsvp = typeof sessionRsvps.$inferSelect;

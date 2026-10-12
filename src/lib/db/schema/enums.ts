@@ -21,3 +21,6 @@ export const mediaTypeEnum = pgEnum("media_type", [
 
 /** Sisi tim dalam satu pertandingan. Tim boleh 1–N orang (SCHEMA.md §3.10). */
 export const matchSideEnum = pgEnum("match_side", ["a", "b"]);
+
+/** Rencana hadir pada sesi bermain (polling). */
+export const rsvpChoiceEnum = pgEnum("rsvp_choice", ["hadir", "skip"]);
