@@ -12,7 +12,7 @@ import { users } from "@/lib/db/schema";
 import { updateProfileSchema } from "@/lib/validators/member";
 import type { ProfileState } from "@/lib/forms/states";
 
-/** Perbarui profil anggota: nama, nama punggung, no. WA, dan avatar. */
+/** Perbarui profil anggota: nama, nama punggung, no. WA, email, dan avatar. */
 export async function updateProfileAction(
   _prev: ProfileState,
   formData: FormData,
@@ -23,6 +23,7 @@ export async function updateProfileAction(
     displayName: formData.get("displayName"),
     nickname: formData.get("nickname"),
     waNumber: formData.get("waNumber"),
+    email: formData.get("email"),
     avatarKey: formData.get("avatarKey"),
   });
   if (!parsed.success) {
@@ -34,7 +35,7 @@ export async function updateProfileAction(
     return { error: "Sesi tidak valid. Coba login ulang.", ok: false };
   }
 
-  const { displayName, nickname, waNumber, avatarKey } = parsed.data;
+  const { displayName, nickname, waNumber, email, avatarKey } = parsed.data;
 
   if (waNumber) {
     const duplicate = await db
@@ -47,10 +48,21 @@ export async function updateProfileAction(
     }
   }
 
+  if (email) {
+    const duplicate = await db
+      .select({ id: users.id })
+      .from(users)
+      .where(and(eq(users.email, email), ne(users.id, id)))
+      .limit(1);
+    if (duplicate.length > 0) {
+      return { error: "Email sudah dipakai anggota lain.", ok: false };
+    }
+  }
+
   try {
     await db
       .update(users)
-      .set({ displayName, nickname, waNumber, avatarKey, updatedAt: new Date() })
+      .set({ displayName, nickname, waNumber, email, avatarKey, updatedAt: new Date() })
       .where(eq(users.id, id));
   } catch {
     return { error: "Gagal menyimpan profil. Coba lagi sebentar.", ok: false };

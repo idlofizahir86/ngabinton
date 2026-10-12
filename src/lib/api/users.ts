@@ -67,6 +67,7 @@ export async function getUserProfile(id: number): Promise<PublicMember | null> {
       displayName: users.displayName,
       nickname: users.nickname,
       waNumber: users.waNumber,
+      email: users.email,
       avatarKey: users.avatarKey,
       avatarUrl: users.avatarUrl,
       exp: users.exp,

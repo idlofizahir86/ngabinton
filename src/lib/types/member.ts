@@ -13,6 +13,7 @@ export type PublicMember = {
   displayName: string;
   nickname: string | null;
   waNumber: string | null;
+  email: string | null;
   avatarKey: string | null;
   avatarUrl: string | null;
   exp: number;

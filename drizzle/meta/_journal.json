@@ -29,6 +29,13 @@
       "when": 1791815582954,
       "tag": "0003_silky_skin",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1791823813629,
+      "tag": "0004_sudden_cammi",
+      "breakpoints": true
     }
   ]
 }

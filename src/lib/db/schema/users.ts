@@ -15,6 +15,8 @@ export const users = pgTable("users", {
   nickname: text("nickname"),
   /** Nomor WhatsApp ternormalisasi (mis. `62812...`). Alternatif login selain username. */
   waNumber: text("wa_number").unique(),
+  /** Email anggota — untuk notifikasi ke depan (belum dipakai kirim email). */
+  email: text("email").unique(),
   /** Kunci preset avatar (monogram/ikon). Digunakan bila `avatar_url` kosong. */
   avatarKey: text("avatar_key"),
   /** URL foto avatar yang di-upload anggota (Supabase Storage). */

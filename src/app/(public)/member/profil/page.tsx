@@ -35,8 +35,8 @@ export default async function MemberProfilePage() {
           <p className="text-xs uppercase tracking-[0.04em] text-primary">Area Anggota</p>
           <h1 className="mt-1 text-3xl font-bold text-text">Edit Profil</h1>
           <p className="mt-2 text-sm text-text-muted">
-            Unggah foto atau pilih avatar preset, lengkapi data, dan isi nomor WhatsApp (bisa
-            dipakai untuk login).
+            Unggah foto atau pilih avatar preset, lengkapi data, dan isi nomor WhatsApp (bisa dipakai
+            untuk login) serta email untuk notifikasi.
           </p>
         </header>
 
@@ -60,6 +60,7 @@ export default async function MemberProfilePage() {
                   displayName: user.displayName,
                   nickname: user.nickname ?? "",
                   waNumber: user.waNumber ?? "",
+                  email: user.email ?? "",
                   avatarKey: getAvatarPreset(user.avatarKey).key,
                 }}
               />

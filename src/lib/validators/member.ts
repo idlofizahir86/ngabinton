@@ -5,6 +5,7 @@ import { z } from "zod";
 
 import { AVATAR_KEYS } from "@/lib/members/avatars";
 import { normalizeWaNumber } from "@/lib/members/wa";
+import { emailField, optionalText, usernameField } from "@/lib/validators/common";
 
 /** Nomor WhatsApp opsional; string kosong dianggap "tidak diisi". */
 const waNumberField = z
@@ -17,22 +18,52 @@ const waNumberField = z
   })
   .transform((value) => (value === null ? null : normalizeWaNumber(value)));
 
+const displayNameField = z
+  .string()
+  .trim()
+  .min(2, "Nama minimal 2 karakter.")
+  .max(60, "Nama maksimal 60 karakter.");
+
+const nicknameField = optionalText(40);
+
+const avatarKeyField = z
+  .string()
+  .trim()
+  .refine((value) => AVATAR_KEYS.includes(value), { message: "Avatar tidak dikenal." });
+
 export const updateProfileSchema = z.object({
-  displayName: z
-    .string()
-    .trim()
-    .min(2, "Nama minimal 2 karakter.")
-    .max(60, "Nama maksimal 60 karakter."),
-  nickname: z
-    .string()
-    .trim()
-    .max(40, "Nama punggung maksimal 40 karakter.")
-    .transform((value) => (value === "" ? null : value)),
+  displayName: displayNameField,
+  nickname: nicknameField,
   waNumber: waNumberField,
-  avatarKey: z
-    .string()
-    .trim()
-    .refine((value) => AVATAR_KEYS.includes(value), { message: "Avatar tidak dikenal." }),
+  email: emailField,
+  avatarKey: avatarKeyField,
 });
 
 export type UpdateProfileInput = z.infer<typeof updateProfileSchema>;
+
+/** Form admin: tambah anggota club baru. */
+export const createMemberSchema = z.object({
+  username: usernameField,
+  displayName: displayNameField,
+  nickname: nicknameField,
+  waNumber: waNumberField,
+  email: emailField,
+  avatarKey: avatarKeyField,
+});
+
+export type CreateMemberInput = z.infer<typeof createMemberSchema>;
+
+/** Form admin: edit data anggota (termasuk status aktif). */
+export const updateMemberSchema = z.object({
+  displayName: displayNameField,
+  nickname: nicknameField,
+  waNumber: waNumberField,
+  email: emailField,
+  avatarKey: avatarKeyField,
+  isActive: z
+    .string()
+    .optional()
+    .transform((value) => value === "on" || value === "true"),
+});
+
+export type UpdateMemberInput = z.infer<typeof updateMemberSchema>;

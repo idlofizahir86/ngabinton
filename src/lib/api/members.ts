@@ -193,27 +193,42 @@ export type AdminMemberRow = {
   displayName: string;
   nickname: string | null;
   waNumber: string | null;
+  email: string | null;
   avatarKey: string | null;
   avatarUrl: string | null;
   exp: number;
   isActive: boolean;
 };
 
+const ADMIN_MEMBER_COLUMNS = {
+  id: users.id,
+  username: users.username,
+  displayName: users.displayName,
+  nickname: users.nickname,
+  waNumber: users.waNumber,
+  email: users.email,
+  avatarKey: users.avatarKey,
+  avatarUrl: users.avatarUrl,
+  exp: users.exp,
+  isActive: users.isActive,
+} as const;
+
 /** Semua anggota club (aktif & nonaktif) untuk halaman admin. */
 export async function getAllMembers(): Promise<AdminMemberRow[]> {
   return db
-    .select({
-      id: users.id,
-      username: users.username,
-      displayName: users.displayName,
-      nickname: users.nickname,
-      waNumber: users.waNumber,
-      avatarKey: users.avatarKey,
-      avatarUrl: users.avatarUrl,
-      exp: users.exp,
-      isActive: users.isActive,
-    })
+    .select(ADMIN_MEMBER_COLUMNS)
     .from(users)
     .where(eq(users.role, "member"))
     .orderBy(desc(users.isActive), asc(users.displayName));
+}
+
+/** Satu anggota berdasarkan id (untuk halaman edit admin). `null` kalau bukan anggota. */
+export async function getMemberById(id: number): Promise<AdminMemberRow | null> {
+  const rows = await db
+    .select(ADMIN_MEMBER_COLUMNS)
+    .from(users)
+    .where(and(eq(users.id, id), eq(users.role, "member")))
+    .limit(1);
+
+  return rows[0] ?? null;
 }
