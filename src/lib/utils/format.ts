@@ -51,3 +51,35 @@ const numberFormatter = new Intl.NumberFormat(LOCALE, { maximumFractionDigits: 0
 export function formatRupiah(amount: number): string {
   return `Rp ${numberFormatter.format(amount)}`;
 }
+
+/**
+ * Format nilai untuk `<input type="datetime-local">` dalam zona WIB:
+ * `YYYY-MM-DDTHH:mm` (dipakai form edit sesi).
+ */
+export function toDateTimeLocalWib(value: Date | string | number): string {
+  const parts = timeZoneParts(toDate(value), [
+    "year",
+    "month",
+    "day",
+    "hour",
+    "minute",
+  ]);
+  return `${parts.year}-${parts.month}-${parts.day}T${parts.hour}:${parts.minute}`;
+}
+
+function timeZoneParts(date: Date, types: string[]): Record<string, string> {
+  const formatter = new Intl.DateTimeFormat("en-CA", {
+    timeZone: TIME_ZONE,
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+    hourCycle: "h23",
+  });
+  const out: Record<string, string> = {};
+  for (const part of formatter.formatToParts(date)) {
+    if (types.includes(part.type)) out[part.type] = part.value;
+  }
+  return out;
+}

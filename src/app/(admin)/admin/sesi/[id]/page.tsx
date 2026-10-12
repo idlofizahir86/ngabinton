@@ -2,10 +2,11 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 
-import { deleteSessionAction } from "@/actions/match";
 import { Container } from "@/components/layout/container";
+import { DeleteSessionButton } from "@/components/match/delete-session-button";
 import { MatchCard } from "@/components/match/match-card";
 import { MatchRecorder } from "@/components/match/match-recorder";
+import { buttonClass } from "@/components/ui/button";
 import { getMemberOptions, getPlaySessionById } from "@/lib/api/matches";
 import { formatDate, formatTime } from "@/lib/utils/format";
 
@@ -44,15 +45,12 @@ export default async function AdminSessionDetailPage({ params }: PageProps) {
           </p>
           {session.notes ? <p className="mt-2 text-sm text-text-secondary">{session.notes}</p> : null}
         </div>
-        <form action={deleteSessionAction}>
-          <input type="hidden" name="sessionId" value={session.id} />
-          <button
-            type="submit"
-            className="rounded-md border border-danger px-3 py-2 text-sm text-danger transition hover:bg-danger/10"
-          >
-            Hapus Sesi
-          </button>
-        </form>
+        <div className="flex flex-col items-start gap-3">
+          <Link href={`/admin/sesi/${session.id}/edit`} className={buttonClass("ghost", "sm")}>
+            Edit Sesi
+          </Link>
+          <DeleteSessionButton sessionId={session.id} gameCount={session.matches.length} />
+        </div>
       </header>
 
       <div className="mt-8 grid gap-8 lg:grid-cols-[1.2fr_1fr]">
