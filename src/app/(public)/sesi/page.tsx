@@ -1,9 +1,8 @@
 import type { Metadata } from "next";
-import Link from "next/link";
 
 import { Container } from "@/components/layout/container";
-import { getPlaySessions, type PlaySessionSummary } from "@/lib/api/matches";
-import { formatDateTime } from "@/lib/utils/format";
+import { SessionRow } from "@/components/match/session-row";
+import { getPlaySessions } from "@/lib/api/matches";
 
 export const metadata: Metadata = {
   title: "Sesi Mabar — NGABINTON",
@@ -12,28 +11,6 @@ export const metadata: Metadata = {
 };
 
 export const revalidate = 0;
-
-function SessionRow({ session }: { session: PlaySessionSummary }) {
-  return (
-    <li>
-      <Link
-        href={`/sesi/${session.id}`}
-        className="block rounded-lg border border-border bg-surface p-4 transition hover:bg-surface-hover"
-      >
-        <div className="flex items-center justify-between gap-3">
-          <p className="font-semibold text-text">{session.title}</p>
-          <span className="shrink-0 rounded-pill bg-surface-hover px-3 py-1 text-xs text-text-muted">
-            {session.matchCount} game
-          </span>
-        </div>
-        <p className="mt-1 text-sm text-text-muted">
-          {formatDateTime(session.playedAt)}
-          {session.location ? ` · ${session.location}` : ""}
-        </p>
-      </Link>
-    </li>
-  );
-}
 
 /** Daftar sesi mabar: mendatang + sudah lewat. */
 export default async function SessionsPage() {

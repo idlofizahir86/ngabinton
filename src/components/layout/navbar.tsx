@@ -1,6 +1,6 @@
 "use client";
 
-import { LogIn, Menu, X } from "lucide-react";
+import { ChevronDown, LogIn, Menu, X } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useState } from "react";
 
@@ -11,14 +11,28 @@ import { MemberAvatar } from "@/components/member/member-avatar";
 import { Sheet } from "@/components/ui/sheet";
 import { cn } from "@/lib/utils/cn";
 
+/** Satu item menu; `children` membuat submenu (dropdown di desktop, nested di sheet). */
+type NavLink = {
+  label: string;
+  href: string;
+  children?: readonly { label: string; href: string }[];
+};
+
 /** Menu utama (ROUTES.md §9.1, CONTENT.md §2.1). */
-const NAV_LINKS = [
+const NAV_LINKS: readonly NavLink[] = [
   { label: "Event", href: "/#events" },
   { label: "Pang-Giatna Ngabinton", href: "/leaderboard" },
-  { label: "Arsip", href: "/arsip" },
+  {
+    label: "Arsip",
+    href: "/arsip",
+    children: [
+      { label: "Arsip Event", href: "/arsip" },
+      { label: "Arsip Mabar", href: "/sesi" },
+    ],
+  },
   { label: "Tentang", href: "/tentang" },
   { label: "Kontak", href: "/kontak" },
-] as const;
+];
 
 /** Ambang scroll untuk berubah solid (DESIGN.md §7.1). */
 const SCROLL_THRESHOLD = 40;
@@ -73,15 +87,41 @@ export function Navbar({ variant = "public", transparentOnTop = true, user = nul
 
         {showMenu ? (
           <nav aria-label="Navigasi utama" className="hidden items-center gap-8 md:flex">
-            {NAV_LINKS.map((link) => (
-              <Link
-                key={link.href}
-                href={link.href}
-                className="whitespace-nowrap text-sm text-text-muted transition duration-150 ease-brand hover:text-text"
-              >
-                {link.label}
-              </Link>
-            ))}
+            {NAV_LINKS.map((link) =>
+              link.children ? (
+                <div key={link.label} className="group relative">
+                  <Link
+                    href={link.href}
+                    className="inline-flex items-center gap-1 whitespace-nowrap text-sm text-text-muted transition duration-150 ease-brand hover:text-text"
+                  >
+                    {link.label}
+                    <ChevronDown aria-hidden className="h-4 w-4" />
+                  </Link>
+                  <div className="invisible absolute left-0 top-full pt-2 opacity-0 transition duration-150 ease-brand group-focus-within:visible group-focus-within:opacity-100 group-hover:visible group-hover:opacity-100">
+                    <ul className="min-w-[11rem] rounded-md border border-border bg-background-elevated p-2 shadow-card">
+                      {link.children.map((child) => (
+                        <li key={child.href}>
+                          <Link
+                            href={child.href}
+                            className="block whitespace-nowrap rounded-sm px-3 py-2 text-sm text-text-muted transition duration-150 ease-brand hover:bg-surface-hover hover:text-text"
+                          >
+                            {child.label}
+                          </Link>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                </div>
+              ) : (
+                <Link
+                  key={link.href}
+                  href={link.href}
+                  className="whitespace-nowrap text-sm text-text-muted transition duration-150 ease-brand hover:text-text"
+                >
+                  {link.label}
+                </Link>
+              ),
+            )}
           </nav>
         ) : null}
 
@@ -158,16 +198,34 @@ export function Navbar({ variant = "public", transparentOnTop = true, user = nul
             </button>
           </div>
           <nav aria-label="Navigasi mobile" className="flex flex-col gap-2 px-4 pb-8">
-            {NAV_LINKS.map((link) => (
-              <Link
-                key={link.href}
-                href={link.href}
-                onClick={() => setMenuOpen(false)}
-                className="rounded-md px-4 py-3 text-lg text-text-secondary transition duration-150 ease-brand hover:bg-surface-hover hover:text-text"
-              >
-                {link.label}
-              </Link>
-            ))}
+            {NAV_LINKS.map((link) =>
+              link.children ? (
+                <div key={link.label} className="flex flex-col gap-1">
+                  <p className="px-4 pt-3 text-xs uppercase tracking-[0.04em] text-text-muted">
+                    {link.label}
+                  </p>
+                  {link.children.map((child) => (
+                    <Link
+                      key={child.href}
+                      href={child.href}
+                      onClick={() => setMenuOpen(false)}
+                      className="rounded-md px-4 py-3 ps-6 text-lg text-text-secondary transition duration-150 ease-brand hover:bg-surface-hover hover:text-text"
+                    >
+                      {child.label}
+                    </Link>
+                  ))}
+                </div>
+              ) : (
+                <Link
+                  key={link.href}
+                  href={link.href}
+                  onClick={() => setMenuOpen(false)}
+                  className="rounded-md px-4 py-3 text-lg text-text-secondary transition duration-150 ease-brand hover:bg-surface-hover hover:text-text"
+                >
+                  {link.label}
+                </Link>
+              ),
+            )}
             {user ? (
               <>
                 <Link

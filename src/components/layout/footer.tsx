@@ -8,6 +8,7 @@ import { BrandLogo } from "@/components/layout/brand-logo";
 const NAV_LINKS = [
   { label: "Event Mendatang", href: "/#events" },
   { label: "Arsip Event", href: "/arsip" },
+  { label: "Arsip Mabar", href: "/sesi" },
   { label: "Tentang Kami", href: "/tentang" },
 ];
 
