@@ -27,7 +27,7 @@ export async function getPlaySessions() {
 
 export type PlaySessionSummary = Awaited<ReturnType<typeof getPlaySessions>>[number];
 
-/** Detail satu sesi: game + peserta + set (SCHEMA.md §5). */
+/** Detail satu sesi: game + peserta + set + RSVP (SCHEMA.md §5). */
 export async function getPlaySessionById(id: string) {
   const session = await db.query.playSessions.findFirst({
     where: eq(playSessions.id, id),
@@ -35,8 +35,36 @@ export async function getPlaySessionById(id: string) {
       matches: {
         orderBy: [asc(matches.order)],
         with: {
-          participants: { orderBy: [asc(matchParticipants.createdAt)] },
+          participants: {
+            orderBy: [asc(matchParticipants.createdAt)],
+            with: {
+              user: {
+                columns: {
+                  id: true,
+                  username: true,
+                  displayName: true,
+                  nickname: true,
+                  avatarKey: true,
+                  avatarUrl: true,
+                },
+              },
+            },
+          },
           sets: { orderBy: [asc(matchSets.setNumber)] },
+        },
+      },
+      rsvps: {
+        with: {
+          user: {
+            columns: {
+              id: true,
+              username: true,
+              displayName: true,
+              nickname: true,
+              avatarKey: true,
+              avatarUrl: true,
+            },
+          },
         },
       },
     },

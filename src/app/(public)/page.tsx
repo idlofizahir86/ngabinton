@@ -85,6 +85,14 @@ export default async function Home() {
             <p className="mt-3 max-w-2xl text-sm text-text-muted">
               Catat rencana hadirmu supaya yang lain tahu siapa saja yang ikut.
             </p>
+            <p className="mt-2">
+              <Link
+                href="/sesi"
+                className="text-sm text-text-muted transition hover:text-text"
+              >
+                Lihat semua sesi →
+              </Link>
+            </p>
 
             {sessions.length > 0 ? (
               <div className="mt-6 grid gap-4 lg:grid-cols-2">

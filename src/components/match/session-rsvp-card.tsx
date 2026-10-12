@@ -8,7 +8,7 @@ import { memberLabel } from "@/lib/members/name";
 import { cn } from "@/lib/utils/cn";
 import { formatDateTime } from "@/lib/utils/format";
 
-function RsvpGroup({
+export function RsvpGroup({
   choice,
   members,
   reveal,
@@ -101,17 +101,25 @@ export function SessionRsvpCard({
         <RsvpGroup choice="skip" members={skip} reveal={reveal} currentUserId={currentUserId} />
       </div>
 
-      <div className="mt-4">
-        {isLoggedIn ? (
-          <RsvpButtons sessionId={session.id} currentChoice={currentChoice} />
-        ) : (
-          <p className="text-sm text-text-muted">
-            <Link href="/login" className="text-primary underline-offset-4 hover:underline">
-              Masuk
-            </Link>{" "}
-            untuk mencatat rencana hadirmu.
-          </p>
-        )}
+      <div className="mt-4 flex flex-wrap items-center justify-between gap-3">
+        <div>
+          {isLoggedIn ? (
+            <RsvpButtons sessionId={session.id} currentChoice={currentChoice} />
+          ) : (
+            <p className="text-sm text-text-muted">
+              <Link href="/login" className="text-primary underline-offset-4 hover:underline">
+                Masuk
+              </Link>{" "}
+              untuk mencatat rencana hadirmu.
+            </p>
+          )}
+        </div>
+        <Link
+          href={`/sesi/${session.id}`}
+          className="text-sm text-text-muted transition hover:text-text"
+        >
+          Detail sesi →
+        </Link>
       </div>
     </article>
   );

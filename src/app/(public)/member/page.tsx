@@ -83,6 +83,11 @@ export default async function MemberPage() {
           <p className="mt-1 text-sm text-text-muted">
             Kapan kamu main dan bagaimana hasilnya di setiap sesi.
           </p>
+          <p className="mt-1">
+            <Link href="/sesi" className="text-sm text-text-muted transition hover:text-text">
+              Lihat rekap per sesi →
+            </Link>
+          </p>
           <div className="mt-5">
             <MatchHistoryList entries={history} />
           </div>
