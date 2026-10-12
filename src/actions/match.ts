@@ -140,7 +140,7 @@ export async function recordMatchAction(
       displayName:
         p.kind === "member" && p.userId
           ? nameById.get(Number(p.userId)) ?? "Anggota"
-          : (p.guestName?.trim() ?? "Tamu"),
+          : (p.guestName?.trim() ?? "BaturanNgabinton"),
     }));
 
     await tx.insert(matchParticipants).values(rows);

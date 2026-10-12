@@ -17,7 +17,7 @@ function SidePlayers({
           {index > 0 ? <span className="text-text-subtle">&amp;</span> : null}
           <span className={player.userId ? "text-text" : "text-text-muted"}>
             {player.displayName}
-            {player.userId ? null : <span className="ml-1 text-[10px] uppercase">tamu</span>}
+            {player.userId ? null : <span className="ml-1 text-[10px]">BaturanNgabinton</span>}
           </span>
         </span>
       ))}

@@ -49,7 +49,7 @@ export type NavbarProps = {
   variant?: "public" | "minimal";
   /** Latar transparan saat di atas, solid setelah discroll (default true). */
   transparentOnTop?: boolean;
-  /** User yang sedang login (dari layout server), `null` kalau tamu. */
+  /** User yang sedang login (dari layout server), `null` kalau pengunjung. */
   user?: NavbarUser | null;
 };
 

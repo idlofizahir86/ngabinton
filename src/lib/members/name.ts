@@ -7,7 +7,7 @@
 const VISIBLE_PREFIX = 3;
 
 /**
- * Sensor nama untuk tamu (belum login): 3 karakter awal + `****`.
+ * Sensor nama untuk pengunjung (belum login): 3 karakter awal + `****`.
  * Contoh: `idlofi86` → `idl****`.
  */
 export function maskName(name: string): string {
@@ -20,7 +20,7 @@ export function maskName(name: string): string {
 
 /**
  * Label tampilan anggota: pakai `nickname` (nama punggung) bila ada, else username.
- * Bila `reveal = false` (tamu), hasilnya disensor.
+ * Bila `reveal = false` (pengunjung), hasilnya disensor.
  */
 export function memberLabel(
   member: { nickname: string | null; username: string },

@@ -5,7 +5,7 @@ import { cn } from "@/lib/utils/cn";
 
 export type LeaderboardTableProps = {
   rows: LeaderboardRow[];
-  /** `true` untuk pengguna yang sudah login (nama lengkap), `false` untuk tamu. */
+  /** `true` untuk pengguna yang sudah login (nama lengkap), `false` untuk pengunjung. */
   reveal: boolean;
 };
 

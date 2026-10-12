@@ -218,7 +218,7 @@ function TeamEditor({
               aria-label={`Pemain ${title}`}
             >
               <option value="m-">— Pilih anggota —</option>
-              <option value="g">Tamu (bukan anggota)</option>
+              <option value="g">BaturanNgabinton (bukan anggota)</option>
               {members.map((member) => (
                 <option key={member.id} value={`m-${member.id}`}>
                   {member.nickname ? `${member.nickname} (${member.displayName})` : member.displayName}
@@ -240,7 +240,7 @@ function TeamEditor({
             <Input
               value={row.guestName}
               onChange={(event) => patch(row.id, { guestName: event.target.value })}
-              placeholder="Nama tamu"
+              placeholder="Nama BaturanNgabinton"
               maxLength={40}
             />
           ) : null}

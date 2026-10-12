@@ -49,9 +49,9 @@ export const matchParticipants = pgTable(
     id: uuid("id").primaryKey().defaultRandom(),
     matchId: uuid("match_id").notNull().references(() => matches.id, { onDelete: "cascade" }),
     side: matchSideEnum("side").notNull(),
-    /** Terisi kalau peserta adalah anggota club; `null` untuk tamu (baturan). */
+    /** Terisi kalau peserta adalah anggota club; `null` untuk BaturanNgabinton. */
     userId: integer("user_id").references(() => users.id, { onDelete: "set null" }),
-    /** Nama tamu non-anggota (`baturanNgabinton`). */
+    /** Nama BaturanNgabinton non-anggota. */
     guestName: text("guest_name"),
     /** Snapshot nama saat game dicatat (agar riwayat tetap terbaca). */
     displayName: text("display_name").notNull(),

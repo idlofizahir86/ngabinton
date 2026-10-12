@@ -89,8 +89,8 @@ export function SessionExpSummary({ session, reveal }: SessionExpSummaryProps) {
             <p className="truncate font-semibold text-text">
               {row.name}
               {row.isMember ? null : (
-                <span className="ml-2 text-[10px] uppercase tracking-[0.04em] text-text-muted">
-                  tamu
+                <span className="ml-2 text-[10px] tracking-[0.04em] text-text-muted">
+                  BaturanNgabinton
                 </span>
               )}
             </p>

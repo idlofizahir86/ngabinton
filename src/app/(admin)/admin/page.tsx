@@ -53,7 +53,7 @@ export default async function AdminDashboardPage() {
         <div className="rounded-lg border border-border bg-surface p-6">
           <h2 className="text-lg font-semibold text-text">Anggota Club</h2>
           <p className="mt-2 text-sm text-text-muted">
-            Lihat daftar anggota, dan ubah tamu (baturan) menjadi anggota agar EXP-nya masuk
+            Lihat daftar anggota, dan ubah BaturanNgabinton menjadi anggota agar EXP-nya masuk
             Pang-Giatna Ngabinton.
           </p>
           <Link href="/admin/anggota" className={buttonClass("ghost", "sm", "mt-4")}>

@@ -57,7 +57,7 @@ export default async function AdminSessionDetailPage({ params }: PageProps) {
         <section className="rounded-lg border border-border bg-surface p-6">
           <h2 className="text-lg font-semibold text-text">Catat Game Baru</h2>
           <p className="mt-1 text-sm text-text-muted">
-            Isi pemain tiap tim (boleh 1–N orang, termasuk tamu) dan skor setiap set.
+            Isi pemain tiap tim (boleh 1–N orang, termasuk BaturanNgabinton) dan skor setiap set.
           </p>
           <div className="mt-5">
             <MatchRecorder sessionId={session.id} members={members} />

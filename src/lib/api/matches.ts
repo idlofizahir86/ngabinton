@@ -96,7 +96,7 @@ export async function getMemberOptions() {
 
 export type MemberOption = Awaited<ReturnType<typeof getMemberOptions>>[number];
 
-/** Daftar tamu (baturan) yang pernah main & belum jadi anggota. */
+/** Daftar BaturanNgabinton yang pernah main & belum jadi anggota. */
 export async function getGuests() {
   return db
     .select({

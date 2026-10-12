@@ -16,7 +16,7 @@ export const metadata: Metadata = {
 
 export const revalidate = 0;
 
-/** Halaman leaderboard EXP — publik, nama disensor untuk tamu (RULES.md §13.3). */
+/** Halaman leaderboard EXP — publik, nama disensor untuk pengunjung (RULES.md §13.3). */
 export default async function LeaderboardPage() {
   const [rows, user] = await Promise.all([getLeaderboard(), getCurrentUser()]);
   const reveal = Boolean(user);
