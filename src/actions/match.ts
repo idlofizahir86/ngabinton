@@ -1,0 +1,209 @@
+"use server";
+
+/**
+ * Server Actions pencatatan permainan (admin/pengurus) — RULES.md §13.
+ * Sesi bermain harus dibuat dulu sebelum game bisa dicatat.
+ */
+import { eq, inArray, sql } from "drizzle-orm";
+import { revalidatePath } from "next/cache";
+import { redirect } from "next/navigation";
+
+import { recomputeExpForUsers } from "@/lib/api/exp";
+import { requireAdmin } from "@/lib/auth/guards";
+import { db } from "@/lib/db/client";
+import { matchParticipants, matches, matchSets, playSessions, users } from "@/lib/db/schema";
+import type { MatchFormState, SessionFormState } from "@/lib/forms/states";
+import { playSessionSchema, recordMatchSchema } from "@/lib/validators/match";
+
+/** Parse nilai `datetime-local` sebagai waktu WIB (RULES.md §8.1). */
+function parseJakartaLocal(value: string): Date | null {
+  if (!value) return null;
+  const normalized = value.length === 16 ? `${value}:00` : value;
+  const withOffset = /[zZ]|[+-]\d{2}:?\d{2}$/.test(normalized)
+    ? normalized
+    : `${normalized}+07:00`;
+  const date = new Date(withOffset);
+  return Number.isNaN(date.getTime()) ? null : date;
+}
+
+/** Buat sesi bermain baru → redirect ke detail sesi. */
+export async function createSessionAction(
+  _prev: SessionFormState,
+  formData: FormData,
+): Promise<SessionFormState> {
+  const session = await requireAdmin();
+
+  const parsed = playSessionSchema.safeParse({
+    title: formData.get("title"),
+    location: formData.get("location"),
+    playedAt: formData.get("playedAt"),
+    endedAt: formData.get("endedAt"),
+    notes: formData.get("notes"),
+  });
+  if (!parsed.success) {
+    return { error: parsed.error.issues[0]?.message ?? "Data sesi tidak valid." };
+  }
+
+  const playedAt = parseJakartaLocal(parsed.data.playedAt);
+  if (!playedAt) {
+    return { error: "Tanggal & jam mulai tidak valid." };
+  }
+  const endedAt = parsed.data.endedAt ? parseJakartaLocal(parsed.data.endedAt) : null;
+
+  const created = await db
+    .insert(playSessions)
+    .values({
+      title: parsed.data.title,
+      location: parsed.data.location,
+      playedAt,
+      endedAt,
+      notes: parsed.data.notes,
+      createdBy: Number(session.sub),
+    })
+    .returning({ id: playSessions.id });
+
+  const id = created[0]?.id;
+  if (!id) {
+    return { error: "Gagal membuat sesi. Coba lagi." };
+  }
+
+  revalidatePath("/admin/sesi");
+  redirect(`/admin/sesi/${id}`);
+}
+
+/** Catat satu game di dalam sesi (peserta 1–N per sisi, 1–N set). */
+export async function recordMatchAction(
+  _prev: MatchFormState,
+  formData: FormData,
+): Promise<MatchFormState> {
+  await requireAdmin();
+
+  let raw: unknown;
+  try {
+    raw = JSON.parse(String(formData.get("payload") ?? ""));
+  } catch {
+    return { error: "Format data game tidak valid.", ok: false };
+  }
+
+  const parsed = recordMatchSchema.safeParse(raw);
+  if (!parsed.success) {
+    return { error: parsed.error.issues[0]?.message ?? "Data game tidak valid.", ok: false };
+  }
+
+  const { sessionId, label, notes, sideA, sideB, sets } = parsed.data;
+
+  const sessionExists = await db
+    .select({ id: playSessions.id })
+    .from(playSessions)
+    .where(eq(playSessions.id, sessionId))
+    .limit(1);
+  if (sessionExists.length === 0) {
+    return { error: "Sesi tidak ditemukan. Buat sesi dulu.", ok: false };
+  }
+
+  const memberIds = [...sideA, ...sideB]
+    .filter((p) => p.kind === "member" && p.userId)
+    .map((p) => Number(p.userId));
+  const nameById = new Map<number, string>();
+  if (memberIds.length > 0) {
+    const rows = await db
+      .select({ id: users.id, displayName: users.displayName, nickname: users.nickname })
+      .from(users)
+      .where(inArray(users.id, memberIds));
+    for (const row of rows) {
+      nameById.set(row.id, row.nickname?.trim() || row.displayName);
+    }
+  }
+
+  const orderRow = await db
+    .select({ max: sql<number>`coalesce(max(${matches.order}), 0)::int` })
+    .from(matches)
+    .where(eq(matches.sessionId, sessionId));
+  const nextOrder = (orderRow[0]?.max ?? 0) + 1;
+
+  await db.transaction(async (tx) => {
+    const inserted = await tx
+      .insert(matches)
+      .values({ sessionId, order: nextOrder, label, notes })
+      .returning({ id: matches.id });
+    const matchId = inserted[0]?.id;
+    if (!matchId) throw new Error("Gagal menyimpan game.");
+
+    const rows = [
+      ...sideA.map((p) => ({ p, side: "a" as const })),
+      ...sideB.map((p) => ({ p, side: "b" as const })),
+    ].map(({ p, side }) => ({
+      matchId,
+      side,
+      userId: p.kind === "member" && p.userId ? Number(p.userId) : null,
+      guestName: p.kind === "guest" ? (p.guestName?.trim() ?? null) : null,
+      displayName:
+        p.kind === "member" && p.userId
+          ? nameById.get(Number(p.userId)) ?? "Anggota"
+          : (p.guestName?.trim() ?? "Tamu"),
+    }));
+
+    await tx.insert(matchParticipants).values(rows);
+    await tx.insert(matchSets).values(
+      sets.map((set, index) => ({
+        matchId,
+        setNumber: index + 1,
+        scoreA: set.scoreA,
+        scoreB: set.scoreB,
+      })),
+    );
+  });
+
+  await recomputeExpForUsers(memberIds);
+  revalidatePath("/leaderboard");
+  revalidatePath(`/admin/sesi/${sessionId}`);
+  revalidatePath("/admin/sesi");
+  return { error: null, ok: true };
+}
+
+/** Hapus satu game + hitung ulang EXP pemainnya. */
+export async function deleteMatchAction(formData: FormData): Promise<void> {
+  await requireAdmin();
+  const matchId = String(formData.get("matchId") ?? "");
+  if (!matchId) return;
+
+  const rows = await db
+    .select({ userId: matchParticipants.userId, sessionId: matches.sessionId })
+    .from(matchParticipants)
+    .innerJoin(matches, eq(matches.id, matchParticipants.matchId))
+    .where(eq(matchParticipants.matchId, matchId));
+
+  const memberIds = rows.map((r) => r.userId).filter((id): id is number => id !== null);
+  const sessionId = rows[0]?.sessionId;
+
+  await db.delete(matches).where(eq(matches.id, matchId));
+  await recomputeExpForUsers(memberIds);
+
+  revalidatePath("/leaderboard");
+  revalidatePath("/admin/sesi");
+  if (sessionId) revalidatePath(`/admin/sesi/${sessionId}`);
+}
+
+/** Hapus sesi bermain beserta seluruh game di dalamnya. */
+export async function deleteSessionAction(formData: FormData): Promise<void> {
+  await requireAdmin();
+  const sessionId = String(formData.get("sessionId") ?? "");
+  if (!sessionId) return;
+
+  const participants = await db
+    .select({ userId: matchParticipants.userId })
+    .from(matchParticipants)
+    .innerJoin(matches, eq(matches.id, matchParticipants.matchId))
+    .where(eq(matches.sessionId, sessionId));
+
+  const memberIds = participants
+    .map((r) => r.userId)
+    .filter((id): id is number => id !== null);
+
+  await db.delete(playSessions).where(eq(playSessions.id, sessionId));
+  await recomputeExpForUsers(memberIds);
+
+  revalidatePath("/leaderboard");
+  revalidatePath("/admin/sesi");
+  redirect("/admin/sesi");
+}

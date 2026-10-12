@@ -4,14 +4,17 @@ import { LogIn, Menu, X } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useState } from "react";
 
+import { logoutAction } from "@/actions/auth";
 import { Container } from "@/components/layout/container";
 import { BrandLogo } from "@/components/layout/brand-logo";
+import { MemberAvatar } from "@/components/member/member-avatar";
 import { Sheet } from "@/components/ui/sheet";
 import { cn } from "@/lib/utils/cn";
 
 /** Menu utama (ROUTES.md §9.1, CONTENT.md §2.1). */
 const NAV_LINKS = [
   { label: "Event", href: "/#events" },
+  { label: "Pang-Giatna Ngabinton", href: "/leaderboard" },
   { label: "Arsip", href: "/arsip" },
   { label: "Tentang", href: "/tentang" },
   { label: "Kontak", href: "/kontak" },
@@ -20,13 +23,28 @@ const NAV_LINKS = [
 /** Ambang scroll untuk berubah solid (DESIGN.md §7.1). */
 const SCROLL_THRESHOLD = 40;
 
+export type NavbarUser = {
+  displayName: string;
+  nickname: string | null;
+  avatarKey: string | null;
+  avatarUrl: string | null;
+  role: "admin" | "superadmin" | "member";
+};
+
 export type NavbarProps = {
   variant?: "public" | "minimal";
   /** Latar transparan saat di atas, solid setelah discroll (default true). */
   transparentOnTop?: boolean;
+  /** User yang sedang login (dari layout server), `null` kalau tamu. */
+  user?: NavbarUser | null;
 };
 
-export function Navbar({ variant = "public", transparentOnTop = true }: NavbarProps) {
+/** Halaman mendarat sesuai role. */
+function homeHref(role: NavbarUser["role"]): string {
+  return role === "member" ? "/member" : "/admin";
+}
+
+export function Navbar({ variant = "public", transparentOnTop = true, user = null }: NavbarProps) {
   const [scrolled, setScrolled] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
 
@@ -39,6 +57,7 @@ export function Navbar({ variant = "public", transparentOnTop = true }: NavbarPr
 
   const solid = !transparentOnTop || scrolled;
   const showMenu = variant === "public";
+  const label = user?.nickname?.trim() || user?.displayName || "";
 
   return (
     <header
@@ -58,7 +77,7 @@ export function Navbar({ variant = "public", transparentOnTop = true }: NavbarPr
               <Link
                 key={link.href}
                 href={link.href}
-                className="text-sm text-text-muted transition duration-150 ease-brand hover:text-text"
+                className="whitespace-nowrap text-sm text-text-muted transition duration-150 ease-brand hover:text-text"
               >
                 {link.label}
               </Link>
@@ -67,19 +86,49 @@ export function Navbar({ variant = "public", transparentOnTop = true }: NavbarPr
         ) : null}
 
         <div className="flex items-center gap-2">
-          <Link
-            href="/login"
-            aria-label="Masuk"
-            className="inline-flex h-11 w-11 items-center justify-center rounded-pill text-text-muted transition duration-150 ease-brand hover:text-text md:hidden"
-          >
-            <LogIn className="h-5 w-5" />
-          </Link>
-          <Link
-            href="/login"
-            className="hidden px-4 py-2 text-sm text-text-muted transition duration-150 ease-brand hover:text-text md:inline-flex"
-          >
-            Masuk
-          </Link>
+          {user ? (
+            <>
+              <Link
+                href={homeHref(user.role)}
+                className="flex items-center gap-2 rounded-pill pr-2 transition duration-150 ease-brand hover:opacity-90"
+                aria-label={`Buka area ${user.role === "member" ? "anggota" : "admin"}`}
+              >
+                <MemberAvatar
+                  name={label}
+                  avatarKey={user.avatarKey}
+                  avatarUrl={user.avatarUrl}
+                  size="sm"
+                />
+                <span className="hidden max-w-[10rem] truncate text-sm text-text-muted md:inline">
+                  {label}
+                </span>
+              </Link>
+              <form action={logoutAction} className="hidden md:block">
+                <button
+                  type="submit"
+                  className="px-4 py-2 text-sm text-text-muted transition duration-150 ease-brand hover:text-text"
+                >
+                  Keluar
+                </button>
+              </form>
+            </>
+          ) : (
+            <>
+              <Link
+                href="/login"
+                aria-label="Masuk"
+                className="inline-flex h-11 w-11 items-center justify-center rounded-pill text-text-muted transition duration-150 ease-brand hover:text-text md:hidden"
+              >
+                <LogIn className="h-5 w-5" />
+              </Link>
+              <Link
+                href="/login"
+                className="hidden px-4 py-2 text-sm text-text-muted transition duration-150 ease-brand hover:text-text md:inline-flex"
+              >
+                Masuk
+              </Link>
+            </>
+          )}
 
           {showMenu ? (
             <button
@@ -119,13 +168,39 @@ export function Navbar({ variant = "public", transparentOnTop = true }: NavbarPr
                 {link.label}
               </Link>
             ))}
-            <Link
-              href="/login"
-              onClick={() => setMenuOpen(false)}
-              className="mt-2 rounded-md bg-primary px-4 py-3 text-center font-semibold text-on-primary"
-            >
-              Masuk
-            </Link>
+            {user ? (
+              <>
+                <Link
+                  href={homeHref(user.role)}
+                  onClick={() => setMenuOpen(false)}
+                  className="mt-2 flex items-center gap-3 rounded-md px-4 py-3 text-lg text-text-secondary transition duration-150 ease-brand hover:bg-surface-hover"
+                >
+                  <MemberAvatar
+                    name={label}
+                    avatarKey={user.avatarKey}
+                    avatarUrl={user.avatarUrl}
+                    size="sm"
+                  />
+                  {user.role === "member" ? "Area Anggota" : "Dashboard"}
+                </Link>
+                <form action={logoutAction}>
+                  <button
+                    type="submit"
+                    className="w-full rounded-md border border-border-strong px-4 py-3 text-center font-semibold text-text"
+                  >
+                    Keluar
+                  </button>
+                </form>
+              </>
+            ) : (
+              <Link
+                href="/login"
+                onClick={() => setMenuOpen(false)}
+                className="mt-2 rounded-md bg-primary px-4 py-3 text-center font-semibold text-on-primary"
+              >
+                Masuk
+              </Link>
+            )}
           </nav>
         </Sheet>
       ) : null}
