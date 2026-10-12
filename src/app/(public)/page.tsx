@@ -13,7 +13,6 @@ import { getCurrentUser } from "@/lib/auth/guards";
 /** Landing di-render ulang tiap 60 detik (ROUTES.md §1.1). */
 export const revalidate = 60;
 
-
 /**
  * Latar hero landing — CONTENT.md §3.1 (aset `public/brand/hero-community.jpg`, `ASSETS.md` §1).
  * Set `null` kalau ingin latar gelap polos tanpa foto.
