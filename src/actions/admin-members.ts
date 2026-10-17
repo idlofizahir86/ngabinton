@@ -12,7 +12,7 @@ import {
   defaultPasswordFor,
   revalidateMemberViews,
 } from "@/actions/member-support";
-import { requireAdmin } from "@/lib/auth/guards";
+import { requireMenu } from "@/lib/auth/guards";
 import { hashPassword } from "@/lib/auth/password";
 import { db } from "@/lib/db/client";
 import { users } from "@/lib/db/schema";
@@ -25,7 +25,7 @@ export async function createMemberAction(
   _prev: MemberFormState,
   formData: FormData,
 ): Promise<MemberFormState> {
-  await requireAdmin();
+  await requireMenu("members");
 
   const parsed = createMemberSchema.safeParse({
     username: formData.get("username"),
@@ -71,7 +71,7 @@ export async function updateMemberAction(
   _prev: MemberFormState,
   formData: FormData,
 ): Promise<MemberFormState> {
-  await requireAdmin();
+  await requireMenu("members");
 
   const memberId = Number(formData.get("memberId"));
   if (!Number.isInteger(memberId)) {
@@ -114,7 +114,7 @@ export async function resetMemberPasswordAction(
   _prev: ResetPasswordState,
   formData: FormData,
 ): Promise<ResetPasswordState> {
-  await requireAdmin();
+  await requireMenu("members");
 
   const memberId = Number(formData.get("memberId"));
   if (!Number.isInteger(memberId)) {

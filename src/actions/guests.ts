@@ -13,9 +13,10 @@ import {
   revalidateMemberViews,
   sameName,
 } from "@/actions/member-support";
+import { promoteGuestAchievements, syncAchievements } from "@/lib/api/achievements";
 import { recomputeExpForUsers } from "@/lib/api/exp";
 import { getGuests } from "@/lib/api/matches";
-import { requireAdmin } from "@/lib/auth/guards";
+import { requireMenu } from "@/lib/auth/guards";
 import { hashPassword } from "@/lib/auth/password";
 import { db } from "@/lib/db/client";
 import { users } from "@/lib/db/schema";
@@ -31,7 +32,7 @@ export async function convertGuestAction(
   _prev: ConvertGuestState,
   formData: FormData,
 ): Promise<ConvertGuestState> {
-  await requireAdmin();
+  await requireMenu("members");
 
   const parsed = convertGuestSchema.safeParse({
     guestName: formData.get("guestName"),
@@ -66,6 +67,8 @@ export async function convertGuestAction(
 
   await linkGuestHistory(guestName, newId);
   await recomputeExpForUsers([newId]);
+  await promoteGuestAchievements(guestName, newId);
+  await syncAchievements();
 
   revalidateMemberViews();
   return { error: null, ok: true };
@@ -81,7 +84,7 @@ export async function convertAllGuestsAction(
   _prev: ConvertAllState,
   _formData: FormData,
 ): Promise<ConvertAllState> {
-  await requireAdmin();
+  await requireMenu("members");
 
   const guests = await getGuests();
   if (guests.length === 0) {
@@ -132,10 +135,12 @@ export async function convertAllGuestsAction(
     }
 
     await linkGuestHistory(guest.guestName, userId);
+    await promoteGuestAchievements(guest.guestName, userId);
     touchedIds.push(userId);
   }
 
   await recomputeExpForUsers(touchedIds);
+  await syncAchievements();
 
   revalidateMemberViews();
   revalidatePath("/sesi");

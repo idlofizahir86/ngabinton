@@ -8,6 +8,7 @@ import { GuestConvertForm } from "@/components/match/guest-convert-form";
 import { buttonClass } from "@/components/ui/button";
 import { getGuests } from "@/lib/api/matches";
 import { getAllMembers } from "@/lib/api/members";
+import { requireMenu } from "@/lib/auth/guards";
 
 export const metadata: Metadata = {
   title: "Anggota — Admin NGABINTON",
@@ -18,6 +19,7 @@ export const revalidate = 0;
 
 /** Kelola anggota club + konversi BaturanNgabinton menjadi anggota. */
 export default async function AdminMembersPage() {
+  await requireMenu("members");
   const [members, guests] = await Promise.all([getAllMembers(), getGuests()]);
 
   return (

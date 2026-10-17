@@ -1,20 +1,29 @@
 import Link from "next/link";
+import { redirect } from "next/navigation";
 
 import { logoutAction } from "@/actions/auth";
+import { AdminNavLinks, visibleAdminNav } from "@/components/admin/admin-nav";
 import { BrandLogo } from "@/components/layout/brand-logo";
 import { Container } from "@/components/layout/container";
-import { getCurrentUser, requireAdmin } from "@/lib/auth/guards";
+import { getCurrentUser, getUserMenus, isAdminRole, requireUser } from "@/lib/auth/guards";
 
-const NAV = [
-  { label: "Dashboard", href: "/admin" },
-  { label: "Sesi Bermain", href: "/admin/sesi" },
-  { label: "Anggota", href: "/admin/anggota" },
-] as const;
-
-/** Layout area admin — hanya pengurus (RULES.md §5). */
+/** Layout area pengurus & staf yang diberi akses menu (RULES.md §5.5). */
 export default async function AdminLayout({ children }: { children: React.ReactNode }) {
-  await requireAdmin();
+  await requireUser();
   const user = await getCurrentUser();
+
+  if (!user) {
+    redirect("/member");
+  }
+
+  const menus = await getUserMenus(user);
+  const isAdmin = isAdminRole(user.role);
+
+  if (!isAdmin && menus.length === 0) {
+    redirect("/member");
+  }
+
+  const navItems = visibleAdminNav(menus, isAdmin);
 
   return (
     <div className="flex min-h-screen flex-col bg-background">
@@ -25,21 +34,14 @@ export default async function AdminLayout({ children }: { children: React.ReactN
               <BrandLogo decorative priority className="h-6 w-auto" />
             </Link>
             <nav aria-label="Navigasi admin" className="hidden items-center gap-6 md:flex">
-              {NAV.map((item) => (
-                <Link
-                  key={item.href}
-                  href={item.href}
-                  className="text-sm text-text-muted transition hover:text-text"
-                >
-                  {item.label}
-                </Link>
-              ))}
+              <AdminNavLinks items={navItems} />
             </nav>
           </div>
 
           <div className="flex items-center gap-3">
             <span className="hidden text-sm text-text-muted sm:inline">
-              {user?.displayName ?? "Pengurus"}
+              {user.nickname || user.displayName}
+              {isAdmin ? "" : " · Staf"}
             </span>
             <form action={logoutAction}>
               <button
@@ -52,12 +54,8 @@ export default async function AdminLayout({ children }: { children: React.ReactN
           </div>
         </Container>
 
-        <Container size="xl" className="flex gap-4 pb-3 md:hidden">
-          {NAV.map((item) => (
-            <Link key={item.href} href={item.href} className="text-sm text-text-muted hover:text-text">
-              {item.label}
-            </Link>
-          ))}
+        <Container size="xl" className="flex gap-4 overflow-x-auto pb-3 md:hidden">
+          <AdminNavLinks items={navItems} />
         </Container>
       </header>
 

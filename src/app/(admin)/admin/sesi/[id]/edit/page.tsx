@@ -5,6 +5,7 @@ import { notFound } from "next/navigation";
 import { Container } from "@/components/layout/container";
 import { SessionEditForm } from "@/components/match/session-edit-form";
 import { getPlaySessionById } from "@/lib/api/matches";
+import { requireMenu } from "@/lib/auth/guards";
 import { toDateTimeLocalWib } from "@/lib/utils/format";
 
 export const metadata: Metadata = {
@@ -18,6 +19,7 @@ type PageProps = { params: Promise<{ id: string }> };
 
 /** Halaman edit data sesi bermain. */
 export default async function AdminSessionEditPage({ params }: PageProps) {
+  await requireMenu("matches");
   const { id } = await params;
   const session = await getPlaySessionById(id);
 

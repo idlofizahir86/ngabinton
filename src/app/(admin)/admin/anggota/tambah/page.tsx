@@ -3,6 +3,7 @@ import Link from "next/link";
 
 import { MemberCreateForm } from "@/components/admin/member-create-form";
 import { Container } from "@/components/layout/container";
+import { requireMenu } from "@/lib/auth/guards";
 
 export const metadata: Metadata = {
   title: "Tambah Anggota — Admin NGABINTON",
@@ -12,7 +13,9 @@ export const metadata: Metadata = {
 export const revalidate = 0;
 
 /** Halaman admin: tambah anggota club baru. */
-export default function AdminMemberCreatePage() {
+export default async function AdminMemberCreatePage() {
+  await requireMenu("members");
+
   return (
     <Container size="lg">
       <Link href="/admin/anggota" className="text-sm text-text-muted transition hover:text-text">

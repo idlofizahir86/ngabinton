@@ -6,6 +6,7 @@ import { MemberEditForm } from "@/components/admin/member-edit-form";
 import { ResetPasswordForm } from "@/components/admin/reset-password-form";
 import { Container } from "@/components/layout/container";
 import { getMemberById } from "@/lib/api/members";
+import { requireMenu } from "@/lib/auth/guards";
 
 export const metadata: Metadata = {
   title: "Edit Anggota — Admin NGABINTON",
@@ -18,6 +19,7 @@ type PageProps = { params: Promise<{ id: string }> };
 
 /** Halaman admin: edit data anggota club. */
 export default async function AdminMemberEditPage({ params }: PageProps) {
+  await requireMenu("members");
   const { id } = await params;
   const memberId = Number(id);
   const member = Number.isInteger(memberId) ? await getMemberById(memberId) : null;
