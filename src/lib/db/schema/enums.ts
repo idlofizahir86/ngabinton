@@ -24,3 +24,25 @@ export const matchSideEnum = pgEnum("match_side", ["a", "b"]);
 
 /** Rencana hadir pada sesi bermain (polling). */
 export const rsvpChoiceEnum = pgEnum("rsvp_choice", ["hadir", "skip"]);
+
+/** Menu area pengurus yang bisa di-assign ke user non-admin (RULES.md §5.5). */
+export const menuKeyEnum = pgEnum("menu_key", ["finance", "matches", "members", "events"]);
+
+/** Jenis transaksi kas (RULES.md §16). */
+export const financeTypeEnum = pgEnum("finance_type", ["income", "expense"]);
+
+/** Metode pembayaran transaksi kas (RULES.md §16). */
+export const financePaymentMethodEnum = pgEnum("finance_payment_method", ["cash", "transfer"]);
+
+/** Jenis pencapaian anggota (RULES.md §13.6). */
+export const achievementTypeEnum = pgEnum("achievement_type", [
+  "ace_of_month",
+  "pang_tangguh_of_month",
+  "exp_milestone",
+  "sessions_milestone",
+  "first_win",
+  "custom",
+  "ace_streak",
+  "dues_diligent",
+  "role",
+]);
