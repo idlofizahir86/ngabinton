@@ -1,22 +1,31 @@
 import type { HistoryEntry, ParticipantBrief } from "@/lib/api/members";
+import { maskName } from "@/lib/members/name";
 import { formatDate, formatTime } from "@/lib/utils/format";
 import { cn } from "@/lib/utils/cn";
 
-function TeamNames({ players }: { players: ParticipantBrief[] }) {
+function TeamNames({ players, reveal }: { players: ParticipantBrief[]; reveal: boolean }) {
   return (
     <span className="flex flex-wrap items-center gap-1.5">
       {players.map((player, index) => (
         <span key={`${player.name}-${index}`} className="flex items-center gap-1">
           {index > 0 ? <span className="text-text-subtle">&amp;</span> : null}
-          <span className="text-text-secondary">{player.name}</span>
+          <span className="text-text-secondary">
+            {reveal ? player.name : maskName(player.name)}
+          </span>
         </span>
       ))}
     </span>
   );
 }
 
-/** Riwayat main anggota (COMPONENTS.md §7.2). */
-export function MatchHistoryList({ entries }: { entries: HistoryEntry[] }) {
+/** Riwayat main anggota (COMPONENTS.md §7.3). */
+export function MatchHistoryList({
+  entries,
+  reveal = true,
+}: {
+  entries: HistoryEntry[];
+  reveal?: boolean;
+}) {
   if (entries.length === 0) {
     return (
       <div className="rounded-lg border border-border bg-surface p-8 text-center">
@@ -58,9 +67,9 @@ export function MatchHistoryList({ entries }: { entries: HistoryEntry[] }) {
           </div>
 
           <div className="mt-4 flex flex-col gap-1 text-sm">
-            <TeamNames players={entry.teammates} />
+            <TeamNames players={entry.teammates} reveal={reveal} />
             <span className="text-text-subtle">vs</span>
-            <TeamNames players={entry.opponents} />
+            <TeamNames players={entry.opponents} reveal={reveal} />
           </div>
 
           <div className="mt-3 flex flex-wrap gap-2">

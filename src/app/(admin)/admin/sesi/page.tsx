@@ -2,9 +2,12 @@ import type { Metadata } from "next";
 import Link from "next/link";
 
 import { Container } from "@/components/layout/container";
+import { MonthFilter } from "@/components/layout/month-filter";
 import { SessionForm } from "@/components/match/session-form";
-import { getPlaySessions } from "@/lib/api/matches";
+import { getPlaySessionPeriodKeys, getPlaySessions } from "@/lib/api/matches";
+import { requireMenu } from "@/lib/auth/guards";
 import { formatDate, formatTime } from "@/lib/utils/format";
+import { getPeriod, isValidPeriodKey, periodOptionsFromDates } from "@/lib/utils/period";
 
 export const metadata: Metadata = {
   title: "Sesi Bermain — Admin NGABINTON",
@@ -13,9 +16,18 @@ export const metadata: Metadata = {
 
 export const revalidate = 0;
 
+type PageProps = { searchParams: Promise<{ periode?: string }> };
+
 /** Daftar sesi bermain + form buat sesi baru. */
-export default async function AdminSessionsPage() {
-  const sessions = await getPlaySessions();
+export default async function AdminSessionsPage({ searchParams }: PageProps) {
+  await requireMenu("matches");
+  const params = await searchParams;
+  const selectedPeriod = isValidPeriodKey(params.periode) ? getPeriod(params.periode) : null;
+
+  const [sessions, periodKeys] = await Promise.all([
+    getPlaySessions(selectedPeriod?.start, selectedPeriod?.end),
+    getPlaySessionPeriodKeys(),
+  ]);
 
   return (
     <Container size="xl">
@@ -37,7 +49,15 @@ export default async function AdminSessionsPage() {
         </section>
 
         <section>
-          <h2 className="text-lg font-semibold text-text">Daftar Sesi</h2>
+          <div className="flex flex-wrap items-end justify-between gap-3">
+            <h2 className="text-lg font-semibold text-text">Daftar Sesi</h2>
+            <MonthFilter
+              action="/admin/sesi"
+              value={selectedPeriod?.key ?? ""}
+              options={periodOptionsFromDates(periodKeys.map((key) => getPeriod(key).start))}
+              allOption={{ value: "", label: "Semua bulan" }}
+            />
+          </div>
           {sessions.length > 0 ? (
             <ul className="mt-4 flex flex-col gap-3">
               {sessions.map((session) => (
@@ -62,7 +82,9 @@ export default async function AdminSessionsPage() {
             </ul>
           ) : (
             <p className="mt-4 rounded-lg border border-border bg-surface p-6 text-sm text-text-muted">
-              Belum ada sesi. Buat sesi pertama di sebelah kiri.
+              {selectedPeriod
+                ? `Belum ada sesi di ${selectedPeriod.label}.`
+                : "Belum ada sesi. Buat sesi pertama di sebelah kiri."}
             </p>
           )}
         </section>

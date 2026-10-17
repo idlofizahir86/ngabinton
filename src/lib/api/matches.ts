@@ -2,13 +2,17 @@
  * Query baca untuk sesi bermain, game, peserta, dan daftar anggota.
  * Semua akses DB baca lewat `lib/api/` (ARCHITECTURE.md §2).
  */
-import { and, asc, count, desc, eq, gte, isNull, sql } from "drizzle-orm";
+import { and, asc, count, desc, eq, gte, isNull, lt, sql } from "drizzle-orm";
 
 import { db } from "@/lib/db/client";
 import { matchParticipants, matches, matchSets, playSessions, users } from "@/lib/db/schema";
 
-/** Sesi bermain + jumlah game di dalamnya (untuk daftar admin). */
-export async function getPlaySessions() {
+/** Sesi bermain + jumlah game (opsional difilter rentang tanggal). */
+export async function getPlaySessions(from?: Date, to?: Date) {
+  const conditions = [];
+  if (from) conditions.push(gte(playSessions.playedAt, from));
+  if (to) conditions.push(lt(playSessions.playedAt, to));
+
   return db
     .select({
       id: playSessions.id,
@@ -21,8 +25,22 @@ export async function getPlaySessions() {
     })
     .from(playSessions)
     .leftJoin(matches, eq(matches.sessionId, playSessions.id))
+    .where(conditions.length > 0 ? and(...conditions) : undefined)
     .groupBy(playSessions.id)
     .orderBy(desc(playSessions.playedAt));
+}
+
+/** Bulan-bulan (YYYY-MM) yang punya sesi bermain. */
+export async function getPlaySessionPeriodKeys(): Promise<string[]> {
+  const rows = await db
+    .select({
+      key: sql<string>`to_char(${playSessions.playedAt} at time zone 'Asia/Jakarta', 'YYYY-MM')`,
+    })
+    .from(playSessions)
+    .groupBy(sql`1`)
+    .orderBy(sql`1 desc`);
+
+  return rows.map((row) => row.key);
 }
 
 export type PlaySessionSummary = Awaited<ReturnType<typeof getPlaySessions>>[number];

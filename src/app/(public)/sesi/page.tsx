@@ -1,8 +1,10 @@
 import type { Metadata } from "next";
 
 import { Container } from "@/components/layout/container";
+import { MonthFilter } from "@/components/layout/month-filter";
 import { SessionRow } from "@/components/match/session-row";
-import { getPlaySessions } from "@/lib/api/matches";
+import { getPlaySessionPeriodKeys, getPlaySessions } from "@/lib/api/matches";
+import { getPeriod, isValidPeriodKey, periodOptionsFromDates } from "@/lib/utils/period";
 
 export const metadata: Metadata = {
   title: "Sesi Mabar — NGABINTON",
@@ -12,9 +14,17 @@ export const metadata: Metadata = {
 
 export const revalidate = 0;
 
+type PageProps = { searchParams: Promise<{ periode?: string }> };
+
 /** Daftar sesi mabar: mendatang + sudah lewat. */
-export default async function SessionsPage() {
-  const sessions = await getPlaySessions();
+export default async function SessionsPage({ searchParams }: PageProps) {
+  const params = await searchParams;
+  const selectedPeriod = isValidPeriodKey(params.periode) ? getPeriod(params.periode) : null;
+
+  const [sessions, periodKeys] = await Promise.all([
+    getPlaySessions(selectedPeriod?.start, selectedPeriod?.end),
+    getPlaySessionPeriodKeys(),
+  ]);
   const now = new Date();
 
   const upcoming = sessions
@@ -31,11 +41,21 @@ export default async function SessionsPage() {
           <p className="mt-4 max-w-2xl text-text-secondary">
             Jadwal sesi mendatang dan rekap hasil tiap sesi yang sudah berjalan.
           </p>
+          <div className="mt-5">
+            <MonthFilter
+              action="/sesi"
+              value={selectedPeriod?.key ?? ""}
+              options={periodOptionsFromDates(periodKeys.map((key) => getPeriod(key).start))}
+              allOption={{ value: "", label: "Semua bulan" }}
+            />
+          </div>
         </header>
 
         {sessions.length === 0 ? (
           <p className="mt-10 rounded-lg border border-border bg-surface p-6 text-sm text-text-muted">
-            Belum ada sesi mabar. Nantikan ya!
+            {selectedPeriod
+              ? `Belum ada sesi mabar di ${selectedPeriod.label}.`
+              : "Belum ada sesi mabar. Nantikan ya!"}
           </p>
         ) : null}
 
