@@ -3,15 +3,14 @@
  */
 import { z } from "zod";
 
-/** Teks opsional; string kosong dianggap "tidak diisi". */
+/** Teks opsional; string kosong / `null` dianggap "tidak diisi". */
 export const optionalText = (max: number) =>
   z
     .string()
     .trim()
     .max(max)
-    .transform((value) => (value === "" ? null : value))
-    .optional()
-    .transform((value) => value ?? null);
+    .nullish()
+    .transform((value) => (value === null || value === undefined || value === "" ? null : value));
 
 /** Username anggota: huruf kecil, angka, underscore. */
 export const usernameField = z
