@@ -1,11 +1,12 @@
 /**
  * Query baca untuk anggota club: leaderboard, statistik, dan riwayat main.
  */
-import { and, asc, desc, eq, isNotNull, gt, sql } from "drizzle-orm";
+import { and, asc, desc, eq, gte, inArray, lt, sql } from "drizzle-orm";
 
 import { db } from "@/lib/db/client";
-import { matchParticipants, matchSets, users } from "@/lib/db/schema";
+import { matchParticipants, matches, matchSets, playSessions, users } from "@/lib/db/schema";
 import { summarizeSets } from "@/lib/api/exp";
+import { getStandings, rankFromStandings, type StandingRow } from "@/lib/api/rankings";
 import type { MatchSide } from "@/lib/constants";
 
 /** Statistik permainan seorang anggota. */
@@ -25,55 +26,15 @@ const STAT_SELECT = {
     then 1 else 0 end), 0)::int`,
 };
 
-/** Agregat statistik per anggota (group by user). */
-async function getStatsByUser() {
-  return db
-    .select(STAT_SELECT)
-    .from(matchParticipants)
-    .innerJoin(matchSets, eq(matchSets.matchId, matchParticipants.matchId))
-    .where(isNotNull(matchParticipants.userId))
-    .groupBy(matchParticipants.userId);
-}
+/** Baris leaderboard: anggota/BaturanNgabinton + statistik. */
+export type LeaderboardRow = StandingRow;
 
-/** Baris leaderboard: anggota + statistik. */
-export type LeaderboardRow = {
-  id: number;
-  username: string;
-  displayName: string;
-  nickname: string | null;
-  avatarKey: string | null;
-  avatarUrl: string | null;
-  exp: number;
-  stats: MemberStats;
-};
-
-/** Leaderboard ("Pang-Giatna Ngabinton"): anggota aktif, urut EXP menurun. */
+/**
+ * Leaderboard ("Pang-Giatna Ngabinton") all-time.
+ * Anggota aktif + BaturanNgabinton, urut EXP menurun (RULES.md §13.3).
+ */
 export async function getLeaderboard(): Promise<LeaderboardRow[]> {
-  const [members, stats] = await Promise.all([
-    db
-      .select({
-        id: users.id,
-        username: users.username,
-        displayName: users.displayName,
-        nickname: users.nickname,
-        avatarKey: users.avatarKey,
-        avatarUrl: users.avatarUrl,
-        exp: users.exp,
-      })
-      .from(users)
-      .where(and(eq(users.role, "member"), eq(users.isActive, true)))
-      .orderBy(desc(users.exp), asc(users.displayName)),
-    getStatsByUser(),
-  ]);
-
-  const byUser = new Map(stats.map((row) => [row.userId, row]));
-  return members.map((member) => {
-    const s = byUser.get(member.id);
-    return {
-      ...member,
-      stats: { games: s?.games ?? 0, setsPlayed: s?.setsPlayed ?? 0, setsWon: s?.setsWon ?? 0 },
-    };
-  });
+  return getStandings();
 }
 
 /** Statistik satu anggota. */
@@ -89,13 +50,9 @@ export async function getMemberStats(userId: number): Promise<MemberStats> {
   return { games: row?.games ?? 0, setsPlayed: row?.setsPlayed ?? 0, setsWon: row?.setsWon ?? 0 };
 }
 
-/** Peringkat anggota (1-based) berdasarkan EXP. */
-export async function getMemberRank(exp: number): Promise<number> {
-  const rows = await db
-    .select({ total: sql<number>`count(*)::int` })
-    .from(users)
-    .where(and(eq(users.role, "member"), eq(users.isActive, true), gt(users.exp, exp)));
-  return (rows[0]?.total ?? 0) + 1;
+/** Peringkat anggota (1-based) pada Pang-Giatna all-time. */
+export async function getMemberRank(userId: number): Promise<number> {
+  return rankFromStandings(await getStandings(), userId);
 }
 
 /** Ringkasan satu peserta dalam sebuah game. */
@@ -128,15 +85,37 @@ export type HistoryEntry = {
 
 const HISTORY_LIMIT = 30;
 
-/** Riwayat main seorang anggota (terbaru dulu). */
+export type HistoryFilters = {
+  from?: Date;
+  to?: Date;
+  limit?: number;
+};
+
+/** Riwayat main seorang anggota (terbaru dulu), opsional difilter rentang tanggal. */
 export async function getMemberHistory(
   userId: number,
-  limit: number = HISTORY_LIMIT,
+  filters: HistoryFilters = {},
 ): Promise<HistoryEntry[]> {
+  const conditions = [eq(matchParticipants.userId, userId)];
+
+  if (filters.from || filters.to) {
+    const sessionConditions = [];
+    if (filters.from) sessionConditions.push(gte(playSessions.playedAt, filters.from));
+    if (filters.to) sessionConditions.push(lt(playSessions.playedAt, filters.to));
+
+    const matchIds = db
+      .select({ id: matches.id })
+      .from(matches)
+      .innerJoin(playSessions, eq(playSessions.id, matches.sessionId))
+      .where(and(...sessionConditions));
+
+    conditions.push(inArray(matchParticipants.matchId, matchIds));
+  }
+
   const rows = await db.query.matchParticipants.findMany({
-    where: eq(matchParticipants.userId, userId),
+    where: and(...conditions),
     orderBy: [desc(matchParticipants.createdAt)],
-    limit,
+    limit: filters.limit ?? HISTORY_LIMIT,
     with: {
       match: {
         with: {
@@ -186,6 +165,22 @@ export async function getMemberHistory(
   });
 }
 
+/** Bulan-bulan (YYYY-MM) saat anggota punya riwayat main. */
+export async function getMemberPeriodKeys(userId: number): Promise<string[]> {
+  const rows = await db
+    .select({
+      key: sql<string>`to_char(${playSessions.playedAt} at time zone 'Asia/Jakarta', 'YYYY-MM')`,
+    })
+    .from(matchParticipants)
+    .innerJoin(matches, eq(matches.id, matchParticipants.matchId))
+    .innerJoin(playSessions, eq(playSessions.id, matches.sessionId))
+    .where(eq(matchParticipants.userId, userId))
+    .groupBy(sql`1`)
+    .orderBy(sql`1 desc`);
+
+  return rows.map((row) => row.key);
+}
+
 /** Baris daftar anggota (admin): termasuk kontak & status aktif. */
 export type AdminMemberRow = {
   id: number;
@@ -220,6 +215,25 @@ export async function getAllMembers(): Promise<AdminMemberRow[]> {
     .from(users)
     .where(eq(users.role, "member"))
     .orderBy(desc(users.isActive), asc(users.displayName));
+}
+
+/** Profil anggota publik berdasarkan username (`/u/[username]`). */
+export async function getMemberByUsername(username: string) {
+  const rows = await db
+    .select({
+      id: users.id,
+      username: users.username,
+      displayName: users.displayName,
+      nickname: users.nickname,
+      avatarKey: users.avatarKey,
+      avatarUrl: users.avatarUrl,
+      exp: users.exp,
+    })
+    .from(users)
+    .where(and(eq(users.username, username), eq(users.role, "member"), eq(users.isActive, true)))
+    .limit(1);
+
+  return rows[0] ?? null;
 }
 
 /** Satu anggota berdasarkan id (untuk halaman edit admin). `null` kalau bukan anggota. */
