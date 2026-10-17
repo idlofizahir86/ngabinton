@@ -76,6 +76,14 @@ export const MENU_DESCRIPTIONS: Record<MenuKey, string> = {
   events: "Kelola event komunitas (travel, gathering, badminton).",
 };
 
+/** Halaman utama tiap menu — dipakai pintasan "Tugas Saya" di area anggota. */
+export const MENU_HOME: Record<MenuKey, string> = {
+  finance: "/admin/keuangan",
+  matches: "/admin/sesi",
+  members: "/admin/anggota",
+  events: "/admin",
+};
+
 // ------------------------------------------------------------
 // Keuangan (RULES.md §16)
 // ------------------------------------------------------------

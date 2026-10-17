@@ -1,7 +1,7 @@
 import { Footer } from "@/components/layout/footer";
 import { MusicToggle } from "@/components/layout/music-toggle";
 import { Navbar } from "@/components/layout/navbar";
-import { getCurrentUser } from "@/lib/auth/guards";
+import { getCurrentUser, getUserMenus, isAdminRole } from "@/lib/auth/guards";
 
 /** Layout halaman publik — bungkus Navbar + Footer (ROUTES.md §1.1). */
 export default async function PublicLayout({
@@ -10,6 +10,8 @@ export default async function PublicLayout({
   children: React.ReactNode;
 }>) {
   const user = await getCurrentUser();
+  const menus = user ? await getUserMenus(user) : [];
+  const hasPanel = (user ? isAdminRole(user.role) : false) || menus.length > 0;
 
   return (
     <>
@@ -25,6 +27,7 @@ export default async function PublicLayout({
               }
             : null
         }
+        panelHref={hasPanel ? "/admin" : null}
       />
       <MusicToggle />
       <div className="flex min-h-screen flex-col">

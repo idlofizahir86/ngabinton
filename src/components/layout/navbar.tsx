@@ -51,6 +51,8 @@ export type NavbarProps = {
   transparentOnTop?: boolean;
   /** User yang sedang login (dari layout server), `null` kalau pengunjung. */
   user?: NavbarUser | null;
+  /** Tautan panel tugas (admin / anggota yang diberi akses menu), `null` bila tidak berhak. */
+  panelHref?: string | null;
 };
 
 /** Halaman mendarat sesuai role. */
@@ -58,7 +60,7 @@ function homeHref(role: NavbarUser["role"]): string {
   return role === "member" ? "/member" : "/admin";
 }
 
-export function Navbar({ variant = "public", transparentOnTop = true, user = null }: NavbarProps) {
+export function Navbar({ variant = "public", transparentOnTop = true, user = null, panelHref = null }: NavbarProps) {
   const [scrolled, setScrolled] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
 
@@ -72,6 +74,7 @@ export function Navbar({ variant = "public", transparentOnTop = true, user = nul
   const solid = !transparentOnTop || scrolled;
   const showMenu = variant === "public";
   const label = user?.nickname?.trim() || user?.displayName || "";
+  const panelLabel = user?.role === "member" ? "Panel Staf" : "Panel Admin";
 
   return (
     <header
@@ -122,6 +125,14 @@ export function Navbar({ variant = "public", transparentOnTop = true, user = nul
                 </Link>
               ),
             )}
+            {panelHref ? (
+              <Link
+                href={panelHref}
+                className="whitespace-nowrap text-sm font-semibold text-primary transition duration-150 ease-brand hover:text-text"
+              >
+                {panelLabel}
+              </Link>
+            ) : null}
           </nav>
         ) : null}
 
@@ -241,6 +252,15 @@ export function Navbar({ variant = "public", transparentOnTop = true, user = nul
                   />
                   {user.role === "member" ? "Area Anggota" : "Dashboard"}
                 </Link>
+                {panelHref ? (
+                  <Link
+                    href={panelHref}
+                    onClick={() => setMenuOpen(false)}
+                    className="rounded-md px-4 py-3 text-lg font-semibold text-primary transition duration-150 ease-brand hover:bg-surface-hover"
+                  >
+                    {panelLabel}
+                  </Link>
+                ) : null}
                 <form action={logoutAction}>
                   <button
                     type="submit"

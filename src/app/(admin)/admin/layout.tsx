@@ -39,6 +39,11 @@ export default async function AdminLayout({ children }: { children: React.ReactN
           </div>
 
           <div className="flex items-center gap-3">
+            {isAdmin ? null : (
+              <Link href="/member" className="text-sm text-text-muted transition hover:text-text">
+                Area Anggota
+              </Link>
+            )}
             <span className="hidden text-sm text-text-muted sm:inline">
               {user.nickname || user.displayName}
               {isAdmin ? "" : " · Staf"}

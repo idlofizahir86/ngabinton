@@ -12,8 +12,9 @@ import { getAchievementsForUser } from "@/lib/api/achievements";
 import { getFinanceTotals } from "@/lib/api/finance";
 import { getMemberHistory, getMemberPeriodKeys, getMemberStats } from "@/lib/api/members";
 import { getStandings, rankFromStandings } from "@/lib/api/rankings";
-import { getCurrentUser, isAdminRole, requireUser } from "@/lib/auth/guards";
+import { getCurrentUser, getUserMenus, isAdminRole, requireUser } from "@/lib/auth/guards";
 import { MonthFilter } from "@/components/layout/month-filter";
+import { MENU_DESCRIPTIONS, MENU_HOME, MENU_LABELS } from "@/lib/constants";
 import { formatRupiah } from "@/lib/utils/format";
 import {
   currentPeriod,
@@ -52,7 +53,7 @@ export default async function MemberPage({ searchParams }: PageProps) {
   const period = currentPeriod();
   const selectedPeriod = isValidPeriodKey(params.periode) ? getPeriod(params.periode) : null;
 
-  const [stats, history, achievements, finance, monthFinance, standings, historyPeriodKeys] =
+  const [stats, history, achievements, finance, monthFinance, standings, historyPeriodKeys, menus] =
     await Promise.all([
       getMemberStats(user.id),
       getMemberHistory(user.id, {
@@ -64,6 +65,7 @@ export default async function MemberPage({ searchParams }: PageProps) {
       getFinanceTotals(period.start, period.end),
       getStandings(),
       getMemberPeriodKeys(user.id),
+      getUserMenus(user),
     ]);
 
   const rank = rankFromStandings(standings, user.id);
@@ -112,6 +114,33 @@ export default async function MemberPage({ searchParams }: PageProps) {
             </Link>
             .
           </p>
+        ) : menus.length > 0 ? (
+          <section className="mt-6 rounded-xl border border-border bg-surface p-5">
+            <div className="flex flex-wrap items-end justify-between gap-3">
+              <div>
+                <h2 className="text-lg font-semibold text-text">Tugas Saya</h2>
+                <p className="mt-1 text-sm text-text-muted">
+                  Menu yang dipercayakan admin kepadamu. Buka salah satu untuk langsung mencatat.
+                </p>
+              </div>
+              <Link href="/admin" className={buttonClass("ghost", "sm")}>
+                Buka Panel Staf
+              </Link>
+            </div>
+            <ul className="mt-4 grid gap-3 sm:grid-cols-2">
+              {menus.map((menu) => (
+                <li key={menu}>
+                  <Link
+                    href={MENU_HOME[menu]}
+                    className="flex h-full flex-col gap-1 rounded-lg border border-border bg-background-elevated p-4 transition hover:border-border-strong hover:bg-surface-hover"
+                  >
+                    <span className="text-sm font-semibold text-text">{MENU_LABELS[menu]}</span>
+                    <span className="text-xs text-text-muted">{MENU_DESCRIPTIONS[menu]}</span>
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          </section>
         ) : null}
 
         <section className="mt-8 grid grid-cols-2 gap-3 sm:grid-cols-5">
