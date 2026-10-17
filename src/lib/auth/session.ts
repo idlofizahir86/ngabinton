@@ -7,6 +7,7 @@
  * Modul ini Node/server-only (pakai `next/headers`), jangan di `middleware.ts`.
  */
 import { cookies } from "next/headers";
+import { cache } from "react";
 
 import { SESSION_COOKIE_NAME, SESSION_DURATION_SECONDS } from "@/lib/constants";
 
@@ -22,14 +23,18 @@ function cookieOptions() {
   };
 }
 
-/** Baca & verifikasi session dari cookie. `null` kalau tidak ada / invalid / expired. */
-export async function getSession(): Promise<SessionPayload | null> {
+/**
+ * Baca & verifikasi session dari cookie. `null` kalau tidak ada / invalid / expired.
+ * Di-cache per request supaya layout, halaman, dan guard tidak memverifikasi
+ * JWT berulang kali.
+ */
+export const getSession = cache(async (): Promise<SessionPayload | null> => {
   const token = (await cookies()).get(SESSION_COOKIE_NAME)?.value;
   if (!token) {
     return null;
   }
   return verifySession(token);
-}
+});
 
 /** Simpan token session ke cookie (HttpOnly, SameSite=Lax, Secure di production). */
 export async function setSessionCookie(token: string): Promise<void> {

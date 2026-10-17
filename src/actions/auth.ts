@@ -9,6 +9,7 @@
  */
 import { eq } from "drizzle-orm";
 import { redirect } from "next/navigation";
+import { after } from "next/server";
 
 import { getUserByIdentifier } from "@/lib/api/users";
 import { signSession } from "@/lib/auth/jwt";
@@ -24,6 +25,7 @@ export type LoginState = { error: string | null };
 
 const GENERIC_ERROR = "Username/No. WA atau password salah.";
 const RATE_LIMIT_ERROR = "Terlalu banyak percobaan. Coba lagi dalam 5 menit.";
+const SERVICE_BUSY_ERROR = "Layanan sedang sibuk. Coba lagi sebentar lagi.";
 
 /** Halaman mendarat sesuai role. */
 function homeForRole(role: "admin" | "superadmin" | "member"): string {
@@ -47,13 +49,14 @@ export async function loginAction(
 
   // Rate limit: 5 percobaan / 5 menit / IP (RULES.md §1.1 & §9).
   try {
-    const { success } = await checkLoginRateLimit(ip);
+    const { success, reason } = await checkLoginRateLimit(ip);
     if (!success) {
-      return { error: RATE_LIMIT_ERROR };
+      // `reason: "timeout"` = Redis tak menjawab, bukan kuota percobaan habis.
+      return { error: reason === "timeout" ? SERVICE_BUSY_ERROR : RATE_LIMIT_ERROR };
     }
   } catch {
     // Fail closed (RULES.md §0): tolak login kalau rate limiter tak bisa diakses.
-    return { error: "Layanan sedang sibuk. Coba lagi sebentar lagi." };
+    return { error: SERVICE_BUSY_ERROR };
   }
 
   const parsed = loginSchema.safeParse({
@@ -89,10 +92,18 @@ export async function loginAction(
   });
   await setSessionCookie(token);
 
-  await db
-    .update(users)
-    .set({ lastLoginAt: new Date(), updatedAt: new Date() })
-    .where(eq(users.id, user.id));
+  // `last_login_at` tidak perlu ditunggu sebelum redirect — jalankan setelah
+  // response terkirim supaya tidak menambah satu round-trip ke DB di jalur login.
+  after(async () => {
+    try {
+      await db
+        .update(users)
+        .set({ lastLoginAt: new Date(), updatedAt: new Date() })
+        .where(eq(users.id, user.id));
+    } catch {
+      // Gagal mencatat waktu login tidak boleh menggagalkan login.
+    }
+  });
 
   const fallback = homeForRole(user.role);
   // redirect() melempar NEXT_REDIRECT — jangan dibungkus try/catch.

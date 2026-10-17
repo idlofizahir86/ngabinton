@@ -3,6 +3,7 @@
  * Middleware hanya mencegah bila TIDAK ada sesi; guard ini menegakkan role.
  */
 import { redirect } from "next/navigation";
+import { cache } from "react";
 
 import { getMenuAccess } from "@/lib/api/access";
 import { getUserProfile } from "@/lib/api/users";
@@ -18,20 +19,27 @@ export function isAdminRole(role: Role): boolean {
   return role === "admin" || role === "superadmin";
 }
 
-/** Menu yang boleh dibuka user: pengurus dapat semua, anggota sesuai grant. */
-export async function getUserMenus(user: PublicMember): Promise<MenuKey[]> {
+/**
+ * Menu yang boleh dibuka user: pengurus dapat semua, anggota sesuai grant.
+ * Di-cache per request karena layout & halaman memanggilnya bersamaan.
+ */
+export const getUserMenus = cache(async (user: PublicMember): Promise<MenuKey[]> => {
   if (isAdminRole(user.role)) return [...MENU_KEYS];
   return getMenuAccess(user.id);
-}
+});
 
-/** Ambil profil lengkap user yang sedang login (atau `null`). */
-export async function getCurrentUser(): Promise<PublicMember | null> {
+/**
+ * Ambil profil lengkap user yang sedang login (atau `null`).
+ * Di-cache per request: layout dan halaman memanggil ini masing-masing, tanpa
+ * cache akan jadi dua query DB identik untuk satu kali render.
+ */
+export const getCurrentUser = cache(async (): Promise<PublicMember | null> => {
   const session = await getSession();
   if (!session) return null;
   const id = Number(session.sub);
   if (!Number.isInteger(id)) return null;
   return getUserProfile(id);
-}
+});
 
 /** Wajib sesi valid; kalau tidak → redirect ke `/login`. */
 export async function requireUser(): Promise<SessionPayload> {
