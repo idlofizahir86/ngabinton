@@ -8,30 +8,21 @@ import { count, eq, inArray, sql } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 
+import { syncAchievements } from "@/lib/api/achievements";
 import { recomputeExpForUsers } from "@/lib/api/exp";
-import { requireAdmin } from "@/lib/auth/guards";
+import { requireMenu } from "@/lib/auth/guards";
 import { db } from "@/lib/db/client";
 import { matchParticipants, matches, matchSets, playSessions, users } from "@/lib/db/schema";
 import type { MatchFormState, SessionFormState } from "@/lib/forms/states";
+import { parseJakartaLocal } from "@/lib/utils/jakarta";
 import { playSessionSchema, recordMatchSchema } from "@/lib/validators/match";
-
-/** Parse nilai `datetime-local` sebagai waktu WIB (RULES.md §8.1). */
-function parseJakartaLocal(value: string): Date | null {
-  if (!value) return null;
-  const normalized = value.length === 16 ? `${value}:00` : value;
-  const withOffset = /[zZ]|[+-]\d{2}:?\d{2}$/.test(normalized)
-    ? normalized
-    : `${normalized}+07:00`;
-  const date = new Date(withOffset);
-  return Number.isNaN(date.getTime()) ? null : date;
-}
 
 /** Buat sesi bermain baru → redirect ke detail sesi. */
 export async function createSessionAction(
   _prev: SessionFormState,
   formData: FormData,
 ): Promise<SessionFormState> {
-  const session = await requireAdmin();
+  const session = await requireMenu("matches");
 
   const parsed = playSessionSchema.safeParse({
     title: formData.get("title"),
@@ -76,7 +67,7 @@ export async function recordMatchAction(
   _prev: MatchFormState,
   formData: FormData,
 ): Promise<MatchFormState> {
-  await requireAdmin();
+  await requireMenu("matches");
 
   let raw: unknown;
   try {
@@ -155,15 +146,18 @@ export async function recordMatchAction(
   });
 
   await recomputeExpForUsers(memberIds);
+  await syncAchievements();
+
   revalidatePath("/leaderboard");
   revalidatePath(`/admin/sesi/${sessionId}`);
   revalidatePath("/admin/sesi");
+  revalidatePath("/member");
   return { error: null, ok: true };
 }
 
 /** Hapus satu game + hitung ulang EXP pemainnya. */
 export async function deleteMatchAction(formData: FormData): Promise<void> {
-  await requireAdmin();
+  await requireMenu("matches");
   const matchId = String(formData.get("matchId") ?? "");
   if (!matchId) return;
 
@@ -189,7 +183,7 @@ export async function updateSessionAction(
   _prev: SessionFormState,
   formData: FormData,
 ): Promise<SessionFormState> {
-  await requireAdmin();
+  await requireMenu("matches");
 
   const sessionId = String(formData.get("sessionId") ?? "");
   if (!sessionId) {
@@ -249,7 +243,7 @@ export async function deleteSessionAction(
   _prev: SessionFormState,
   formData: FormData,
 ): Promise<SessionFormState> {
-  await requireAdmin();
+  await requireMenu("matches");
 
   const sessionId = String(formData.get("sessionId") ?? "");
   if (!sessionId) {
