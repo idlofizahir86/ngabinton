@@ -1,0 +1,284 @@
+/**
+ * Query baca keuangan NGABINTON (RULES.md §16).
+ * Keuangan transparan: semua anggota yang login boleh melihat seluruh transaksi.
+ */
+import { and, desc, eq, gte, lt, sql } from "drizzle-orm";
+import { alias } from "drizzle-orm/pg-core";
+
+import type { FinancePaymentMethod } from "@/lib/constants";
+import { db } from "@/lib/db/client";
+import { financeEntries, financeTransfers, playSessions, users } from "@/lib/db/schema";
+
+export type FinanceType = "income" | "expense";
+
+const payer = alias(users, "finance_payer");
+
+export type FinanceEntryRow = {
+  id: string;
+  type: FinanceType;
+  amount: number;
+  description: string;
+  category: string;
+  paymentMethod: FinancePaymentMethod;
+  payerId: number | null;
+  payerName: string | null;
+  occurredAt: Date;
+  sessionId: string | null;
+  sessionTitle: string | null;
+  createdByName: string | null;
+};
+
+export type FinanceEntryFilters = {
+  type?: FinanceType;
+  from?: Date;
+  to?: Date;
+  sessionId?: string;
+  limit?: number;
+};
+
+/** Daftar transaksi terbaru + nama pencatat & judul sesi. */
+export async function getFinanceEntries(
+  filters: FinanceEntryFilters = {},
+): Promise<FinanceEntryRow[]> {
+  const conditions = [];
+  if (filters.type) conditions.push(eq(financeEntries.type, filters.type));
+  if (filters.from) conditions.push(gte(financeEntries.occurredAt, filters.from));
+  if (filters.to) conditions.push(lt(financeEntries.occurredAt, filters.to));
+  if (filters.sessionId) conditions.push(eq(financeEntries.playSessionId, filters.sessionId));
+
+  const rows = await db
+    .select({
+      id: financeEntries.id,
+      type: financeEntries.type,
+      amount: financeEntries.amount,
+      description: financeEntries.description,
+      category: financeEntries.category,
+      paymentMethod: financeEntries.paymentMethod,
+      payerId: financeEntries.payerUserId,
+      payerName: payer.displayName,
+      occurredAt: financeEntries.occurredAt,
+      sessionId: financeEntries.playSessionId,
+      sessionTitle: playSessions.title,
+      createdByName: users.displayName,
+    })
+    .from(financeEntries)
+    .leftJoin(playSessions, eq(playSessions.id, financeEntries.playSessionId))
+    .leftJoin(users, eq(users.id, financeEntries.createdBy))
+    .leftJoin(payer, eq(payer.id, financeEntries.payerUserId))
+    .where(conditions.length > 0 ? and(...conditions) : undefined)
+    .orderBy(desc(financeEntries.occurredAt), desc(financeEntries.createdAt))
+    .limit(filters.limit ?? 200);
+
+  return rows;
+}
+
+/** Satu transaksi berdasarkan id (untuk halaman edit). */
+export async function getFinanceEntryById(id: string): Promise<FinanceEntryRow | null> {
+  const direct = await db
+    .select({
+      id: financeEntries.id,
+      type: financeEntries.type,
+      amount: financeEntries.amount,
+      description: financeEntries.description,
+      category: financeEntries.category,
+      paymentMethod: financeEntries.paymentMethod,
+      payerId: financeEntries.payerUserId,
+      payerName: payer.displayName,
+      occurredAt: financeEntries.occurredAt,
+      sessionId: financeEntries.playSessionId,
+      sessionTitle: playSessions.title,
+      createdByName: users.displayName,
+    })
+    .from(financeEntries)
+    .leftJoin(playSessions, eq(playSessions.id, financeEntries.playSessionId))
+    .leftJoin(users, eq(users.id, financeEntries.createdBy))
+    .leftJoin(payer, eq(payer.id, financeEntries.payerUserId))
+    .where(eq(financeEntries.id, id))
+    .limit(1);
+
+  return direct[0] ?? null;
+}
+
+export type MethodTotals = {
+  income: number;
+  expense: number;
+  balance: number;
+  /** Dana masuk dari dompet lain (transfer internal). */
+  transferIn: number;
+  /** Dana keluar ke dompet lain (transfer internal). */
+  transferOut: number;
+};
+
+export type FinanceTransferRow = {
+  id: string;
+  fromMethod: FinancePaymentMethod;
+  toMethod: FinancePaymentMethod;
+  amount: number;
+  description: string;
+  occurredAt: Date;
+  createdByName: string | null;
+};
+
+export type FinanceTotals = {
+  income: number;
+  expense: number;
+  balance: number;
+  /** Saldo tunai (cash). */
+  cash: MethodTotals;
+  /** Saldo rekening bank (transfer). */
+  transfer: MethodTotals;
+};
+
+type RawTotals = {
+  income: number;
+  expense: number;
+  cashIncome: number;
+  cashExpense: number;
+  transferIncome: number;
+  transferExpense: number;
+};
+
+const TOTAL_COLUMNS = {
+  income: sql<number>`coalesce(sum(case when ${financeEntries.type} = 'income' then ${financeEntries.amount} else 0 end), 0)::int`,
+  expense: sql<number>`coalesce(sum(case when ${financeEntries.type} = 'expense' then ${financeEntries.amount} else 0 end), 0)::int`,
+  cashIncome: sql<number>`coalesce(sum(case when ${financeEntries.type} = 'income' and ${financeEntries.paymentMethod} = 'cash' then ${financeEntries.amount} else 0 end), 0)::int`,
+  cashExpense: sql<number>`coalesce(sum(case when ${financeEntries.type} = 'expense' and ${financeEntries.paymentMethod} = 'cash' then ${financeEntries.amount} else 0 end), 0)::int`,
+  transferIncome: sql<number>`coalesce(sum(case when ${financeEntries.type} = 'income' and ${financeEntries.paymentMethod} = 'transfer' then ${financeEntries.amount} else 0 end), 0)::int`,
+  transferExpense: sql<number>`coalesce(sum(case when ${financeEntries.type} = 'expense' and ${financeEntries.paymentMethod} = 'transfer' then ${financeEntries.amount} else 0 end), 0)::int`,
+} as const;
+
+export const ZERO_TOTALS: FinanceTotals = {
+  income: 0,
+  expense: 0,
+  balance: 0,
+  cash: { income: 0, expense: 0, balance: 0, transferIn: 0, transferOut: 0 },
+  transfer: { income: 0, expense: 0, balance: 0, transferIn: 0, transferOut: 0 },
+};
+
+function toTotals(row: RawTotals | undefined): FinanceTotals {
+  if (!row) return ZERO_TOTALS;
+  return {
+    income: row.income,
+    expense: row.expense,
+    balance: row.income - row.expense,
+    cash: {
+      income: row.cashIncome,
+      expense: row.cashExpense,
+      balance: row.cashIncome - row.cashExpense,
+      transferIn: 0,
+      transferOut: 0,
+    },
+    transfer: {
+      income: row.transferIncome,
+      expense: row.transferExpense,
+      balance: row.transferIncome - row.transferExpense,
+      transferIn: 0,
+      transferOut: 0,
+    },
+  };
+}
+
+/** Total pemasukan, pengeluaran, dan saldo (total, cash, transfer) pada rentang waktu. */
+export async function getFinanceTotals(from?: Date, to?: Date): Promise<FinanceTotals> {
+  const conditions = [];
+  if (from) conditions.push(gte(financeEntries.occurredAt, from));
+  if (to) conditions.push(lt(financeEntries.occurredAt, to));
+
+  const transferConditions = [];
+  if (from) transferConditions.push(gte(financeTransfers.occurredAt, from));
+  if (to) transferConditions.push(lt(financeTransfers.occurredAt, to));
+
+  const [rows, transferRows] = await Promise.all([
+    db
+      .select(TOTAL_COLUMNS)
+      .from(financeEntries)
+      .where(conditions.length > 0 ? and(...conditions) : undefined),
+    db
+      .select({
+        cashIn: sql<number>`coalesce(sum(case when ${financeTransfers.toMethod} = 'cash' then ${financeTransfers.amount} else 0 end), 0)::int`,
+        cashOut: sql<number>`coalesce(sum(case when ${financeTransfers.fromMethod} = 'cash' then ${financeTransfers.amount} else 0 end), 0)::int`,
+        transferIn: sql<number>`coalesce(sum(case when ${financeTransfers.toMethod} = 'transfer' then ${financeTransfers.amount} else 0 end), 0)::int`,
+        transferOut: sql<number>`coalesce(sum(case when ${financeTransfers.fromMethod} = 'transfer' then ${financeTransfers.amount} else 0 end), 0)::int`,
+      })
+      .from(financeTransfers)
+      .where(transferConditions.length > 0 ? and(...transferConditions) : undefined),
+  ]);
+
+  const base = toTotals(rows[0]);
+  const moved = transferRows[0] ?? { cashIn: 0, cashOut: 0, transferIn: 0, transferOut: 0 };
+
+  return {
+    ...base,
+    cash: {
+      ...base.cash,
+      transferIn: moved.cashIn,
+      transferOut: moved.cashOut,
+      balance: base.cash.balance + moved.cashIn - moved.cashOut,
+    },
+    transfer: {
+      ...base.transfer,
+      transferIn: moved.transferIn,
+      transferOut: moved.transferOut,
+      balance: base.transfer.balance + moved.transferIn - moved.transferOut,
+    },
+  };
+}
+
+/** Riwayat perpindahan dana Cash ↔ Rekening Bank (opsional per rentang tanggal). */
+export async function getFinanceTransfers(
+  from?: Date,
+  to?: Date,
+  limit: number = 200,
+): Promise<FinanceTransferRow[]> {
+  const conditions = [];
+  if (from) conditions.push(gte(financeTransfers.occurredAt, from));
+  if (to) conditions.push(lt(financeTransfers.occurredAt, to));
+
+  return db
+    .select({
+      id: financeTransfers.id,
+      fromMethod: financeTransfers.fromMethod,
+      toMethod: financeTransfers.toMethod,
+      amount: financeTransfers.amount,
+      description: financeTransfers.description,
+      occurredAt: financeTransfers.occurredAt,
+      createdByName: users.displayName,
+    })
+    .from(financeTransfers)
+    .leftJoin(users, eq(users.id, financeTransfers.createdBy))
+    .where(conditions.length > 0 ? and(...conditions) : undefined)
+    .orderBy(desc(financeTransfers.occurredAt), desc(financeTransfers.createdAt))
+    .limit(limit);
+}
+
+/** Bulan-bulan (YYYY-MM) yang punya transaksi atau pindah dana. */
+export async function getFinancePeriodKeys(): Promise<string[]> {
+  const [entryRows, transferRows] = await Promise.all([
+    db
+      .select({
+        key: sql<string>`to_char(${financeEntries.occurredAt} at time zone 'Asia/Jakarta', 'YYYY-MM')`,
+      })
+      .from(financeEntries)
+      .groupBy(sql`1`),
+    db
+      .select({
+        key: sql<string>`to_char(${financeTransfers.occurredAt} at time zone 'Asia/Jakarta', 'YYYY-MM')`,
+      })
+      .from(financeTransfers)
+      .groupBy(sql`1`),
+  ]);
+
+  return [...new Set([...entryRows, ...transferRows].map((row) => row.key))].sort((a, b) =>
+    b.localeCompare(a),
+  );
+}
+
+/** Total keuangan satu sesi bermain (mis. iuran sesi). */
+export async function getSessionFinanceTotals(sessionId: string): Promise<FinanceTotals> {
+  const rows = await db
+    .select(TOTAL_COLUMNS)
+    .from(financeEntries)
+    .where(eq(financeEntries.playSessionId, sessionId));
+
+  return toTotals(rows[0]);
+}

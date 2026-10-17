@@ -2,12 +2,16 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 
+import { FinanceLedger } from "@/components/finance/finance-ledger";
+import { FinanceSummary } from "@/components/finance/finance-summary";
 import { Container } from "@/components/layout/container";
 import { DeleteSessionButton } from "@/components/match/delete-session-button";
 import { MatchCard } from "@/components/match/match-card";
 import { MatchRecorder } from "@/components/match/match-recorder";
 import { buttonClass } from "@/components/ui/button";
+import { getFinanceEntries, getSessionFinanceTotals } from "@/lib/api/finance";
 import { getMemberOptions, getPlaySessionById } from "@/lib/api/matches";
+import { requireMenu } from "@/lib/auth/guards";
 import { formatDate, formatTime } from "@/lib/utils/format";
 
 export const metadata: Metadata = {
@@ -21,8 +25,14 @@ type PageProps = { params: Promise<{ id: string }> };
 
 /** Detail satu sesi: catat game + daftar game. */
 export default async function AdminSessionDetailPage({ params }: PageProps) {
+  await requireMenu("matches");
   const { id } = await params;
-  const [session, members] = await Promise.all([getPlaySessionById(id), getMemberOptions()]);
+  const [session, members, financeTotals, financeEntries] = await Promise.all([
+    getPlaySessionById(id),
+    getMemberOptions(),
+    getSessionFinanceTotals(id),
+    getFinanceEntries({ sessionId: id }),
+  ]);
 
   if (!session) {
     notFound();
@@ -81,6 +91,27 @@ export default async function AdminSessionDetailPage({ params }: PageProps) {
           )}
         </section>
       </div>
+
+      <section className="mt-10">
+        <div className="flex flex-wrap items-end justify-between gap-3">
+          <div>
+            <h2 className="text-lg font-semibold text-text">Keuangan Sesi</h2>
+            <p className="mt-1 text-sm text-text-muted">
+              Iuran dan biaya yang ditautkan ke sesi ini.
+            </p>
+          </div>
+          <Link href="/admin/keuangan" className={buttonClass("ghost", "sm")}>
+            Buka Keuangan
+          </Link>
+        </div>
+        <FinanceSummary totals={financeTotals} caption="Kas sesi ini" className="mt-4" />
+        <div className="mt-4">
+          <FinanceLedger
+            entries={financeEntries}
+            emptyText="Belum ada transaksi keuangan untuk sesi ini."
+          />
+        </div>
+      </section>
     </Container>
   );
 }
