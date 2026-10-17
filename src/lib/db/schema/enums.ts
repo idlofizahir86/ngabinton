@@ -45,4 +45,5 @@ export const achievementTypeEnum = pgEnum("achievement_type", [
   "ace_streak",
   "dues_diligent",
   "role",
+  "family_join",
 ]);

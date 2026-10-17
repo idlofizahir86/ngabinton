@@ -21,6 +21,7 @@ import {
   eventOrganizers,
   events,
   financeEntries,
+  matchParticipants,
   memberAchievements,
   userMenuAccess,
   users,
@@ -40,6 +41,7 @@ export const ACHIEVEMENT_LABELS = {
   exp_milestone: "Milestone EXP",
   sessions_milestone: "Milestone Sesi",
   first_win: "Kemenangan Pertama",
+  family_join: "Become Kaluarga Ngabinton",
 } as const;
 
 export const ACHIEVEMENT_QUOTES = {
@@ -377,6 +379,54 @@ export async function awardMilestoneAchievements(): Promise<void> {
 }
 
 /**
+ * Badge penyambutan: BaturanNgabinton yang resmi menjadi anggota keluarga
+ * Ngabinton (RULES.md §13.9). Disimpan sekali seumur akun.
+ */
+function familyJoinRow(userId: number): AchievementInsert {
+  return {
+    type: "family_join",
+    code: "family_join",
+    subjectKey: `user:${userId}`,
+    userId,
+    periodKey: "all",
+    label: ACHIEVEMENT_LABELS.family_join,
+    description: "Dari BaturanNgabinton menjadi anggota keluarga Ngabinton",
+    icon: "home",
+    tone: "live",
+  };
+}
+
+/** Anugerahkan badge penyambutan ke satu anggota. */
+export async function awardFamilyJoin(userId: number): Promise<void> {
+  await insertAchievements([familyJoinRow(userId)]);
+}
+
+/**
+ * Backfill badge penyambutan untuk anggota yang riwayat BaturanNgabinton-nya
+ * sudah tertaut (game lama tetap menyimpan `guestName` setelah dikonversi).
+ */
+export async function backfillFamilyJoin(): Promise<void> {
+  const rows = await db
+    .selectDistinct({ userId: matchParticipants.userId })
+    .from(matchParticipants)
+    .innerJoin(users, eq(users.id, matchParticipants.userId))
+    .where(
+      and(
+        isNotNull(matchParticipants.userId),
+        isNotNull(matchParticipants.guestName),
+        eq(users.role, "member"),
+        eq(users.isActive, true),
+      ),
+    );
+
+  const userIds = rows
+    .map((row) => row.userId)
+    .filter((userId): userId is number => userId !== null);
+
+  await insertAchievements(userIds.map(familyJoinRow));
+}
+
+/**
  * Finalisasi ACE/Pang-Tangguh untuk bulan yang sudah lewat dan belum punya
  * pencapaian. Murah (2 query) saat semua sudah final — dipakai di render halaman.
  */
@@ -407,6 +457,7 @@ export async function syncAchievements(): Promise<void> {
   }
 
   await awardMilestoneAchievements();
+  await backfillFamilyJoin();
   await syncRoleBadges();
 }
 

@@ -5,6 +5,7 @@ import {
   Coins,
   Crown,
   Flame,
+  Home,
   Megaphone,
   Sparkles,
   TrendingUp,
@@ -87,6 +88,11 @@ const RULES = [
     icon: Megaphone,
     title: "EO Event",
     body: "Otomatis untuk anggota yang ditetapkan sebagai penanggung jawab sebuah event.",
+  },
+  {
+    icon: Home,
+    title: "Become Kaluarga Ngabinton",
+    body: "Otomatis untuk BaturanNgabinton yang diangkat menjadi anggota club — riwayat & pencapaiannya ikut terbawa.",
   },
 ];
 

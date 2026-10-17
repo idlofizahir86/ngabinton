@@ -1,0 +1,1 @@
+ALTER TYPE "public"."achievement_type" ADD VALUE 'family_join';

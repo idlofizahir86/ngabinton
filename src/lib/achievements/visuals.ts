@@ -13,7 +13,8 @@ export type AchievementType =
   | "custom"
   | "ace_streak"
   | "dues_diligent"
-  | "role";
+  | "role"
+  | "family_join";
 
 export type AchievementLike = {
   type: AchievementType;
@@ -61,6 +62,7 @@ const CODE_VISUALS: Record<string, { iconKey: string; tone: AchievementTone }> =
   ace_streak_12: { iconKey: "crown", tone: "warning" },
   dues_diligent_3m: { iconKey: "coins", tone: "live" },
   role_finance_steward: { iconKey: "wallet", tone: "live" },
+  family_join: { iconKey: "home", tone: "live" },
 };
 
 const TYPE_FALLBACK: Record<AchievementType, { iconKey: string; tone: AchievementTone }> = {
@@ -73,6 +75,7 @@ const TYPE_FALLBACK: Record<AchievementType, { iconKey: string; tone: Achievemen
   ace_streak: { iconKey: "trending-up", tone: "warning" },
   dues_diligent: { iconKey: "coins", tone: "live" },
   role: { iconKey: "award", tone: "primary" },
+  family_join: { iconKey: "home", tone: "live" },
 };
 
 /** `OKT26` dari `2026-10`. */
@@ -107,7 +110,9 @@ export function getAchievementVisual(achievement: AchievementLike): AchievementV
             ? "WIN"
             : achievement.code === "role_finance_steward"
               ? "DUIT"
-              : isEventOrganizer
+              : achievement.code === "family_join"
+                ? "KLRG"
+                : isEventOrganizer
                 ? "EO"
                 : streakMatch
                   ? `${streakMatch[1]}X`
