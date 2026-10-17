@@ -40,6 +40,7 @@ export const sessionRsvpsRelations = relations(sessionRsvps, ({ one }) => ({
 
 export const matchesRelations = relations(matches, ({ one, many }) => ({
   session: one(playSessions, { fields: [matches.sessionId], references: [playSessions.id] }),
+  createdByUser: one(users, { fields: [matches.createdBy], references: [users.id] }),
   participants: many(matchParticipants),
   sets: many(matchSets),
 }));

@@ -54,6 +54,12 @@ export default async function AdminSessionDetailPage({ params }: PageProps) {
             {session.location ? ` · ${session.location}` : ""}
           </p>
           {session.notes ? <p className="mt-2 text-sm text-text-secondary">{session.notes}</p> : null}
+          {session.createdByUser ? (
+            <p className="mt-1 text-xs text-text-subtle">
+              Dibuat{" "}
+              {session.createdByUser.nickname?.trim() || session.createdByUser.displayName}
+            </p>
+          ) : null}
         </div>
         <div className="flex flex-col items-start gap-3">
           <Link href={`/admin/sesi/${session.id}/edit`} className={buttonClass("ghost", "sm")}>

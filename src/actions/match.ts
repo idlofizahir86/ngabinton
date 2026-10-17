@@ -67,7 +67,7 @@ export async function recordMatchAction(
   _prev: MatchFormState,
   formData: FormData,
 ): Promise<MatchFormState> {
-  await requireMenu("matches");
+  const authSession = await requireMenu("matches");
 
   let raw: unknown;
   try {
@@ -111,11 +111,18 @@ export async function recordMatchAction(
     .from(matches)
     .where(eq(matches.sessionId, sessionId));
   const nextOrder = (orderRow[0]?.max ?? 0) + 1;
+  const createdBy = Number(authSession.sub);
 
   await db.transaction(async (tx) => {
     const inserted = await tx
       .insert(matches)
-      .values({ sessionId, order: nextOrder, label, notes })
+      .values({
+        sessionId,
+        order: nextOrder,
+        label,
+        notes,
+        createdBy: Number.isInteger(createdBy) ? createdBy : null,
+      })
       .returning({ id: matches.id });
     const matchId = inserted[0]?.id;
     if (!matchId) throw new Error("Gagal menyimpan game.");

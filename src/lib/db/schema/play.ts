@@ -35,6 +35,8 @@ export const matches = pgTable(
     order: integer("order").notNull(),
     label: text("label"),
     notes: text("notes"),
+    /** Pengurus/staf yang mencatat game ini (bisa beda orang dengan pembuat sesi). */
+    createdBy: integer("created_by").references(() => users.id, { onDelete: "set null" }),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   },
   (t) => [

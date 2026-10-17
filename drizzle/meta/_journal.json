@@ -71,6 +71,13 @@
       "when": 1792251755866,
       "tag": "0009_condemned_mandarin",
       "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1792255288532,
+      "tag": "0010_lucky_the_leader",
+      "breakpoints": true
     }
   ]
 }

@@ -30,6 +30,7 @@ export function MatchCard({ match }: { match: MatchWithDetails }) {
   const sideA = match.participants.filter((player) => player.side === "a");
   const sideB = match.participants.filter((player) => player.side === "b");
   const summary = summarizeSets(match.sets);
+  const recorder = match.createdByUser;
 
   return (
     <li className="rounded-lg border border-border bg-surface p-4 sm:p-5">
@@ -40,6 +41,11 @@ export function MatchCard({ match }: { match: MatchWithDetails }) {
             {match.label ? ` · ${match.label}` : ""}
           </p>
           {match.notes ? <p className="mt-1 text-sm text-text-secondary">{match.notes}</p> : null}
+          {recorder ? (
+            <p className="mt-1 text-xs text-text-subtle">
+              dicatat {recorder.nickname?.trim() || recorder.displayName}
+            </p>
+          ) : null}
         </div>
         <form action={deleteMatchAction}>
           <input type="hidden" name="matchId" value={match.id} />

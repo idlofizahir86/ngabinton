@@ -50,9 +50,11 @@ export async function getPlaySessionById(id: string) {
   const session = await db.query.playSessions.findFirst({
     where: eq(playSessions.id, id),
     with: {
+      createdByUser: { columns: { id: true, displayName: true, nickname: true } },
       matches: {
         orderBy: [asc(matches.order)],
         with: {
+          createdByUser: { columns: { id: true, displayName: true, nickname: true } },
           participants: {
             orderBy: [asc(matchParticipants.createdAt)],
             with: {
