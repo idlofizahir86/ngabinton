@@ -3,10 +3,11 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 
 import { Container } from "@/components/layout/container";
+import { AttendanceList } from "@/components/match/attendance-list";
 import { MatchResultCard } from "@/components/match/match-result-card";
 import { RsvpGroup } from "@/components/match/session-rsvp-card";
 import { SessionExpSummary } from "@/components/match/session-exp-summary";
-import { getPlaySessionById } from "@/lib/api/matches";
+import { getPlaySessionById, getSessionAttendance } from "@/lib/api/matches";
 import { getCurrentUser } from "@/lib/auth/guards";
 import { formatDate, formatDateTime, formatTime } from "@/lib/utils/format";
 
@@ -27,6 +28,8 @@ export default async function SessionDetailPage({ params }: PageProps) {
   if (!session) {
     notFound();
   }
+
+  const attendance = await getSessionAttendance(session.id);
 
   const reveal = Boolean(user);
   const isUpcoming = session.playedAt >= new Date();
@@ -72,6 +75,18 @@ export default async function SessionDetailPage({ params }: PageProps) {
           <div className="mt-4 grid gap-3 sm:grid-cols-2">
             <RsvpGroup choice="hadir" members={hadir} reveal={reveal} currentUserId={null} />
             <RsvpGroup choice="skip" members={skip} reveal={reveal} currentUserId={null} />
+          </div>
+        </section>
+
+        <section className="mt-12">
+          <h2 className="text-xl font-semibold text-text">
+            Kehadiran ({attendance.length})
+          </h2>
+          <p className="mt-1 text-sm text-text-muted">
+            Anggota yang benar-benar hadir di sesi ini — peserta game dan yang ditandai pengurus.
+          </p>
+          <div className="mt-4">
+            <AttendanceList attendees={attendance} reveal={reveal} currentUserId={user?.id ?? null} />
           </div>
         </section>
 

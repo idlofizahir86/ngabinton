@@ -10,7 +10,14 @@ import { memberAchievements } from "./achievements";
 import { eventOrganizers } from "./event-organizers";
 import { events } from "./events";
 import { financeEntries, financeTransfers } from "./finance";
-import { matchParticipants, matches, matchSets, playSessions, sessionRsvps } from "./play";
+import {
+  matchParticipants,
+  matches,
+  matchSets,
+  playSessions,
+  sessionAttendances,
+  sessionRsvps,
+} from "./play";
 import { users } from "./users";
 
 export const usersRelations = relations(users, ({ many }) => ({
@@ -19,6 +26,7 @@ export const usersRelations = relations(users, ({ many }) => ({
   playSessions: many(playSessions),
   matchParticipants: many(matchParticipants),
   sessionRsvps: many(sessionRsvps),
+  sessionAttendances: many(sessionAttendances),
   menuAccess: many(userMenuAccess),
   achievements: many(memberAchievements),
   financeEntries: many(financeEntries),
@@ -30,12 +38,21 @@ export const usersRelations = relations(users, ({ many }) => ({
 export const playSessionsRelations = relations(playSessions, ({ one, many }) => ({
   matches: many(matches),
   rsvps: many(sessionRsvps),
+  attendances: many(sessionAttendances),
   createdByUser: one(users, { fields: [playSessions.createdBy], references: [users.id] }),
 }));
 
 export const sessionRsvpsRelations = relations(sessionRsvps, ({ one }) => ({
   session: one(playSessions, { fields: [sessionRsvps.sessionId], references: [playSessions.id] }),
   user: one(users, { fields: [sessionRsvps.userId], references: [users.id] }),
+}));
+
+export const sessionAttendancesRelations = relations(sessionAttendances, ({ one }) => ({
+  session: one(playSessions, {
+    fields: [sessionAttendances.sessionId],
+    references: [playSessions.id],
+  }),
+  user: one(users, { fields: [sessionAttendances.userId], references: [users.id] }),
 }));
 
 export const matchesRelations = relations(matches, ({ one, many }) => ({

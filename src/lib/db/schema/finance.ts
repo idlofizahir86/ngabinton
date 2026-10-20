@@ -28,6 +28,8 @@ export const financeEntries = pgTable(
     paymentMethod: financePaymentMethodEnum("payment_method").notNull().default("cash"),
     /** Anggota yang membayar/menerima (mis. iuran sesi). NULL untuk transaksi umum. */
     payerUserId: integer("payer_user_id").references(() => users.id, { onDelete: "set null" }),
+    /** Nama BaturanNgabinton pembayar (mis. iuran mabar) bila bukan anggota. */
+    payerGuestName: text("payer_guest_name"),
     occurredAt: timestamp("occurred_at", { withTimezone: true }).notNull().defaultNow(),
     createdBy: integer("created_by").references(() => users.id, { onDelete: "set null" }),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
@@ -38,6 +40,7 @@ export const financeEntries = pgTable(
     index("finance_entries_session_idx").on(t.playSessionId),
     index("finance_entries_type_idx").on(t.type),
     index("finance_entries_payer_idx").on(t.payerUserId),
+    index("finance_entries_guest_payer_idx").on(t.payerGuestName),
   ],
 );
 

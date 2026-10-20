@@ -9,6 +9,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 
 import { requireMenu } from "@/lib/auth/guards";
+import { guestAttendanceKey } from "@/lib/api/matches";
 import type { FinancePaymentMethod } from "@/lib/constants";
 import { db } from "@/lib/db/client";
 import { financeEntries, financeTransfers, playSessions, users } from "@/lib/db/schema";
@@ -229,8 +230,8 @@ export async function deleteFinanceTransferAction(formData: FormData): Promise<v
 }
 
 /**
- * Catat iuran sesi untuk banyak anggota sekaligus.
- * Anggota yang sudah punya iuran di sesi yang sama dilewati (idempotent).
+ * Catat iuran sesi untuk banyak anggota/BaturanNgabinton sekaligus.
+ * Pembayar yang sudah punya iuran di sesi yang sama dilewati (idempotent).
  */
 export async function createBulkSessionDuesAction(
   _prev: BulkDuesState,
@@ -244,6 +245,7 @@ export async function createBulkSessionDuesAction(
     paymentMethod: formData.get("paymentMethod") ?? "cash",
     occurredAt: formData.get("occurredAt"),
     memberIds: formData.getAll("memberIds"),
+    guestNames: formData.getAll("guestNames"),
     description: formData.get("description") ?? "",
   });
   if (!parsed.success) {
@@ -271,20 +273,29 @@ export async function createBulkSessionDuesAction(
     return { error: "Sesi tidak ditemukan.", ok: false, created: 0, skipped: 0 };
   }
 
-  const memberRows = await db
-    .select({ id: users.id })
-    .from(users)
-    .where(
-      and(
-        inArray(users.id, parsed.data.memberIds),
-        eq(users.role, "member"),
-        eq(users.isActive, true),
-      ),
-    );
+  const memberRows =
+    parsed.data.memberIds.length > 0
+      ? await db
+          .select({ id: users.id })
+          .from(users)
+          .where(
+            and(
+              inArray(users.id, parsed.data.memberIds),
+              eq(users.role, "member"),
+              eq(users.isActive, true),
+            ),
+          )
+      : [];
 
-  if (memberRows.length === 0) {
+  const guestNames = [
+    ...new Map(
+      parsed.data.guestNames.map((name) => [guestAttendanceKey(name), name] as const),
+    ).values(),
+  ];
+
+  if (memberRows.length === 0 && guestNames.length === 0) {
     return {
-      error: "Tidak ada anggota aktif yang valid.",
+      error: "Tidak ada anggota aktif atau BaturanNgabinton yang valid.",
       ok: false,
       created: 0,
       skipped: 0,
@@ -292,40 +303,44 @@ export async function createBulkSessionDuesAction(
   }
 
   const existing = await db
-    .select({ payerUserId: financeEntries.payerUserId })
+    .select({
+      payerUserId: financeEntries.payerUserId,
+      payerGuestName: financeEntries.payerGuestName,
+    })
     .from(financeEntries)
     .where(
       and(
         eq(financeEntries.playSessionId, sessionRow.id),
         eq(financeEntries.type, "income"),
-        inArray(
-          financeEntries.payerUserId,
-          memberRows.map((row) => row.id),
-        ),
+        eq(financeEntries.category, "iuran_sesi"),
       ),
     );
 
-  const paidIds = new Set(
-    existing
-      .map((row) => row.payerUserId)
-      .filter((id): id is number => typeof id === "number"),
-  );
+  const paidMemberIds = new Set<number>();
+  const paidGuestKeys = new Set<string>();
+  for (const row of existing) {
+    if (row.payerUserId !== null) paidMemberIds.add(row.payerUserId);
+    if (row.payerGuestName) paidGuestKeys.add(guestAttendanceKey(row.payerGuestName));
+  }
 
-  const targets = memberRows.filter((row) => !paidIds.has(row.id));
-  if (targets.length === 0) {
+  const memberTargets = memberRows.filter((row) => !paidMemberIds.has(row.id));
+  const guestTargets = guestNames.filter((name) => !paidGuestKeys.has(guestAttendanceKey(name)));
+  const skipped = memberRows.length - memberTargets.length + (guestNames.length - guestTargets.length);
+
+  if (memberTargets.length === 0 && guestTargets.length === 0) {
     return {
       error: null,
       ok: true,
       created: 0,
-      skipped: paidIds.size,
+      skipped,
     };
   }
 
   const createdBy = Number(authSession.sub);
   const description = parsed.data.description ?? `Iuran ${sessionRow.title}`;
 
-  await db.insert(financeEntries).values(
-    targets.map((row) => ({
+  await db.insert(financeEntries).values([
+    ...memberTargets.map((row) => ({
       type: "income" as const,
       amount: parsed.data.amount,
       description,
@@ -336,8 +351,24 @@ export async function createBulkSessionDuesAction(
       occurredAt,
       createdBy: Number.isInteger(createdBy) ? createdBy : null,
     })),
-  );
+    ...guestTargets.map((name) => ({
+      type: "income" as const,
+      amount: parsed.data.amount,
+      description,
+      category: "iuran_sesi",
+      paymentMethod: parsed.data.paymentMethod,
+      payerGuestName: name,
+      playSessionId: sessionRow.id,
+      occurredAt,
+      createdBy: Number.isInteger(createdBy) ? createdBy : null,
+    })),
+  ]);
 
   revalidateFinance(sessionRow.id);
-  return { error: null, ok: true, created: targets.length, skipped: paidIds.size };
+  return {
+    error: null,
+    ok: true,
+    created: memberTargets.length + guestTargets.length,
+    skipped,
+  };
 }

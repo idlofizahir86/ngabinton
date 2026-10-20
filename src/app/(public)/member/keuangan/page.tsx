@@ -38,13 +38,12 @@ export default async function MemberFinancePage({ searchParams }: PageProps) {
   const from = selectedPeriod?.start;
   const to = selectedPeriod?.end;
 
-  const [entries, transfers, allTime, monthTotals, periodKeys] = await Promise.all([
-    getFinanceEntries({ from, to }),
-    getFinanceTransfers(from, to),
-    getFinanceTotals(),
-    getFinanceTotals(period.start, period.end),
-    getFinancePeriodKeys(),
-  ]);
+  // Berurutan agar pool koneksi kecil tidak macet saat banyak query serentak.
+  const entries = await getFinanceEntries({ from, to });
+  const transfers = await getFinanceTransfers(from, to);
+  const allTime = await getFinanceTotals();
+  const monthTotals = await getFinanceTotals(period.start, period.end);
+  const periodKeys = await getFinancePeriodKeys();
 
   return (
     <div className="pb-24 pt-28">

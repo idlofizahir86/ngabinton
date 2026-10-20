@@ -5,7 +5,14 @@
 import { and, asc, count, desc, eq, gte, isNull, lt, sql } from "drizzle-orm";
 
 import { db } from "@/lib/db/client";
-import { matchParticipants, matches, matchSets, playSessions, users } from "@/lib/db/schema";
+import {
+  matchParticipants,
+  matches,
+  matchSets,
+  playSessions,
+  sessionAttendances,
+  users,
+} from "@/lib/db/schema";
 
 /** Sesi bermain + jumlah game (opsional difilter rentang tanggal). */
 export async function getPlaySessions(from?: Date, to?: Date) {
@@ -95,6 +102,119 @@ export async function getPlaySessionById(id: string) {
 
 export type PlaySessionDetail = NonNullable<Awaited<ReturnType<typeof getPlaySessionById>>>;
 export type MatchWithDetails = PlaySessionDetail["matches"][number];
+
+export type SessionAttendee = {
+  /** Kunci unik: `u:{userId}` untuk anggota, `g:{nama}` untuk BaturanNgabinton. */
+  key: string;
+  userId: number | null;
+  guestName: string | null;
+  /** Nama tampil (nickname/username anggota, atau nama BaturanNgabinton). */
+  name: string;
+  username: string | null;
+  nickname: string | null;
+  avatarKey: string | null;
+  avatarUrl: string | null;
+  isGuest: boolean;
+  /** Hadir karena tercatat sebagai peserta game di sesi ini. */
+  played: boolean;
+  /** Baris `session_attendances` bila ditandai manual (null untuk peserta game). */
+  attendanceId: string | null;
+};
+
+/** Kunci normalisasi nama BaturanNgabinton (tanpa beda huruf besar/kecil). */
+export function guestAttendanceKey(guestName: string): string {
+  return `g:${guestName.trim().toLowerCase()}`;
+}
+
+function attendeeKey(userId: number | null, guestName: string | null): string {
+  if (userId !== null) return `u:${userId}`;
+  return guestAttendanceKey(guestName ?? "");
+}
+
+/**
+ * Kehadiran nyata satu sesi: peserta game (anggota & BaturanNgabinton) plus
+ * siapa pun yang ditandai pengurus. `RULES.md` §14.2.
+ */
+export async function getSessionAttendance(sessionId: string): Promise<SessionAttendee[]> {
+  const [players, marked] = await Promise.all([
+    db
+      .selectDistinct({
+        userId: matchParticipants.userId,
+        guestName: matchParticipants.guestName,
+        participantName: matchParticipants.displayName,
+        username: users.username,
+        nickname: users.nickname,
+        avatarKey: users.avatarKey,
+        avatarUrl: users.avatarUrl,
+      })
+      .from(matchParticipants)
+      .innerJoin(matches, eq(matches.id, matchParticipants.matchId))
+      .leftJoin(users, eq(users.id, matchParticipants.userId))
+      .where(eq(matches.sessionId, sessionId)),
+    db
+      .select({
+        attendanceId: sessionAttendances.id,
+        userId: sessionAttendances.userId,
+        guestName: sessionAttendances.guestName,
+        username: users.username,
+        displayName: users.displayName,
+        nickname: users.nickname,
+        avatarKey: users.avatarKey,
+        avatarUrl: users.avatarUrl,
+      })
+      .from(sessionAttendances)
+      .leftJoin(users, eq(users.id, sessionAttendances.userId))
+      .where(eq(sessionAttendances.sessionId, sessionId)),
+  ]);
+
+  const byKey = new Map<string, SessionAttendee>();
+
+  for (const row of marked) {
+    const isGuest = row.userId === null;
+    const name = isGuest
+      ? (row.guestName ?? "BaturanNgabinton")
+      : row.nickname?.trim() || row.username || row.displayName || "Anggota";
+
+    byKey.set(attendeeKey(row.userId, row.guestName), {
+      key: attendeeKey(row.userId, row.guestName),
+      userId: row.userId,
+      guestName: row.guestName,
+      name,
+      username: row.username,
+      nickname: row.nickname,
+      avatarKey: row.avatarKey,
+      avatarUrl: row.avatarUrl,
+      isGuest,
+      played: false,
+      attendanceId: row.attendanceId,
+    });
+  }
+
+  for (const row of players) {
+    const key = attendeeKey(row.userId, row.guestName);
+    const existing = byKey.get(key);
+    const isGuest = row.userId === null;
+    const name = isGuest
+      ? existing?.name || row.participantName
+      : row.nickname?.trim() || row.username || row.participantName;
+
+    byKey.set(key, {
+      key,
+      userId: row.userId,
+      guestName: row.guestName,
+      name,
+      username: row.username,
+      nickname: row.nickname,
+      avatarKey: row.avatarKey,
+      avatarUrl: row.avatarUrl,
+      isGuest,
+      played: true,
+      attendanceId: existing?.attendanceId ?? null,
+    });
+  }
+
+  return [...byKey.values()].sort((a, b) => a.name.localeCompare(b.name));
+}
 
 /** Pilihan anggota club untuk input peserta game: `{ id, label }`. */
 export async function getMemberOptions() {

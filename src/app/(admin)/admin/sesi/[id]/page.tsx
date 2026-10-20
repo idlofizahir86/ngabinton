@@ -4,14 +4,17 @@ import { notFound } from "next/navigation";
 
 import { FinanceLedger } from "@/components/finance/finance-ledger";
 import { FinanceSummary } from "@/components/finance/finance-summary";
+import { SessionDuesPanel } from "@/components/finance/session-dues-panel";
 import { Container } from "@/components/layout/container";
 import { DeleteSessionButton } from "@/components/match/delete-session-button";
 import { MatchCard } from "@/components/match/match-card";
 import { MatchRecorder } from "@/components/match/match-recorder";
+import { SessionAttendancePanel } from "@/components/match/session-attendance-panel";
 import { buttonClass } from "@/components/ui/button";
 import { getFinanceEntries, getSessionFinanceTotals } from "@/lib/api/finance";
 import { getMemberOptions, getPlaySessionById } from "@/lib/api/matches";
-import { requireMenu } from "@/lib/auth/guards";
+import { getSessionDuesStatus } from "@/lib/api/session-dues";
+import { getCurrentUser, getUserMenus, requireMenu } from "@/lib/auth/guards";
 import { formatDate, formatTime } from "@/lib/utils/format";
 
 export const metadata: Metadata = {
@@ -27,16 +30,23 @@ type PageProps = { params: Promise<{ id: string }> };
 export default async function AdminSessionDetailPage({ params }: PageProps) {
   await requireMenu("matches");
   const { id } = await params;
-  const [session, members, financeTotals, financeEntries] = await Promise.all([
+  const [session, members, financeTotals, financeEntries, duesRows, user] = await Promise.all([
     getPlaySessionById(id),
     getMemberOptions(),
     getSessionFinanceTotals(id),
     getFinanceEntries({ sessionId: id }),
+    getSessionDuesStatus(id),
+    getCurrentUser(),
   ]);
 
   if (!session) {
     notFound();
   }
+
+  const menus = user ? await getUserMenus(user) : [];
+  const canManageFinance = menus.includes("finance");
+  const paidCount = duesRows.filter((row) => row.paidAmount > 0).length;
+  const unpaidCount = duesRows.length - paidCount;
 
   return (
     <Container size="xl">
@@ -97,6 +107,51 @@ export default async function AdminSessionDetailPage({ params }: PageProps) {
           )}
         </section>
       </div>
+
+      <section className="mt-10">
+        <div className="flex flex-wrap items-end justify-between gap-3">
+          <div>
+            <h2 className="text-lg font-semibold text-text">Kehadiran ({duesRows.length})</h2>
+            <p className="mt-1 text-sm text-text-muted">
+              Peserta game otomatis tercatat hadir. Tambahkan anggota yang datang tapi tidak ikut
+              main supaya iurannya ikut terpantau.
+            </p>
+          </div>
+        </div>
+        <div className="mt-4">
+          <SessionAttendancePanel
+            sessionId={session.id}
+            attendees={duesRows}
+            members={members}
+          />
+        </div>
+      </section>
+
+      {canManageFinance ? (
+        <section className="mt-10">
+          <div className="flex flex-wrap items-end justify-between gap-3">
+            <div>
+              <h2 className="text-lg font-semibold text-text">Iuran Sesi</h2>
+              <p className="mt-1 text-sm text-text-muted">
+                Hadir {duesRows.length} · sudah bayar {paidCount} · belum bayar {unpaidCount}.
+              </p>
+            </div>
+          </div>
+          {duesRows.length > 0 ? (
+            <div className="mt-4 rounded-lg border border-border bg-surface p-4">
+              <SessionDuesPanel
+                sessionId={session.id}
+                sessionTitle={session.title}
+                rows={duesRows}
+              />
+            </div>
+          ) : (
+            <p className="mt-4 rounded-lg border border-border bg-surface p-6 text-sm text-text-muted">
+              Belum ada anggota hadir yang bisa dicatat iurannya di sesi ini.
+            </p>
+          )}
+        </section>
+      ) : null}
 
       <section className="mt-10">
         <div className="flex flex-wrap items-end justify-between gap-3">

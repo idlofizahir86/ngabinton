@@ -10,12 +10,13 @@ import { MemberCard } from "@/components/member/member-card";
 import { buttonClass } from "@/components/ui/button";
 import { getAchievementsForUser } from "@/lib/api/achievements";
 import { getFinanceTotals } from "@/lib/api/finance";
+import { getMemberUnpaidSessionDues } from "@/lib/api/session-dues";
 import { getMemberHistory, getMemberPeriodKeys, getMemberStats } from "@/lib/api/members";
 import { getStandings, rankFromStandings } from "@/lib/api/rankings";
 import { getCurrentUser, getUserMenus, isAdminRole, requireUser } from "@/lib/auth/guards";
 import { MonthFilter } from "@/components/layout/month-filter";
 import { MENU_DESCRIPTIONS, MENU_HOME, MENU_LABELS } from "@/lib/constants";
-import { formatRupiah } from "@/lib/utils/format";
+import { formatDate, formatRupiah } from "@/lib/utils/format";
 import {
   currentPeriod,
   getPeriod,
@@ -53,20 +54,20 @@ export default async function MemberPage({ searchParams }: PageProps) {
   const period = currentPeriod();
   const selectedPeriod = isValidPeriodKey(params.periode) ? getPeriod(params.periode) : null;
 
-  const [stats, history, achievements, finance, monthFinance, standings, historyPeriodKeys, menus] =
-    await Promise.all([
-      getMemberStats(user.id),
-      getMemberHistory(user.id, {
-        from: selectedPeriod?.start,
-        to: selectedPeriod?.end,
-      }),
-      getAchievementsForUser(user.id),
-      getFinanceTotals(),
-      getFinanceTotals(period.start, period.end),
-      getStandings(),
-      getMemberPeriodKeys(user.id),
-      getUserMenus(user),
-    ]);
+  // Berurutan (bukan Promise.all) agar pool koneksi kecil tidak macet ketika
+  // banyak query dijalankan serentak — lihat catatan M14-08 di TASK.md.
+  const stats = await getMemberStats(user.id);
+  const history = await getMemberHistory(user.id, {
+    from: selectedPeriod?.start,
+    to: selectedPeriod?.end,
+  });
+  const achievements = await getAchievementsForUser(user.id);
+  const finance = await getFinanceTotals();
+  const monthFinance = await getFinanceTotals(period.start, period.end);
+  const standings = await getStandings();
+  const historyPeriodKeys = await getMemberPeriodKeys(user.id);
+  const menus = await getUserMenus(user);
+  const unpaidDues = await getMemberUnpaidSessionDues(user.id);
 
   const rank = rankFromStandings(standings, user.id);
   const winRate =
@@ -137,6 +138,32 @@ export default async function MemberPage({ searchParams }: PageProps) {
                     <span className="text-sm font-semibold text-text">{MENU_LABELS[menu]}</span>
                     <span className="text-xs text-text-muted">{MENU_DESCRIPTIONS[menu]}</span>
                   </Link>
+                </li>
+              ))}
+            </ul>
+          </section>
+        ) : null}
+
+        {unpaidDues.length > 0 ? (
+          <section className="mt-6 rounded-xl border border-warning/40 bg-warning/10 p-5">
+            <h2 className="text-lg font-semibold text-text">Iuran Sesi Belum Tercatat</h2>
+            <p className="mt-1 text-sm text-text-muted">
+              Kamu tercatat hadir di sesi berikut, tapi belum ada iuran sesi yang tercatat atas
+              namamu. Kalau sudah membayar, hubungi pengurus keuangan.
+            </p>
+            <ul className="mt-3 flex flex-col gap-1.5">
+              {unpaidDues.map((due) => (
+                <li
+                  key={due.sessionId}
+                  className="flex flex-wrap items-center justify-between gap-2 text-sm"
+                >
+                  <Link
+                    href={`/sesi/${due.sessionId}`}
+                    className="text-text underline-offset-4 hover:underline"
+                  >
+                    {due.title}
+                  </Link>
+                  <span className="text-xs text-text-muted">{formatDate(due.playedAt)}</span>
                 </li>
               ))}
             </ul>

@@ -78,6 +78,20 @@
       "when": 1792255288532,
       "tag": "0010_lucky_the_leader",
       "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "7",
+      "when": 1792391900532,
+      "tag": "0011_session_attendance",
+      "breakpoints": true
+    },
+    {
+      "idx": 12,
+      "version": "7",
+      "when": 1792393410068,
+      "tag": "0012_guest_attendance_dues",
+      "breakpoints": true
     }
   ]
 }

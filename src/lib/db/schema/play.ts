@@ -80,6 +80,34 @@ export const matchSets = pgTable(
 );
 
 /**
+ * Kehadiran nyata pada sesi bermain ("Real Hadir").
+ *
+ * Hanya menyimpan kehadiran yang **ditandai pengurus** untuk anggota yang
+ * datang tapi tidak tercatat di game mana pun. Peserta game (`match_participants`)
+ * ikut dihitung hadir saat dibaca — lihat `getSessionAttendance()`.
+ */
+export const sessionAttendances = pgTable(
+  "session_attendances",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    sessionId: uuid("session_id").notNull().references(() => playSessions.id, { onDelete: "cascade" }),
+    /** Anggota club; `null` bila yang ditandai adalah BaturanNgabinton. */
+    userId: integer("user_id").references(() => users.id, { onDelete: "cascade" }),
+    /** Nama BaturanNgabinton (non-anggota) yang hadir. */
+    guestName: text("guest_name"),
+    /** Pengurus yang menandai kehadiran. */
+    markedBy: integer("marked_by").references(() => users.id, { onDelete: "set null" }),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [
+    uniqueIndex("session_attendances_session_user_unique").on(t.sessionId, t.userId),
+    uniqueIndex("session_attendances_session_guest_unique").on(t.sessionId, t.guestName),
+    index("session_attendances_session_idx").on(t.sessionId),
+    index("session_attendances_user_idx").on(t.userId),
+  ],
+);
+
+/**
  * Rencana hadir anggota pada sesi bermain (polling "Gass / Ga dulu").
  * Satu anggota maksimal satu pilihan per sesi.
  */

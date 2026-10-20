@@ -74,6 +74,37 @@ export const rsvpSchema = z.object({
 
 export type RsvpInput = z.infer<typeof rsvpSchema>;
 
+/** Kehadiran nyata sesi yang ditandai pengurus (RULES.md §14.2). */
+export const sessionAttendanceSchema = z
+  .object({
+    sessionId: z.string().uuid("Sesi tidak valid."),
+    userId: optionalText(20).refine((value) => value === null || /^\d+$/.test(value), {
+      message: "Anggota tidak valid.",
+    }),
+    guestName: optionalText(40),
+  })
+  .superRefine((value, ctx) => {
+    const hasUser = value.userId !== null;
+    const hasGuest = value.guestName !== null;
+
+    if (hasUser === hasGuest) {
+      ctx.addIssue({
+        code: "custom",
+        message: "Pilih anggota atau isi nama BaturanNgabinton.",
+        path: ["userId"],
+      });
+    }
+    if (hasGuest && (value.guestName?.length ?? 0) < 2) {
+      ctx.addIssue({
+        code: "custom",
+        message: "Nama BaturanNgabinton minimal 2 karakter.",
+        path: ["guestName"],
+      });
+    }
+  });
+
+export type SessionAttendanceInput = z.infer<typeof sessionAttendanceSchema>;
+
 /** Konversi BaturanNgabinton menjadi anggota club. */
 export const convertGuestSchema = z.object({
   guestName: z.string().trim().min(2, "Nama BaturanNgabinton tidak valid.").max(40),

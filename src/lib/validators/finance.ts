@@ -28,21 +28,27 @@ export const financeEntrySchema = z.object({
 
 export type FinanceEntryInput = z.infer<typeof financeEntrySchema>;
 
-/** Input massal iuran sesi: satu transaksi per anggota terpilih. */
-export const bulkSessionDuesSchema = z.object({
-  sessionId: z.string().uuid("Sesi tidak valid."),
-  amount: z.coerce
-    .number()
-    .int("Nominal harus bilangan bulat.")
-    .positive("Nominal harus lebih dari 0.")
-    .max(MAX_AMOUNT, "Nominal terlalu besar."),
-  paymentMethod: z.enum(["cash", "transfer"], { message: "Metode pembayaran tidak valid." }),
-  occurredAt: z.string().trim().min(1, "Tanggal transaksi wajib diisi."),
-  memberIds: z
-    .array(z.coerce.number().int().positive())
-    .min(1, "Pilih minimal satu anggota yang membayar."),
-  description: optionalText(120),
-});
+/** Input massal iuran sesi: satu transaksi per anggota/BaturanNgabinton terpilih. */
+export const bulkSessionDuesSchema = z
+  .object({
+    sessionId: z.string().uuid("Sesi tidak valid."),
+    amount: z.coerce
+      .number()
+      .int("Nominal harus bilangan bulat.")
+      .positive("Nominal harus lebih dari 0.")
+      .max(MAX_AMOUNT, "Nominal terlalu besar."),
+    paymentMethod: z.enum(["cash", "transfer"], { message: "Metode pembayaran tidak valid." }),
+    occurredAt: z.string().trim().min(1, "Tanggal transaksi wajib diisi."),
+    memberIds: z.array(z.coerce.number().int().positive()).default([]),
+    guestNames: z
+      .array(z.string().trim().min(2, "Nama BaturanNgabinton minimal 2 karakter.").max(40))
+      .default([]),
+    description: optionalText(120),
+  })
+  .refine((value) => value.memberIds.length + value.guestNames.length > 0, {
+    message: "Pilih minimal satu pembayar.",
+    path: ["memberIds"],
+  });
 
 export type BulkSessionDuesInput = z.infer<typeof bulkSessionDuesSchema>;
 
