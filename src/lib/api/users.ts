@@ -8,6 +8,7 @@ import { db } from "@/lib/db/client";
 import { users } from "@/lib/db/schema";
 import { looksLikePhone, normalizeWaNumber } from "@/lib/members/wa";
 import type { PublicMember, SessionUser } from "@/lib/types/member";
+import { DB_READ_TIMEOUT_MS, withTimeout } from "@/lib/utils/timeout";
 
 export type UserRole = "admin" | "superadmin" | "member";
 
@@ -36,7 +37,10 @@ const AUTH_COLUMNS = {
 
 /** Ambil user berdasarkan username. `null` kalau tidak ada. */
 export async function getUserByUsername(username: string): Promise<AuthUser | null> {
-  const rows = await db.select(AUTH_COLUMNS).from(users).where(eq(users.username, username)).limit(1);
+  const rows = await withTimeout(
+    db.select(AUTH_COLUMNS).from(users).where(eq(users.username, username)).limit(1),
+    DB_READ_TIMEOUT_MS,
+  );
   return rows[0] ?? null;
 }
 
@@ -54,47 +58,56 @@ export async function getUserByIdentifier(identifier: string): Promise<AuthUser 
     ? or(eq(users.username, trimmed), eq(users.waNumber, normalizedWa))
     : eq(users.username, trimmed);
 
-  const rows = await db.select(AUTH_COLUMNS).from(users).where(condition).limit(1);
+  const rows = await withTimeout(
+    db.select(AUTH_COLUMNS).from(users).where(condition).limit(1),
+    DB_READ_TIMEOUT_MS,
+  );
   return rows[0] ?? null;
 }
 
 /** Profil ringkas (tanpa `passwordHash`) untuk keperluan tampilan. */
 export async function getUserProfile(id: number): Promise<PublicMember | null> {
-  const rows = await db
-    .select({
-      id: users.id,
-      username: users.username,
-      displayName: users.displayName,
-      nickname: users.nickname,
-      waNumber: users.waNumber,
-      email: users.email,
-      avatarKey: users.avatarKey,
-      avatarUrl: users.avatarUrl,
-      exp: users.exp,
-      role: users.role,
-    })
-    .from(users)
-    .where(eq(users.id, id))
-    .limit(1);
+  const rows = await withTimeout(
+    db
+      .select({
+        id: users.id,
+        username: users.username,
+        displayName: users.displayName,
+        nickname: users.nickname,
+        waNumber: users.waNumber,
+        email: users.email,
+        avatarKey: users.avatarKey,
+        avatarUrl: users.avatarUrl,
+        exp: users.exp,
+        role: users.role,
+      })
+      .from(users)
+      .where(eq(users.id, id))
+      .limit(1),
+    DB_READ_TIMEOUT_MS,
+  );
 
   return rows[0] ?? null;
 }
 
 /** Profil ringkas untuk keperluan sesi (area member/admin). */
 export async function getSessionUser(id: number): Promise<SessionUser | null> {
-  const rows = await db
-    .select({
-      id: users.id,
-      username: users.username,
-      displayName: users.displayName,
-      nickname: users.nickname,
-      avatarKey: users.avatarKey,
-      avatarUrl: users.avatarUrl,
-      role: users.role,
-    })
-    .from(users)
-    .where(eq(users.id, id))
-    .limit(1);
+  const rows = await withTimeout(
+    db
+      .select({
+        id: users.id,
+        username: users.username,
+        displayName: users.displayName,
+        nickname: users.nickname,
+        avatarKey: users.avatarKey,
+        avatarUrl: users.avatarUrl,
+        role: users.role,
+      })
+      .from(users)
+      .where(eq(users.id, id))
+      .limit(1),
+    DB_READ_TIMEOUT_MS,
+  );
 
   return rows[0] ?? null;
 }

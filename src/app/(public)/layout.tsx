@@ -1,39 +1,28 @@
 import { Footer } from "@/components/layout/footer";
 import { MusicToggle } from "@/components/layout/music-toggle";
-import { Navbar } from "@/components/layout/navbar";
-import { getCurrentUser, getUserMenus, isAdminRole } from "@/lib/auth/guards";
+import { SessionProvider } from "@/components/layout/session-provider";
+import { SiteNavbar } from "@/components/layout/site-navbar";
 
-/** Layout halaman publik — bungkus Navbar + Footer (ROUTES.md §1.1). */
-export default async function PublicLayout({
+/**
+ * Layout halaman publik — bungkus Navbar + Footer (ROUTES.md §1.1).
+ *
+ * Sengaja **tidak** membaca cookie: status login diambil client lewat
+ * `<SessionProvider />` supaya halaman publik (`/`, `/arsip`, `/[slug]`) bisa
+ * di-cache ISR. Halaman ber-auth (`/member*`) tetap dinamis lewat `requireUser`.
+ */
+export default function PublicLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  const user = await getCurrentUser();
-  const menus = user ? await getUserMenus(user) : [];
-  const hasPanel = (user ? isAdminRole(user.role) : false) || menus.length > 0;
-
   return (
-    <>
-      <Navbar
-        user={
-          user
-            ? {
-                displayName: user.displayName,
-                nickname: user.nickname,
-                avatarKey: user.avatarKey,
-                avatarUrl: user.avatarUrl,
-                role: user.role,
-              }
-            : null
-        }
-        panelHref={hasPanel ? "/admin" : null}
-      />
+    <SessionProvider>
+      <SiteNavbar />
       <MusicToggle />
       <div className="flex min-h-screen flex-col">
         <main className="flex-1">{children}</main>
         <Footer />
       </div>
-    </>
+    </SessionProvider>
   );
 }

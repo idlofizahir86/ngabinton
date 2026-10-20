@@ -5,7 +5,7 @@
  * upload foto → resize + convert WebP (`sharp`) → simpan ke Supabase Storage → update `users.avatar_url`.
  */
 import { eq } from "drizzle-orm";
-import { revalidatePath } from "next/cache";
+import { revalidatePath, revalidateTag } from "next/cache";
 import sharp from "sharp";
 
 import { requireUser } from "@/lib/auth/guards";
@@ -28,6 +28,7 @@ function isAllowedType(type: string): boolean {
 }
 
 function revalidateAvatar() {
+  revalidateTag("rankings");
   revalidatePath("/member");
   revalidatePath("/member/profil");
   revalidatePath("/leaderboard");

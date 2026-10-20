@@ -13,6 +13,7 @@ import {
   sessionAttendances,
   users,
 } from "@/lib/db/schema";
+import { DB_READ_TIMEOUT_MS, withTimeout } from "@/lib/utils/timeout";
 
 /** Sesi bermain + jumlah game (opsional difilter rentang tanggal). */
 export async function getPlaySessions(from?: Date, to?: Date) {
@@ -20,32 +21,38 @@ export async function getPlaySessions(from?: Date, to?: Date) {
   if (from) conditions.push(gte(playSessions.playedAt, from));
   if (to) conditions.push(lt(playSessions.playedAt, to));
 
-  return db
-    .select({
-      id: playSessions.id,
-      title: playSessions.title,
-      location: playSessions.location,
-      playedAt: playSessions.playedAt,
-      endedAt: playSessions.endedAt,
-      notes: playSessions.notes,
-      matchCount: count(matches.id),
-    })
-    .from(playSessions)
-    .leftJoin(matches, eq(matches.sessionId, playSessions.id))
-    .where(conditions.length > 0 ? and(...conditions) : undefined)
-    .groupBy(playSessions.id)
-    .orderBy(desc(playSessions.playedAt));
+  return withTimeout(
+    db
+      .select({
+        id: playSessions.id,
+        title: playSessions.title,
+        location: playSessions.location,
+        playedAt: playSessions.playedAt,
+        endedAt: playSessions.endedAt,
+        notes: playSessions.notes,
+        matchCount: count(matches.id),
+      })
+      .from(playSessions)
+      .leftJoin(matches, eq(matches.sessionId, playSessions.id))
+      .where(conditions.length > 0 ? and(...conditions) : undefined)
+      .groupBy(playSessions.id)
+      .orderBy(desc(playSessions.playedAt)),
+    DB_READ_TIMEOUT_MS,
+  );
 }
 
 /** Bulan-bulan (YYYY-MM) yang punya sesi bermain. */
 export async function getPlaySessionPeriodKeys(): Promise<string[]> {
-  const rows = await db
-    .select({
-      key: sql<string>`to_char(${playSessions.playedAt} at time zone 'Asia/Jakarta', 'YYYY-MM')`,
-    })
-    .from(playSessions)
-    .groupBy(sql`1`)
-    .orderBy(sql`1 desc`);
+  const rows = await withTimeout(
+    db
+      .select({
+        key: sql<string>`to_char(${playSessions.playedAt} at time zone 'Asia/Jakarta', 'YYYY-MM')`,
+      })
+      .from(playSessions)
+      .groupBy(sql`1`)
+      .orderBy(sql`1 desc`),
+    DB_READ_TIMEOUT_MS,
+  );
 
   return rows.map((row) => row.key);
 }
@@ -54,7 +61,8 @@ export type PlaySessionSummary = Awaited<ReturnType<typeof getPlaySessions>>[num
 
 /** Detail satu sesi: game + peserta + set + RSVP (SCHEMA.md §5). */
 export async function getPlaySessionById(id: string) {
-  const session = await db.query.playSessions.findFirst({
+  const session = await withTimeout(
+    db.query.playSessions.findFirst({
     where: eq(playSessions.id, id),
     with: {
       createdByUser: { columns: { id: true, displayName: true, nickname: true } },
@@ -95,7 +103,9 @@ export async function getPlaySessionById(id: string) {
         },
       },
     },
-  });
+    }),
+    DB_READ_TIMEOUT_MS,
+  );
 
   return session ?? null;
 }
@@ -136,7 +146,8 @@ function attendeeKey(userId: number | null, guestName: string | null): string {
  * siapa pun yang ditandai pengurus. `RULES.md` §14.2.
  */
 export async function getSessionAttendance(sessionId: string): Promise<SessionAttendee[]> {
-  const [players, marked] = await Promise.all([
+  const [players, marked] = await withTimeout(
+    Promise.all([
     db
       .selectDistinct({
         userId: matchParticipants.userId,
@@ -165,7 +176,9 @@ export async function getSessionAttendance(sessionId: string): Promise<SessionAt
       .from(sessionAttendances)
       .leftJoin(users, eq(users.id, sessionAttendances.userId))
       .where(eq(sessionAttendances.sessionId, sessionId)),
-  ]);
+    ]),
+    DB_READ_TIMEOUT_MS,
+  );
 
   const byKey = new Map<string, SessionAttendee>();
 
@@ -218,18 +231,21 @@ export async function getSessionAttendance(sessionId: string): Promise<SessionAt
 
 /** Pilihan anggota club untuk input peserta game: `{ id, label }`. */
 export async function getMemberOptions() {
-  const rows = await db
-    .select({
-      id: users.id,
-      username: users.username,
-      displayName: users.displayName,
-      nickname: users.nickname,
-      avatarKey: users.avatarKey,
-      avatarUrl: users.avatarUrl,
-    })
-    .from(users)
-    .where(and(eq(users.role, "member"), eq(users.isActive, true)))
-    .orderBy(asc(users.displayName));
+  const rows = await withTimeout(
+    db
+      .select({
+        id: users.id,
+        username: users.username,
+        displayName: users.displayName,
+        nickname: users.nickname,
+        avatarKey: users.avatarKey,
+        avatarUrl: users.avatarUrl,
+      })
+      .from(users)
+      .where(and(eq(users.role, "member"), eq(users.isActive, true)))
+      .orderBy(asc(users.displayName)),
+    DB_READ_TIMEOUT_MS,
+  );
 
   return rows;
 }
@@ -254,27 +270,30 @@ export type GuestSummary = Awaited<ReturnType<typeof getGuests>>[number];
 
 /** Sesi bermain mendatang + daftar RSVP (untuk halaman utama). */
 export async function getUpcomingPlaySessions(limit: number = 5) {
-  return db.query.playSessions.findMany({
-    where: gte(playSessions.playedAt, new Date()),
-    orderBy: [asc(playSessions.playedAt)],
-    limit,
-    with: {
-      rsvps: {
-        with: {
-          user: {
-            columns: {
-              id: true,
-              username: true,
-              displayName: true,
-              nickname: true,
-              avatarKey: true,
-              avatarUrl: true,
+  return withTimeout(
+    db.query.playSessions.findMany({
+      where: gte(playSessions.playedAt, new Date()),
+      orderBy: [asc(playSessions.playedAt)],
+      limit,
+      with: {
+        rsvps: {
+          with: {
+            user: {
+              columns: {
+                id: true,
+                username: true,
+                displayName: true,
+                nickname: true,
+                avatarKey: true,
+                avatarUrl: true,
+              },
             },
           },
         },
       },
-    },
-  });
+    }),
+    DB_READ_TIMEOUT_MS,
+  );
 }
 
 export type UpcomingSession = Awaited<ReturnType<typeof getUpcomingPlaySessions>>[number];

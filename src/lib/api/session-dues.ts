@@ -18,6 +18,7 @@ import {
   playSessions,
   sessionAttendances,
 } from "@/lib/db/schema";
+import { DB_READ_TIMEOUT_MS, withTimeout } from "@/lib/utils/timeout";
 
 export type SessionDuesRow = SessionAttendee & {
   /** Total iuran sesi yang sudah dibayar orang ini. */
@@ -32,7 +33,8 @@ export type SessionDuesRow = SessionAttendee & {
  * `payer_user_id` atau `payer_guest_name` terisi.
  */
 export async function getSessionDuesStatus(sessionId: string): Promise<SessionDuesRow[]> {
-  const [attendees, payments] = await Promise.all([
+  const [attendees, payments] = await withTimeout(
+    Promise.all([
     getSessionAttendance(sessionId),
     db
       .select({
@@ -54,7 +56,9 @@ export async function getSessionDuesStatus(sessionId: string): Promise<SessionDu
         ),
       )
       .groupBy(financeEntries.payerUserId, financeEntries.payerGuestName),
-  ]);
+    ]),
+    DB_READ_TIMEOUT_MS,
+  );
 
   const paid = new Map<string, { amount: number; count: number }>();
   for (const row of payments) {
@@ -124,14 +128,17 @@ export async function getMemberUnpaidSessionDues(
       ),
   );
 
-  return db
-    .select({
-      sessionId: playSessions.id,
-      title: playSessions.title,
-      playedAt: playSessions.playedAt,
-    })
-    .from(playSessions)
-    .where(and(lt(playSessions.playedAt, new Date()), attended, alreadyPaid))
-    .orderBy(desc(playSessions.playedAt))
-    .limit(limit);
+  return withTimeout(
+    db
+      .select({
+        sessionId: playSessions.id,
+        title: playSessions.title,
+        playedAt: playSessions.playedAt,
+      })
+      .from(playSessions)
+      .where(and(lt(playSessions.playedAt, new Date()), attended, alreadyPaid))
+      .orderBy(desc(playSessions.playedAt))
+      .limit(limit),
+    DB_READ_TIMEOUT_MS,
+  );
 }

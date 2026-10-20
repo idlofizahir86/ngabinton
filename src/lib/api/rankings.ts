@@ -5,11 +5,13 @@
  * (tanpa akun), tetapi pencapaiannya tidak ditampilkan sampai jadi anggota.
  */
 import { and, asc, eq, gte, isNotNull, lt, or, sql } from "drizzle-orm";
+import { unstable_cache } from "next/cache";
 
 import { EXP_LOSS_PER_SET, EXP_WIN_PER_SET } from "@/lib/constants";
 import { db } from "@/lib/db/client";
 import { matchParticipants, matches, matchSets, playSessions, users } from "@/lib/db/schema";
 import type { Period } from "@/lib/utils/period";
+import { DB_READ_TIMEOUT_MS, withTimeout } from "@/lib/utils/timeout";
 
 export type StandingStats = {
   sessions: number;
@@ -77,23 +79,26 @@ async function getRawStandings(from?: Date, to?: Date): Promise<RawStanding[]> {
 }
 
 /** Semua peserta (anggota aktif + BaturanNgabinton), urut EXP menurun. */
-export async function getStandings(from?: Date, to?: Date): Promise<StandingRow[]> {
-  const [raw, profiles] = await Promise.all([
-    getRawStandings(from, to),
-    db
-      .select({
-        id: users.id,
-        username: users.username,
-        displayName: users.displayName,
-        nickname: users.nickname,
-        avatarKey: users.avatarKey,
-        avatarUrl: users.avatarUrl,
-        role: users.role,
-        isActive: users.isActive,
-      })
-      .from(users)
-      .orderBy(asc(users.displayName)),
-  ]);
+async function getStandingsUncached(from?: Date, to?: Date): Promise<StandingRow[]> {
+  const [raw, profiles] = await withTimeout(
+    Promise.all([
+      getRawStandings(from, to),
+      db
+        .select({
+          id: users.id,
+          username: users.username,
+          displayName: users.displayName,
+          nickname: users.nickname,
+          avatarKey: users.avatarKey,
+          avatarUrl: users.avatarUrl,
+          role: users.role,
+          isActive: users.isActive,
+        })
+        .from(users)
+        .orderBy(asc(users.displayName)),
+    ]),
+    DB_READ_TIMEOUT_MS,
+  );
 
   const byId = new Map(profiles.map((profile) => [profile.id, profile]));
 
@@ -150,6 +155,22 @@ export async function getStandings(from?: Date, to?: Date): Promise<StandingRow[
     if (b.stats.games !== a.stats.games) return b.stats.games - a.stats.games;
     return a.displayName.localeCompare(b.displayName, "id");
   });
+}
+
+/**
+ * Papan peringkat all-time di-cache 60 detik (tag `rankings`) karena dipakai
+ * banyak halaman (`/member`, `/leaderboard`, profil publik) dan isinya sama
+ * untuk semua pengunjung.
+ */
+const getStandingsCached = unstable_cache(getStandingsUncached, ["standings-all-time"], {
+  revalidate: 60,
+  tags: ["rankings"],
+});
+
+/** Semua peserta (anggota aktif + BaturanNgabinton), urut EXP menurun. */
+export async function getStandings(from?: Date, to?: Date): Promise<StandingRow[]> {
+  if (from || to) return getStandingsUncached(from, to);
+  return getStandingsCached();
 }
 
 /** Peringkat 1-based dari daftar standings (hindari query ulang). */

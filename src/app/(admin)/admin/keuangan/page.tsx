@@ -53,14 +53,13 @@ export default async function AdminFinancePage({ searchParams }: PageProps) {
   const to = showAll ? undefined : period.end;
   const type = params.type === "income" || params.type === "expense" ? params.type : undefined;
 
-  const [entries, transfers, totals, sessions, members, periodKeys] = await Promise.all([
-    getFinanceEntries({ type, from, to }),
-    type ? Promise.resolve([]) : getFinanceTransfers(from, to),
-    getFinanceTotals(from, to),
-    getPlaySessions(),
-    getMemberOptions(),
-    getFinancePeriodKeys(),
-  ]);
+  // Berurutan agar pool koneksi kecil tidak macet saat banyak query serentak.
+  const entries = await getFinanceEntries({ type, from, to });
+  const transfers = type ? [] : await getFinanceTransfers(from, to);
+  const totals = await getFinanceTotals(from, to);
+  const sessions = await getPlaySessions();
+  const members = await getMemberOptions();
+  const periodKeys = await getFinancePeriodKeys();
 
   const sessionOptions = sessions.map((session) => ({
     id: session.id,

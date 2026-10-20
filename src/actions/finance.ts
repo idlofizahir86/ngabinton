@@ -5,7 +5,7 @@
  * Hanya user dengan menu `finance` atau pengurus yang boleh menulis.
  */
 import { and, eq, inArray } from "drizzle-orm";
-import { revalidatePath } from "next/cache";
+import { revalidatePath, revalidateTag } from "next/cache";
 import { redirect } from "next/navigation";
 
 import { requireMenu } from "@/lib/auth/guards";
@@ -26,6 +26,8 @@ import {
 } from "@/lib/validators/finance";
 
 function revalidateFinance(sessionId?: string | null) {
+  // Tag dipakai `unstable_cache` (saldo & daftar bulan), path untuk RSC.
+  revalidateTag("finance");
   revalidatePath("/admin/keuangan");
   revalidatePath("/member/keuangan");
   revalidatePath("/member");

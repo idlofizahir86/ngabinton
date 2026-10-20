@@ -35,6 +35,12 @@ const DB_MAX_LIFETIME_SECONDS = 15 * 60;
 /** TCP keepalive (detik) agar koneksi tidak mati diam-diam saat instance di-freeze Vercel. */
 const DB_KEEP_ALIVE_SECONDS = 30;
 
+/**
+ * Catatan: Supabase Transaction Pooler (Supavisor) **mengabaikan** parameter
+ * `statement_timeout`/`application_name` dari klien dan memaksa 2 menit.
+ * Karena itu batas waktu query ditegakkan di aplikasi lewat `withTimeout()`
+ * (`lib/utils/timeout.ts`).
+ */
 const sql =
   globalForDb.__ngabintonSql ??
   postgres(connectionString, {

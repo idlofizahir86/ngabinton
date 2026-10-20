@@ -5,7 +5,7 @@
  * Sesi bermain harus dibuat dulu sebelum game bisa dicatat.
  */
 import { count, eq, inArray, sql } from "drizzle-orm";
-import { revalidatePath } from "next/cache";
+import { revalidatePath, revalidateTag } from "next/cache";
 import { redirect } from "next/navigation";
 
 import { syncAchievements } from "@/lib/api/achievements";
@@ -155,6 +155,7 @@ export async function recordMatchAction(
   await recomputeExpForUsers(memberIds);
   await syncAchievements();
 
+  revalidateTag("rankings");
   revalidatePath("/leaderboard");
   revalidatePath(`/admin/sesi/${sessionId}`);
   revalidatePath("/admin/sesi");
@@ -180,6 +181,7 @@ export async function deleteMatchAction(formData: FormData): Promise<void> {
   await db.delete(matches).where(eq(matches.id, matchId));
   await recomputeExpForUsers(memberIds);
 
+  revalidateTag("rankings");
   revalidatePath("/leaderboard");
   revalidatePath("/admin/sesi");
   if (sessionId) revalidatePath(`/admin/sesi/${sessionId}`);
@@ -271,6 +273,9 @@ export async function deleteSessionAction(
 
   await db.delete(playSessions).where(eq(playSessions.id, sessionId));
 
+  // Transaksi sesi jadi kas umum (FK set null) & papan peringkat berubah.
+  revalidateTag("finance");
+  revalidateTag("rankings");
   revalidatePath("/admin/sesi");
   revalidatePath("/");
   redirect("/admin/sesi");

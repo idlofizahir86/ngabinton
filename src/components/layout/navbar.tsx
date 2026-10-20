@@ -7,6 +7,7 @@ import { useEffect, useState } from "react";
 import { logoutAction } from "@/actions/auth";
 import { Container } from "@/components/layout/container";
 import { BrandLogo } from "@/components/layout/brand-logo";
+import { notifySessionChanged } from "@/components/layout/session-provider";
 import { MemberAvatar } from "@/components/member/member-avatar";
 import { Sheet } from "@/components/ui/sheet";
 import { cn } from "@/lib/utils/cn";
@@ -154,7 +155,11 @@ export function Navbar({ variant = "public", transparentOnTop = true, user = nul
                   {label}
                 </span>
               </Link>
-              <form action={logoutAction} className="hidden md:block">
+              <form
+                action={logoutAction}
+                className="hidden md:block"
+                onSubmit={() => notifySessionChanged()}
+              >
                 <button
                   type="submit"
                   className="px-4 py-2 text-sm text-text-muted transition duration-150 ease-brand hover:text-text"
@@ -261,7 +266,7 @@ export function Navbar({ variant = "public", transparentOnTop = true, user = nul
                     {panelLabel}
                   </Link>
                 ) : null}
-                <form action={logoutAction}>
+                <form action={logoutAction} onSubmit={() => notifySessionChanged()}>
                   <button
                     type="submit"
                     className="w-full rounded-md border border-border-strong px-4 py-3 text-center font-semibold text-text"

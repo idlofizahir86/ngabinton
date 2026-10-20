@@ -5,7 +5,7 @@ import { EventHero } from "@/components/event/event-hero";
 import { EventSections } from "@/components/event/event-sections";
 import { EventSubNav } from "@/components/event/event-sub-nav";
 import { Container } from "@/components/layout/container";
-import { getEventBySlug } from "@/lib/api/events";
+import { getEventBySlug, getPublishedEventSlugs } from "@/lib/api/events";
 import { APP_URL } from "@/lib/constants";
 import { CINEMA_ANCHORS, EVENT_TYPE_LABEL, STORY_ANCHORS } from "@/lib/event-content";
 import { getEventStatus } from "@/lib/utils/event-status";
@@ -18,6 +18,15 @@ export const revalidate = 60;
 type EventPageProps = {
   params: Promise<{ slug: string }>;
 };
+
+/**
+ * Prerender semua event publik saat build. Event baru tetap bisa dibuka
+ * (dirender on-demand lalu di-cache 60 detik) karena `dynamicParams` default `true`.
+ */
+export async function generateStaticParams(): Promise<{ slug: string }[]> {
+  const slugs = await getPublishedEventSlugs();
+  return slugs.map((slug) => ({ slug }));
+}
 
 /** Fallback deskripsi kalau event tidak punya `subtitle`/`description` (RULES.md §6.3). */
 const DEFAULT_DESCRIPTION =

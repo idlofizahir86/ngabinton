@@ -4,11 +4,10 @@ import Link from "next/link";
 import { EventCarousel } from "@/components/event/event-carousel";
 import { ParticipantGrid } from "@/components/event/participant-grid";
 import { Container } from "@/components/layout/container";
-import { SessionRsvpCard } from "@/components/match/session-rsvp-card";
+import { RsvpSessionList } from "@/components/match/rsvp-session-list";
 import { buttonClass } from "@/components/ui/button";
 import { getGalleryMedia, getPastTravelEvents, getUpcomingEvents } from "@/lib/api/events";
 import { getUpcomingPlaySessions } from "@/lib/api/matches";
-import { getCurrentUser } from "@/lib/auth/guards";
 
 /** Landing di-render ulang tiap 60 detik (ROUTES.md §1.1). */
 export const revalidate = 60;
@@ -25,16 +24,12 @@ const HERO_META = ["~20 member", "Sejak 2025", "Bandung"];
 
 /** Landing page — hero (M3-06) + section carousel (M3-07). */
 export default async function Home() {
-  const [upcoming, archive, gallery, sessions, user] = await Promise.all([
+  const [upcoming, archive, gallery, sessions] = await Promise.all([
     getUpcomingEvents(),
     getPastTravelEvents(),
     getGalleryMedia(),
     getUpcomingPlaySessions(),
-    getCurrentUser(),
   ]);
-
-  const isLoggedIn = Boolean(user);
-  const currentUserId = user?.id ?? null;
 
   return (
     <>
@@ -96,17 +91,7 @@ export default async function Home() {
             </p>
 
             {sessions.length > 0 ? (
-              <div className="mt-6 grid gap-4 lg:grid-cols-2">
-                {sessions.map((session) => (
-                  <SessionRsvpCard
-                    key={session.id}
-                    session={session}
-                    reveal={isLoggedIn}
-                    isLoggedIn={isLoggedIn}
-                    currentUserId={currentUserId}
-                  />
-                ))}
-              </div>
+              <RsvpSessionList sessions={sessions} />
             ) : (
               <p className="mt-6 rounded-lg border border-border bg-surface p-6 text-sm text-text-muted">
                 Belum ada jadwal sesi mendatang. Nantikan ya!

@@ -32,6 +32,7 @@ import {
   shiftPeriod,
   type Period,
 } from "@/lib/utils/period";
+import { DB_READ_TIMEOUT_MS, withTimeout } from "@/lib/utils/timeout";
 
 export type Achievement = typeof memberAchievements.$inferSelect;
 
@@ -58,11 +59,14 @@ async function insertAchievements(rows: AchievementInsert[]): Promise<void> {
 
 /** Pencapaian seorang anggota (milestone + bulanan), terbaru dulu. */
 export async function getAchievementsForUser(userId: number): Promise<Achievement[]> {
-  return db
-    .select()
-    .from(memberAchievements)
-    .where(eq(memberAchievements.userId, userId))
-    .orderBy(desc(memberAchievements.awardedAt));
+  return withTimeout(
+    db
+      .select()
+      .from(memberAchievements)
+      .where(eq(memberAchievements.userId, userId))
+      .orderBy(desc(memberAchievements.awardedAt)),
+    DB_READ_TIMEOUT_MS,
+  );
 }
 
 /** Pencapaian pada satu periode (ACE & Pang-Tangguh). */

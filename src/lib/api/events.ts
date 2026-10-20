@@ -14,12 +14,22 @@ import {
 } from "@/lib/db/schema";
 import { eventFixtures } from "@/lib/fixtures/events";
 import type { Event } from "@/lib/types/event";
+import { DB_READ_TIMEOUT_MS, withTimeout } from "@/lib/utils/timeout";
 
 /** Batas default jumlah event yang diambil. */
 const DEFAULT_LIMIT = 12;
 
 /** Batas default jumlah foto galeri landing. */
 const GALLERY_LIMIT = 8;
+
+/** Daftar slug event yang tampil publik — dipakai `generateStaticParams` (ISR). */
+export async function getPublishedEventSlugs(): Promise<string[]> {
+  const rows = await withTimeout(
+    db.select({ slug: events.slug }).from(events).where(eq(events.isPublished, true)),
+    DB_READ_TIMEOUT_MS,
+  );
+  return rows.map((row) => row.slug);
+}
 
 /**
  * Event mendatang: `is_published = true` dan `starts_at` di masa depan,

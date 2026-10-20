@@ -47,4 +47,6 @@ export async function setRsvpAction(formData: FormData): Promise<void> {
   }
 
   revalidatePath("/");
+  revalidatePath("/sesi");
+  revalidatePath(`/sesi/${sessionId}`);
 }

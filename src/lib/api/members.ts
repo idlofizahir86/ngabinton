@@ -8,6 +8,7 @@ import { matchParticipants, matches, matchSets, playSessions, users } from "@/li
 import { summarizeSets } from "@/lib/api/exp";
 import { getStandings, rankFromStandings, type StandingRow } from "@/lib/api/rankings";
 import type { MatchSide } from "@/lib/constants";
+import { DB_READ_TIMEOUT_MS, withTimeout } from "@/lib/utils/timeout";
 
 /** Statistik permainan seorang anggota. */
 export type MemberStats = {
@@ -39,12 +40,15 @@ export async function getLeaderboard(): Promise<LeaderboardRow[]> {
 
 /** Statistik satu anggota. */
 export async function getMemberStats(userId: number): Promise<MemberStats> {
-  const rows = await db
-    .select(STAT_SELECT)
-    .from(matchParticipants)
-    .innerJoin(matchSets, eq(matchSets.matchId, matchParticipants.matchId))
-    .where(eq(matchParticipants.userId, userId))
-    .groupBy(matchParticipants.userId);
+  const rows = await withTimeout(
+    db
+      .select(STAT_SELECT)
+      .from(matchParticipants)
+      .innerJoin(matchSets, eq(matchSets.matchId, matchParticipants.matchId))
+      .where(eq(matchParticipants.userId, userId))
+      .groupBy(matchParticipants.userId),
+    DB_READ_TIMEOUT_MS,
+  );
 
   const row = rows[0];
   return { games: row?.games ?? 0, setsPlayed: row?.setsPlayed ?? 0, setsWon: row?.setsWon ?? 0 };
@@ -112,20 +116,23 @@ export async function getMemberHistory(
     conditions.push(inArray(matchParticipants.matchId, matchIds));
   }
 
-  const rows = await db.query.matchParticipants.findMany({
-    where: and(...conditions),
-    orderBy: [desc(matchParticipants.createdAt)],
-    limit: filters.limit ?? HISTORY_LIMIT,
-    with: {
-      match: {
-        with: {
-          session: true,
-          participants: true,
-          sets: { orderBy: [asc(matchSets.setNumber)] },
+  const rows = await withTimeout(
+    db.query.matchParticipants.findMany({
+      where: and(...conditions),
+      orderBy: [desc(matchParticipants.createdAt)],
+      limit: filters.limit ?? HISTORY_LIMIT,
+      with: {
+        match: {
+          with: {
+            session: true,
+            participants: true,
+            sets: { orderBy: [asc(matchSets.setNumber)] },
+          },
         },
       },
-    },
-  });
+    }),
+    DB_READ_TIMEOUT_MS,
+  );
 
   return rows.map((row) => {
     const side = row.side;
@@ -167,16 +174,19 @@ export async function getMemberHistory(
 
 /** Bulan-bulan (YYYY-MM) saat anggota punya riwayat main. */
 export async function getMemberPeriodKeys(userId: number): Promise<string[]> {
-  const rows = await db
-    .select({
-      key: sql<string>`to_char(${playSessions.playedAt} at time zone 'Asia/Jakarta', 'YYYY-MM')`,
-    })
-    .from(matchParticipants)
-    .innerJoin(matches, eq(matches.id, matchParticipants.matchId))
-    .innerJoin(playSessions, eq(playSessions.id, matches.sessionId))
-    .where(eq(matchParticipants.userId, userId))
-    .groupBy(sql`1`)
-    .orderBy(sql`1 desc`);
+  const rows = await withTimeout(
+    db
+      .select({
+        key: sql<string>`to_char(${playSessions.playedAt} at time zone 'Asia/Jakarta', 'YYYY-MM')`,
+      })
+      .from(matchParticipants)
+      .innerJoin(matches, eq(matches.id, matchParticipants.matchId))
+      .innerJoin(playSessions, eq(playSessions.id, matches.sessionId))
+      .where(eq(matchParticipants.userId, userId))
+      .groupBy(sql`1`)
+      .orderBy(sql`1 desc`),
+    DB_READ_TIMEOUT_MS,
+  );
 
   return rows.map((row) => row.key);
 }
@@ -219,19 +229,22 @@ export async function getAllMembers(): Promise<AdminMemberRow[]> {
 
 /** Profil anggota publik berdasarkan username (`/u/[username]`). */
 export async function getMemberByUsername(username: string) {
-  const rows = await db
-    .select({
-      id: users.id,
-      username: users.username,
-      displayName: users.displayName,
-      nickname: users.nickname,
-      avatarKey: users.avatarKey,
-      avatarUrl: users.avatarUrl,
-      exp: users.exp,
-    })
-    .from(users)
-    .where(and(eq(users.username, username), eq(users.role, "member"), eq(users.isActive, true)))
-    .limit(1);
+  const rows = await withTimeout(
+    db
+      .select({
+        id: users.id,
+        username: users.username,
+        displayName: users.displayName,
+        nickname: users.nickname,
+        avatarKey: users.avatarKey,
+        avatarUrl: users.avatarUrl,
+        exp: users.exp,
+      })
+      .from(users)
+      .where(and(eq(users.username, username), eq(users.role, "member"), eq(users.isActive, true)))
+      .limit(1),
+    DB_READ_TIMEOUT_MS,
+  );
 
   return rows[0] ?? null;
 }
