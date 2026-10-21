@@ -7,6 +7,7 @@ export * from "./users";
 export * from "./events";
 export * from "./event-organizers";
 export * from "./play";
+export * from "./games";
 export * from "./access";
 export * from "./finance";
 export * from "./achievement-definitions";
