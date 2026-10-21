@@ -1,0 +1,1022 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,user-scalable=no">
+<title>Flappy Badminton — NGABINTON</title>
+<style>
+  html,body{margin:0;height:100dvh;background:#0b1220;display:flex;
+    align-items:center;justify-content:center;overflow:hidden;
+    font-family:system-ui,-apple-system,sans-serif;touch-action:manipulation}
+  canvas{display:block;width:min(100vw,calc(100dvh * 480 / 720));height:auto;
+    aspect-ratio:480/720;border-radius:14px;box-shadow:0 24px 80px rgba(0,0,0,.75)}
+  #ngbt-toast{position:fixed;left:50%;top:14px;z-index:20;transform:translateX(-50%) translateY(-140%);
+    max-width:min(92vw,420px);padding:10px 14px;border-radius:10px;background:rgba(20,20,20,.94);
+    color:#fff;font:600 13px/1.35 system-ui,sans-serif;text-align:center;box-shadow:0 8px 28px rgba(0,0,0,.5);
+    border:1px solid #404040;opacity:0;transition:transform .25s ease,opacity .25s ease;pointer-events:none}
+  #ngbt-toast.show{transform:translateX(-50%) translateY(0);opacity:1}
+  #ngbt-toast.ok{border-color:#22c55e}
+  #ngbt-toast.guest{border-color:#f59e0b}
+  #ngbt-toast.err{border-color:#ef4444}
+</style>
+</head>
+<body>
+<canvas id="game" width="480" height="720"></canvas>
+<div id="ngbt-toast" role="status" aria-live="polite"></div>
+<script>
+(() => {
+"use strict";
+
+const cv = document.getElementById('game');
+const ctx = cv.getContext('2d');
+const W = 480, H = 720;
+const GROUND_Y = H - 90;
+const SHUTTLE_X = 140;
+
+/* ================= KARAKTER SHUTTLECOCK ================= */
+const CHARACTERS = [
+  { id:'classic', name:'Classic', desc:'Seimbang',
+    feather:'#f0f0f0', cork:'#d4a373', accent:'#ffffff',
+    size:1.00, grav:1.00, flap:1.00 },
+  { id:'fire',    name:'Fire',    desc:'Cepat',
+    feather:'#ff6b6b', cork:'#8b0000', accent:'#ff4d4d',
+    size:0.92, grav:1.15, flap:1.08 },
+  { id:'ice',     name:'Ice',     desc:'Ringan',
+    feather:'#90e0ef', cork:'#0077b6', accent:'#4cc9f0',
+    size:0.88, grav:0.82, flap:0.88 },
+  { id:'forest',  name:'Forest',  desc:'Besar',
+    feather:'#57cc99', cork:'#2d6a4f', accent:'#80ed99',
+    size:1.15, grav:0.90, flap:0.95 },
+  { id:'shadow',  name:'Shadow',  desc:'Sulit',
+    feather:'#22223b', cork:'#1a1a2e', accent:'#4a4e69',
+    size:1.00, grav:1.25, flap:1.15 },
+];
+
+/* ================= KONSTANTA ================= */
+const GRAVITY   = 0.55;
+const FLAP_V    = -9.0;
+const MAX_V     = 14;
+const RACKET_W  = 70;
+const RACKET_GAP= 165;
+const RACKET_SPD= 2.6;
+const RACKET_SPC= 235;
+const STEP      = 1/60;
+
+/* ================= STATE ================= */
+let state = 'select';
+/* Level dikunci ke Kok Ice (gravitasi & flap paling ringan) — Pang-Jagona. */
+let selected = 2;
+
+const shuttle = { y: H/2, vy: 0, rot: 0, flapPhase: 0, x: SHUTTLE_X };
+let rackets = [];
+let racketTimer = 0;
+let score = 0;
+let shake = 0;
+let groundX = 0;
+let deathTimer = 0;
+let readyTimer = 0;
+
+const particles = [];
+const clouds = [];
+for (let i = 0; i < 6; i++){
+  clouds.push({
+    x: Math.random() * W * 1.4,
+    y: 40 + Math.random() * 160,
+    s: 0.5 + Math.random() * 0.7,
+    spd: 8 + Math.random() * 18
+  });
+}
+
+/* ================= PARALLAX BANGUNAN ================= */
+const buildingScroll = { far: 0, mid: 0, near: 0 };
+const FAR_SPD  = 15 / 60;    // px per step
+const MID_SPD  = 35 / 60;
+const NEAR_SPD = 65 / 60;
+
+/* ================= LOGO ================= */
+const logoImg = new Image();
+logoImg.crossOrigin = 'anonymous';
+let logoLoaded = false;
+logoImg.onload = () => { logoLoaded = true; };
+logoImg.onerror = () => { logoLoaded = false; };
+logoImg.src = '/brand/logo.svg';
+
+let best = loadBest();
+function loadBest(){
+  try { return JSON.parse(localStorage.getItem('flappy_badminton_best') || '{}'); }
+  catch { return {}; }
+}
+function saveBest(){
+  try { localStorage.setItem('flappy_badminton_best', JSON.stringify(best)); }
+  catch {}
+}
+
+/* ================= UTIL ================= */
+const clamp = (v,a,b) => v < a ? a : v > b ? b : v;
+
+function roundRect(x,y,w,h,r){
+  ctx.beginPath();
+  ctx.moveTo(x+r,y);
+  ctx.arcTo(x+w,y,x+w,y+h,r);
+  ctx.arcTo(x+w,y+h,x,y+h,r);
+  ctx.arcTo(x,y+h,x,y,r);
+  ctx.arcTo(x,y,x+w,y,r);
+  ctx.closePath();
+}
+
+/* ================= LAYOUT UI ================= */
+const CARD_W = 110, CARD_H = 120;
+const cardRects = [
+  { x: 63,  y: 250, w: CARD_W, h: CARD_H },
+  { x: 185, y: 250, w: CARD_W, h: CARD_H },
+  { x: 307, y: 250, w: CARD_W, h: CARD_H },
+  { x: 124, y: 385, w: CARD_W, h: CARD_H },
+  { x: 246, y: 385, w: CARD_W, h: CARD_H },
+];
+const startBtn = { x: 165, y: 570, w: 150, h: 56 };
+
+/* ================= INPUT ================= */
+cv.addEventListener('pointerdown', e => {
+  const r = cv.getBoundingClientRect();
+  const mx = (e.clientX - r.left) * (W / r.width);
+  const my = (e.clientY - r.top)  * (H / r.height);
+  handlePointer(mx, my);
+});
+addEventListener('keydown', e => {
+  const k = e.key.toLowerCase();
+  if ([' ','arrowup','arrowdown','arrowleft','arrowright','enter'].includes(k)) e.preventDefault();
+  if (e.repeat) return;
+
+  if (state === 'select'){
+    if (k >= '1' && k <= '5'){ selected = +k - 1; return; }
+    if (k === 'arrowleft' || k === 'a'){ selected = (selected + 4) % 5; return; }
+    if (k === 'arrowright'|| k === 'd'){ selected = (selected + 1) % 5; return; }
+    if (k === 'enter' || k === ' '){ startGame(); return; }
+  } else if (state === 'ready' || state === 'playing'){
+    if (k === ' ' || k === 'arrowup' || k === 'w') flap();
+  } else if (state === 'over'){
+    if (k === 'r' || k === ' ' || k === 'enter') restart();
+    if (k === 'c'){ location.href = '/mainan'; }
+  }
+});
+
+function handlePointer(mx, my){
+  if (state === 'select'){
+    for (let i = 0; i < cardRects.length; i++){
+      const c = cardRects[i];
+      if (mx > c.x && mx < c.x + c.w && my > c.y && my < c.y + c.h){
+        selected = i; return;
+      }
+    }
+    if (mx > startBtn.x && mx < startBtn.x + startBtn.w &&
+        my > startBtn.y && my < startBtn.y + startBtn.h){
+      startGame();
+    }
+  } else if (state === 'ready' || state === 'playing'){
+    flap();
+  } else if (state === 'over'){
+    if (mx > 80 && mx < 230 && my > 540 && my < 596) restart();
+    if (mx > 250 && mx < 400 && my > 540 && my < 596){ location.href = '/mainan'; }
+  }
+}
+
+/* ================= FLOW ================= */
+function resetShuttle(){
+  shuttle.y = H/2;
+  shuttle.vy = 0;
+  shuttle.rot = 0;
+  shuttle.flapPhase = 0;
+}
+function startGame(){
+  rackets = [];
+  racketTimer = 0;
+  score = 0;
+  shake = 0;
+  deathTimer = 0;
+  readyTimer = 0;
+  particles.length = 0;
+  resetShuttle();
+  state = 'ready';
+}
+function flap(){
+  const c = CHARACTERS[selected];
+  if (state === 'ready'){ state = 'playing'; }
+  if (state !== 'playing') return;
+  shuttle.vy = FLAP_V * c.flap;
+  shuttle.flapPhase = 0;
+  for (let i = 0; i < 4; i++){
+    particles.push({
+      x: shuttle.x - 18, y: shuttle.y + 6,
+      vx: -60 - Math.random()*80, vy: (Math.random()-0.5)*80,
+      life: 0.45, max: 0.45, c: 'rgba(255,255,255,.85)', r: 3
+    });
+  }
+}
+function die(){
+  if (state !== 'playing') return;
+  state = 'dying';
+  shake = 12;
+  deathTimer = 0;
+  const ch = CHARACTERS[selected];
+  const rec = best[ch.id] || 0;
+  if (score > rec){ best[ch.id] = score; saveBest(); }
+  if (score > 0 && window.NGBT) window.NGBT.submitScore(score);
+  for (let i = 0; i < 14; i++){
+    const a = Math.random() * Math.PI * 2, s = 60 + Math.random() * 220;
+    particles.push({
+      x: shuttle.x, y: shuttle.y,
+      vx: Math.cos(a)*s, vy: Math.sin(a)*s,
+      life: 0.7, max: 0.7, c: ch.accent, r: 3 + Math.random()*3
+    });
+  }
+}
+function restart(){ startGame(); }
+
+/* ================= RAKET ================= */
+function spawnRacket(){
+  const minTop = 100;
+  const maxTop = GROUND_Y - RACKET_GAP - 100;
+  const top = minTop + Math.random() * (maxTop - minTop);
+  rackets.push({ x: W + 20, top, scored: false });
+}
+
+function checkCollision(){
+  const c = CHARACTERS[selected];
+  const r = 14 * c.size;
+  if (shuttle.y - r < 0){ shuttle.y = r; shuttle.vy = 0; }
+  if (shuttle.y + r > GROUND_Y) return true;
+  for (const p of rackets){
+    if (shuttle.x + r > p.x && shuttle.x - r < p.x + RACKET_W){
+      if (shuttle.y - r < p.top || shuttle.y + r > p.top + RACKET_GAP) return true;
+    }
+  }
+  return false;
+}
+function passRackets(){
+  for (const p of rackets){
+    if (!p.scored && shuttle.x > p.x + RACKET_W){
+      p.scored = true;
+      score++;
+    }
+  }
+}
+
+/* ================= STEP ================= */
+function step(){
+  groundX = (groundX + RACKET_SPD) % 40;
+  for (const cl of clouds){
+    cl.x -= cl.spd / 60;
+    if (cl.x < -140){ cl.x = W + 100; cl.y = 30 + Math.random()*220; }
+  }
+  buildingScroll.far  += FAR_SPD;
+  buildingScroll.mid  += MID_SPD;
+  buildingScroll.near += NEAR_SPD;
+
+  for (let i = particles.length - 1; i >= 0; i--){
+    const p = particles[i];
+    p.x += p.vx / 60;
+    p.y += p.vy / 60;
+    p.vy += 400 / 60;
+    p.life -= 1/60;
+    if (p.life <= 0) particles.splice(i,1);
+  }
+
+  const c = CHARACTERS[selected];
+
+  if (state === 'ready'){
+    readyTimer += 1/60;
+    shuttle.flapPhase += 0.5;
+    shuttle.y = H/2 + Math.sin(readyTimer * 4) * 8;
+    shuttle.rot = Math.sin(readyTimer * 4) * 0.1;
+    return;
+  }
+
+  if (state === 'playing'){
+    shuttle.vy += GRAVITY * c.grav;
+    if (shuttle.vy > MAX_V) shuttle.vy = MAX_V;
+    shuttle.y += shuttle.vy;
+    shuttle.flapPhase += (shuttle.vy < 0 ? 0.9 : 0.25);
+
+    const targetRot = clamp(shuttle.vy * 0.09, -0.8, 1.4);
+    shuttle.rot += (targetRot - shuttle.rot) * 0.18;
+
+    for (const p of rackets) p.x -= RACKET_SPD;
+    while (rackets.length && rackets[0].x + RACKET_W < -20) rackets.shift();
+
+    racketTimer -= 1/60;
+    if (racketTimer <= 0){
+      spawnRacket();
+      racketTimer = RACKET_SPC / RACKET_SPD / 60;
+    }
+
+    if (checkCollision()){ die(); return; }
+    passRackets();
+    return;
+  }
+
+  if (state === 'dying'){
+    deathTimer += 1/60;
+    shuttle.vy += GRAVITY * c.grav * 1.6;
+    shuttle.y += shuttle.vy;
+    shuttle.rot += 0.12;
+    shake *= 0.88;
+    if (shuttle.y > GROUND_Y - 12){
+      shuttle.y = GROUND_Y - 12;
+      state = 'over';
+    }
+    return;
+  }
+}
+
+/* ================================================================
+   BACKGROUND: LANGIT, AWAN, BANGUNAN PARALLAX, LOGO
+   ================================================================ */
+function drawSky(){
+  const g = ctx.createLinearGradient(0, 0, 0, GROUND_Y);
+  g.addColorStop(0,    '#1a3a5c');
+  g.addColorStop(0.40, '#2d6a8f');
+  g.addColorStop(0.72, '#7bb5cc');
+  g.addColorStop(1,    '#c8dfe8');
+  ctx.fillStyle = g;
+  ctx.fillRect(0, 0, W, GROUND_Y);
+
+  for (const cl of clouds){
+    const w = 80 * cl.s, h = 26 * cl.s;
+    ctx.fillStyle = 'rgba(255,255,255,.42)';
+    ctx.beginPath();
+    ctx.arc(cl.x,        cl.y,        h, 0, Math.PI*2);
+    ctx.arc(cl.x + w*.35, cl.y - h*.4, h*.9, 0, Math.PI*2);
+    ctx.arc(cl.x + w*.65, cl.y,        h*.85, 0, Math.PI*2);
+    ctx.arc(cl.x + w*.32, cl.y + h*.4, h*.7, 0, Math.PI*2);
+    ctx.fill();
+  }
+}
+
+/* ---------- LAPIS 1: SILUET BANDUNG (GEDUNG SATE, dll) ---------- */
+function drawBandungSilhouette(offset){
+  const period = 900;
+  const baseY  = GROUND_Y;
+  ctx.save();
+  ctx.globalAlpha = 0.38;
+  ctx.fillStyle   = '#0a1a26';
+
+  const startX = -(offset % period) - period;
+  for (let x = startX; x < W + period; x += period){
+    drawBandungBlock(x, baseY);
+  }
+  ctx.restore();
+}
+
+function drawBandungBlock(x, baseY){
+  // Gunung (Tangkuban Perahu dkk) - siluet landai
+  ctx.beginPath();
+  ctx.moveTo(x, baseY);
+  ctx.lineTo(x + 110, baseY - 55);
+  ctx.lineTo(x + 190, baseY - 35);
+  ctx.lineTo(x + 290, baseY - 80);   // puncak utama
+  ctx.lineTo(x + 380, baseY - 30);
+  ctx.lineTo(x + 470, baseY - 50);
+  ctx.lineTo(x + 590, baseY - 25);
+  ctx.lineTo(x + 720, baseY - 45);
+  ctx.lineTo(x + 900, baseY);
+  ctx.closePath();
+  ctx.fill();
+
+  // Gedung Sate di tengah
+  drawGedungSate(x + 450, baseY);
+
+  // Gedung-gedung generik
+  drawTower(x + 130, baseY, 55, 65);
+  drawTower(x + 195, baseY, 45, 40);
+  drawTower(x + 620, baseY, 60, 75);
+  drawTower(x + 690, baseY, 50, 55);
+  drawTower(x + 755, baseY, 55, 45);
+  drawTower(x + 260, baseY, 40, 50);
+}
+
+function drawTower(cx, baseY, w, h){
+  const x = cx - w/2, y = baseY - h;
+  ctx.fillRect(x, y, w, h);
+}
+
+function drawGedungSate(cx, baseY){
+  const w = 130, h = 70;
+  const x = cx - w/2;
+  const y = baseY - h;
+
+  // Sayap kiri & kanan (lebih rendah)
+  ctx.fillRect(x - 65, y + 30, 65, h - 30);
+  ctx.fillRect(x + w,  y + 30, 65, h - 30);
+
+  // Badan utama
+  ctx.fillRect(x, y, w, h);
+
+  // Menara tengah
+  const tw = 30, th = 48;
+  const tx = cx - tw/2, ty = y - th;
+  ctx.fillRect(tx, ty, tw, th);
+
+  // Spire (limas)
+  const spH = 38, spW = 22;
+  ctx.beginPath();
+  ctx.moveTo(cx, ty - spH);
+  ctx.lineTo(cx + spW/2, ty);
+  ctx.lineTo(cx - spW/2, ty);
+  ctx.closePath();
+  ctx.fill();
+
+  // Pin "sate" + 6 bulatan ornamen (ciri khas Gedung Sate)
+  ctx.fillRect(cx - 1, ty - spH - 20, 2, 20);
+  for (let i = 0; i < 6; i++){
+    const a = (i / 6) * Math.PI * 2;
+    const ox = cx + Math.cos(a) * 4;
+    const oy = ty - spH - 16 + Math.sin(a) * 4;
+    ctx.beginPath();
+    ctx.arc(ox, oy, 3.4, 0, Math.PI * 2);
+    ctx.fill();
+  }
+}
+
+/* ---------- LAPIS 2: SEKOLAH RABBANI ---------- */
+function drawSekolahLayer(offset){
+  const period = 800;
+  const baseY  = GROUND_Y;
+  ctx.save();
+  ctx.globalAlpha = 0.78;
+
+  const startX = -(offset % period) - period;
+  for (let x = startX; x < W + period; x += period){
+    drawSekolah(x + 210, baseY);
+    drawSekolah(x + 560, baseY);
+  }
+  ctx.restore();
+}
+
+function drawSekolah(cx, baseY){
+  const w = 200, h = 150;
+  const x = cx - w/2;
+  const y = baseY - h;
+
+  // Bayangan samping
+  ctx.fillStyle = 'rgba(0,0,0,0.10)';
+  ctx.fillRect(x + w - 20, y, 20, h);
+
+  // Badan utama (krem)
+  ctx.fillStyle = '#e8dcc0';
+  ctx.fillRect(x, y, w, h);
+
+  // Atap segitiga (cokelat tua)
+  ctx.fillStyle = '#8b4513';
+  ctx.beginPath();
+  ctx.moveTo(x - 15, y + 4);
+  ctx.lineTo(cx, y - 42);
+  ctx.lineTo(x + w + 15, y + 4);
+  ctx.closePath();
+  ctx.fill();
+
+  // Border atap
+  ctx.fillStyle = '#5d3a1a';
+  ctx.fillRect(x - 10, y, w + 20, 6);
+
+  // Jendela (grid)
+  for (let row = 0; row < 4; row++){
+    for (let col = 0; col < 6; col++){
+      const wx = x + 18 + col * 30;
+      const wy = y + 22 + row * 30;
+      ctx.fillStyle = '#3d6b8f';
+      ctx.fillRect(wx, wy, 22, 18);
+      ctx.fillStyle = 'rgba(160,210,240,0.55)';
+      ctx.fillRect(wx + 2, wy + 2, 18, 4);
+    }
+  }
+
+  // Pintu
+  ctx.fillStyle = '#5d3a1a';
+  ctx.fillRect(cx - 20, baseY - 40, 40, 40);
+  ctx.fillStyle = 'rgba(255,220,150,0.35)';
+  ctx.fillRect(cx - 17, baseY - 36, 14, 16);
+  ctx.fillRect(cx + 3,  baseY - 36, 14, 16);
+
+  // Papan nama
+  ctx.fillStyle = '#2c3e50';
+  ctx.font = 'bold 13px system-ui,sans-serif';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillText('SEKOLAH RABBANI', cx, y + 16);
+
+  // Bendera di tiang
+  ctx.strokeStyle = '#9aa5b1';
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.moveTo(x + 22, baseY);
+  ctx.lineTo(x + 22, baseY - 205);
+  ctx.stroke();
+  ctx.fillStyle = '#e74c3c';
+  ctx.fillRect(x + 23, baseY - 205, 28, 18);
+  ctx.fillStyle = 'rgba(255,255,255,0.75)';
+  ctx.fillRect(x + 23, baseY - 205, 28, 2);
+}
+
+/* ---------- LAPIS 3: SPORTAINMENT RABBANI ---------- */
+function drawSportainmentLayer(offset){
+  const period = 520;
+  const baseY  = GROUND_Y;
+  ctx.save();
+  ctx.globalAlpha = 0.88;
+
+  const startX = -(offset % period) - period;
+  for (let x = startX; x < W + period; x += period){
+    drawSportainment(x + 260, baseY);
+  }
+  ctx.restore();
+}
+
+function drawSportainment(cx, baseY){
+  const w = 320, h = 200;
+  const x = cx - w/2;
+  const y = baseY - h;
+
+  // Badan utama (dark modern)
+  ctx.fillStyle = '#1a252f';
+  ctx.fillRect(x, y + 80, w, h - 80);
+
+  // Panel samping kaca
+  ctx.fillStyle = '#2c4a6e';
+  ctx.fillRect(x,         y + 80, 30, h - 80);
+  ctx.fillRect(x + w - 30, y + 80, 30, h - 80);
+
+  // Atap melengkung
+  ctx.fillStyle = '#2c3e50';
+  ctx.beginPath();
+  ctx.moveTo(x - 25, y + 80);
+  ctx.quadraticCurveTo(cx, y - 40, x + w + 25, y + 80);
+  ctx.lineTo(x + w, y + 100);
+  ctx.lineTo(x, y + 100);
+  ctx.closePath();
+  ctx.fill();
+
+  // Highlight tepi atap
+  ctx.strokeStyle = 'rgba(150,200,255,0.5)';
+  ctx.lineWidth = 3;
+  ctx.beginPath();
+  ctx.moveTo(x - 20, y + 78);
+  ctx.quadraticCurveTo(cx, y - 35, x + w + 20, y + 78);
+  ctx.stroke();
+
+  // Banner LED merah
+  ctx.fillStyle = '#e63946';
+  ctx.fillRect(x + 30, y + 92, w - 60, 28);
+  ctx.fillStyle = 'rgba(255,255,255,0.15)';
+  ctx.fillRect(x + 30, y + 92, w - 60, 6);
+
+  // Teks LED
+  ctx.fillStyle = '#ffffff';
+  ctx.font = 'bold 15px system-ui,sans-serif';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillText('SPORTAINMENT RABBANI', cx, y + 107);
+
+  // Fasad kaca besar
+  ctx.fillStyle = 'rgba(90,160,210,0.55)';
+  ctx.fillRect(x + 30, y + 130, w - 60, 42);
+
+  // Pembatas kaca
+  ctx.strokeStyle = 'rgba(255,255,255,0.35)';
+  ctx.lineWidth = 1.5;
+  for (let i = 1; i < 8; i++){
+    const gx = x + 30 + (w - 60) * i / 8;
+    ctx.beginPath();
+    ctx.moveTo(gx, y + 130);
+    ctx.lineTo(gx, y + 172);
+    ctx.stroke();
+  }
+
+  // Ikon raket pada fasad
+  ctx.strokeStyle = 'rgba(255,255,255,0.55)';
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.ellipse(x + 60, y + 145, 12, 15, 0, 0, Math.PI * 2);
+  ctx.stroke();
+  ctx.beginPath();
+  ctx.moveTo(x + 60, y + 160);
+  ctx.lineTo(x + 60, y + 176);
+  ctx.stroke();
+
+  // Pintu masuk
+  ctx.fillStyle = '#0a1018';
+  ctx.fillRect(cx - 42, baseY - 55, 84, 55);
+  ctx.fillStyle = 'rgba(150,200,255,0.35)';
+  ctx.fillRect(cx - 40, baseY - 53, 80, 10);
+  ctx.strokeStyle = 'rgba(255,255,255,0.2)';
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.moveTo(cx, baseY - 53);
+  ctx.lineTo(cx, baseY);
+  ctx.stroke();
+}
+
+/* ---------- LOGO WATERMARK ---------- */
+function drawLogoWatermark(){
+  ctx.save();
+  ctx.globalAlpha = 0.09;
+  if (logoLoaded){
+    const lw = 170;
+    const lh = 170 * (logoImg.height / logoImg.width || 1);
+    ctx.drawImage(logoImg, (W - lw) / 2, 230, lw, lh);
+  } else {
+    ctx.fillStyle = '#ffffff';
+    ctx.font = 'bold 62px system-ui,sans-serif';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText('NGABINTON', W/2, 300);
+  }
+  ctx.restore();
+}
+
+/* ================= DRAW SHUTTLECOCK ================= */
+function drawShuttlecock(x, y, rot, flapPhase, ch, scale){
+  const s = (ch.size || 1) * (scale || 1);
+  ctx.save();
+  ctx.translate(x, y);
+  ctx.rotate(rot);
+  ctx.scale(s, s);
+
+  ctx.fillStyle = ch.feather;
+  ctx.beginPath();
+  ctx.moveTo(-14, -8); ctx.lineTo(14, -8);
+  ctx.lineTo(20, 22);  ctx.lineTo(-20, 22);
+  ctx.closePath(); ctx.fill();
+
+  ctx.strokeStyle = 'rgba(0,0,0,0.12)';
+  ctx.lineWidth = 1.5;
+  for (let i = -12; i <= 12; i += 6){
+    ctx.beginPath();
+    ctx.moveTo(i, -8);
+    ctx.lineTo(i * 1.4, 22);
+    ctx.stroke();
+  }
+
+  ctx.fillStyle = ch.cork;
+  ctx.beginPath();
+  ctx.arc(0, -14, 9, 0, Math.PI * 2);
+  ctx.fill();
+
+  ctx.fillStyle = 'rgba(255,255,255,0.28)';
+  ctx.beginPath();
+  ctx.arc(-3, -17, 4, 0, Math.PI * 2);
+  ctx.fill();
+
+  ctx.restore();
+}
+
+/* ================= DRAW RAKET ================= */
+function drawRacketObstacle(p){
+  drawRacket(p.x, 0, RACKET_W, p.top, true);
+  drawRacket(p.x, p.top + RACKET_GAP, RACKET_W, GROUND_Y - (p.top + RACKET_GAP), false);
+}
+
+function drawRacket(x, y, w, h, isTop){
+  const handleW = 10;
+  const headW = w;
+  const headH = Math.min(h * 0.55, 100);
+  let headY;
+
+  if (isTop){
+    headY = y + h - headH;
+    ctx.fillStyle = '#8B5A2B';
+    ctx.fillRect(x + w/2 - handleW/2, y, handleW, headY - y);
+    ctx.fillStyle = '#5D3A1A';
+    ctx.fillRect(x + w/2 - handleW/2 - 2, y, handleW + 4, 18);
+  } else {
+    headY = y;
+    ctx.fillStyle = '#8B5A2B';
+    ctx.fillRect(x + w/2 - handleW/2, headY + headH, handleW, h - headH);
+    ctx.fillStyle = '#5D3A1A';
+    ctx.fillRect(x + w/2 - handleW/2 - 2, headY + h - 18, handleW + 4, 18);
+  }
+
+  ctx.strokeStyle = '#a0a0a0';
+  ctx.lineWidth = 4;
+  ctx.beginPath();
+  ctx.moveTo(x + w/2, isTop ? headY : headY + headH);
+  ctx.lineTo(x + w/2, isTop ? y + 20 : y + h - 20);
+  ctx.stroke();
+
+  const headCX = x + w/2;
+  const headCY = headY + headH/2;
+
+  ctx.strokeStyle = '#2c3e50';
+  ctx.lineWidth = 5;
+  ctx.beginPath();
+  ctx.ellipse(headCX, headCY, headW/2, headH/2, 0, 0, Math.PI*2);
+  ctx.stroke();
+
+  ctx.strokeStyle = '#e74c3c';
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.ellipse(headCX, headCY, headW/2 - 3, headH/2 - 3, 0, 0, Math.PI*2);
+  ctx.stroke();
+
+  ctx.strokeStyle = 'rgba(255,255,255,0.45)';
+  ctx.lineWidth = 1;
+  for (let i = 1; i < 6; i++){
+    const lx = x + (w / 6) * i;
+    ctx.beginPath();
+    ctx.moveTo(lx, headY + 3);
+    ctx.lineTo(lx, headY + headH - 3);
+    ctx.stroke();
+  }
+  for (let i = 1; i < 5; i++){
+    const ly = headY + (headH / 5) * i;
+    ctx.beginPath();
+    ctx.moveTo(x + 3, ly);
+    ctx.lineTo(x + w - 3, ly);
+    ctx.stroke();
+  }
+}
+
+/* ================= COURT ================= */
+function drawCourt(){
+  const g = ctx.createLinearGradient(0, GROUND_Y, 0, H);
+  g.addColorStop(0, '#2d6a4f');
+  g.addColorStop(1, '#1b4332');
+  ctx.fillStyle = g;
+  ctx.fillRect(0, GROUND_Y, W, H - GROUND_Y);
+
+  ctx.strokeStyle = 'rgba(255,255,255,0.7)';
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.moveTo(0, GROUND_Y + 8);
+  ctx.lineTo(W, GROUND_Y + 8);
+  ctx.stroke();
+
+  ctx.beginPath();
+  ctx.moveTo(W/2, GROUND_Y);
+  ctx.lineTo(W/2, H);
+  ctx.stroke();
+
+  ctx.strokeStyle = 'rgba(255,255,255,0.35)';
+  ctx.beginPath();
+  ctx.moveTo(W/2 - 120, GROUND_Y + 8);
+  ctx.lineTo(W/2 - 120, H);
+  ctx.stroke();
+  ctx.beginPath();
+  ctx.moveTo(W/2 + 120, GROUND_Y + 8);
+  ctx.lineTo(W/2 + 120, H);
+  ctx.stroke();
+
+  ctx.strokeStyle = 'rgba(0,0,0,0.1)';
+  ctx.lineWidth = 1;
+  const off = -(groundX % 20);
+  for (let x = off; x < W + 20; x += 20){
+    ctx.beginPath();
+    ctx.moveTo(x, GROUND_Y + 8);
+    ctx.lineTo(x, H);
+    ctx.stroke();
+  }
+}
+
+/* ================= HUD ================= */
+function drawHUD(){
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+
+  if (state === 'playing' || state === 'dying' || state === 'ready'){
+    ctx.font = 'bold 54px system-ui,sans-serif';
+    ctx.fillStyle = 'rgba(0,0,0,.25)';
+    ctx.fillText(score, W/2 + 2, 102);
+    ctx.fillStyle = '#fff';
+    ctx.fillText(score, W/2, 100);
+  }
+
+  if (state === 'ready'){
+    ctx.font = 'bold 22px system-ui,sans-serif';
+    ctx.fillStyle = 'rgba(0,0,0,.35)';
+    ctx.fillText('Tap / Spasi untuk servis', W/2 + 1, 222);
+    ctx.fillStyle = '#fff';
+    ctx.fillText('Tap / Spasi untuk servis', W/2, 220);
+  }
+}
+
+/* ================= SELECT SCREEN ================= */
+function drawSelect(){
+  const g = ctx.createLinearGradient(0, 0, 0, H);
+  g.addColorStop(0, '#0f2b3d');
+  g.addColorStop(1, '#071a26');
+  ctx.fillStyle = g; ctx.fillRect(0, 0, W, H);
+
+  const t = performance.now() / 1000;
+  ctx.fillStyle = 'rgba(255,255,255,.4)';
+  for (let i = 0; i < 30; i++){
+    const sx = (i * 137.5) % W;
+    const sy = (i * 79.3) % (H * 0.5);
+    ctx.globalAlpha = 0.15 + 0.2 * Math.sin(t * 2 + i);
+    ctx.fillRect(sx, sy, 2, 2);
+  }
+  ctx.globalAlpha = 1;
+
+  if (logoLoaded){
+    const lw = 140;
+    const lh = 140 * (logoImg.height / logoImg.width || 1);
+    ctx.drawImage(logoImg, (W - lw)/2, 20, lw, lh);
+  } else {
+    ctx.fillStyle = '#ffd93d';
+    ctx.font = 'bold 40px system-ui,sans-serif';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText('NGABINTON', W/2, 50);
+  }
+
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.font = 'bold 34px system-ui,sans-serif';
+  ctx.fillStyle = '#ffd93d';
+  ctx.fillText('FLAPPY BADMINTON', W/2, 155);
+  ctx.font = 'bold 16px system-ui,sans-serif';
+  ctx.fillStyle = '#e9f1ff';
+  ctx.fillText('PILIH SHUTTLECOCK', W/2, 185);
+
+  for (let i = 0; i < CHARACTERS.length; i++){
+    const c = CHARACTERS[i];
+    const r = cardRects[i];
+    const sel = i === selected;
+
+    ctx.fillStyle = sel ? 'rgba(255,217,61,0.18)' : 'rgba(255,255,255,0.06)';
+    roundRect(r.x, r.y, r.w, r.h, 14); ctx.fill();
+
+    ctx.strokeStyle = sel ? '#ffd93d' : 'rgba(255,255,255,.18)';
+    ctx.lineWidth = sel ? 3 : 1.5;
+    roundRect(r.x, r.y, r.w, r.h, 14); ctx.stroke();
+
+    const flapPh = Math.sin(performance.now()/300 + i) * 2 + 2;
+    drawShuttlecock(r.x + r.w/2, r.y + r.h*0.42, 0, flapPh, c, 0.9);
+
+    ctx.fillStyle = sel ? '#ffd93d' : '#ffffff';
+    ctx.font = 'bold 15px system-ui,sans-serif';
+    ctx.fillText(c.name, r.x + r.w/2, r.y + r.h - 32);
+
+    ctx.fillStyle = 'rgba(200,215,235,.75)';
+    ctx.font = '11px system-ui,sans-serif';
+    ctx.fillText(c.desc, r.x + r.w/2, r.y + r.h - 14);
+
+    ctx.fillStyle = 'rgba(255,255,255,.35)';
+    ctx.font = 'bold 11px system-ui,sans-serif';
+    ctx.textAlign = 'right';
+    ctx.fillText(String(i+1), r.x + r.w - 8, r.y + 12);
+    ctx.textAlign = 'center';
+  }
+
+  const ch = CHARACTERS[selected];
+  ctx.fillStyle = 'rgba(255,255,255,.85)';
+  ctx.font = 'bold 16px system-ui,sans-serif';
+  ctx.fillText(ch.name.toUpperCase(), W/2, 528);
+
+  const stats = `Berat ${'●'.repeat(Math.round(ch.grav*2))}${'○'.repeat(4-Math.round(ch.grav*2))}`
+              + `   ·   Power ${'●'.repeat(Math.round(ch.flap*2))}${'○'.repeat(4-Math.round(ch.flap*2))}`;
+  ctx.fillStyle = 'rgba(180,205,235,.8)';
+  ctx.font = '13px system-ui,sans-serif';
+  ctx.fillText(stats, W/2, 552);
+
+  const pulse = 1 + Math.sin(performance.now()/400) * 0.02;
+  ctx.save();
+  ctx.translate(startBtn.x + startBtn.w/2, startBtn.y + startBtn.h/2);
+  ctx.scale(pulse, pulse);
+  ctx.fillStyle = '#ffd93d';
+  roundRect(-startBtn.w/2, -startBtn.h/2, startBtn.w, startBtn.h, 14); ctx.fill();
+  ctx.fillStyle = '#1a1a1a';
+  ctx.font = 'bold 22px system-ui,sans-serif';
+  ctx.fillText('MULAI ▸', 0, 2);
+  ctx.restore();
+
+  ctx.fillStyle = 'rgba(180,205,235,.5)';
+  ctx.font = '12px system-ui,sans-serif';
+  ctx.fillText('Klik kartu · Enter untuk mulai', W/2, 650);
+
+  const totalBest = Object.values(best).reduce((a,b) => a+b, 0);
+  if (totalBest > 0){
+    ctx.fillStyle = 'rgba(255,217,61,.5)';
+    ctx.font = 'bold 12px system-ui,sans-serif';
+    ctx.fillText(`Total best: ${totalBest}`, W/2, 678);
+  }
+}
+
+/* ================= GAME OVER ================= */
+function drawOver(){
+  ctx.fillStyle = 'rgba(8,14,26,.78)';
+  ctx.fillRect(0, 0, W, H);
+
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+
+  ctx.font = 'bold 42px system-ui,sans-serif';
+  ctx.fillStyle = '#ff6b6b';
+  ctx.fillText('GAME OVER', W/2, 240);
+
+  const ch = CHARACTERS[selected];
+  const rec = best[ch.id] || 0;
+
+  ctx.font = 'bold 16px system-ui,sans-serif';
+  ctx.fillStyle = 'rgba(200,215,235,.75)';
+  ctx.fillText('SKOR', W/2, 320);
+  ctx.font = 'bold 72px system-ui,sans-serif';
+  ctx.fillStyle = '#ffffff';
+  ctx.fillText(String(score), W/2, 375);
+
+  ctx.font = 'bold 14px system-ui,sans-serif';
+  ctx.fillStyle = 'rgba(200,215,235,.7)';
+  ctx.fillText(`BEST ${ch.name}: ${rec}`, W/2, 430);
+
+  if (score >= rec && score > 0){
+    ctx.fillStyle = '#ffd93d';
+    ctx.font = 'bold 18px system-ui,sans-serif';
+    ctx.fillText('★ REKOR BARU ★', W/2, 470);
+  }
+
+  const btn = (x, label, color) => {
+    ctx.fillStyle = color;
+    roundRect(x, 540, 150, 56, 12); ctx.fill();
+    ctx.fillStyle = '#fff';
+    ctx.font = 'bold 18px system-ui,sans-serif';
+    ctx.fillText(label, x + 75, 570);
+  };
+  btn(80,  'ULANGI (R)', '#3a86ff');
+  btn(250, 'ARENA (C)',  '#6c5ce7');
+}
+
+/* ================= RENDER ================= */
+function render(){
+  ctx.setTransform(1, 0, 0, 1, 0, 0);
+  ctx.clearRect(0, 0, W, H);
+
+  if (state === 'select'){
+    drawSelect();
+    return;
+  }
+
+  ctx.save();
+  if (shake > 0.5){
+    ctx.translate((Math.random()-0.5)*shake, (Math.random()-0.5)*shake);
+  }
+
+  // Latar langit + awan
+  drawSky();
+
+  // Bangunan parallax (3 lapis)
+  drawBandungSilhouette(buildingScroll.far);
+  drawSekolahLayer(buildingScroll.mid);
+  drawSportainmentLayer(buildingScroll.near);
+
+  // Logo watermark di atas bangunan
+  drawLogoWatermark();
+
+  // Rintangan raket
+  for (const p of rackets) drawRacketObstacle(p);
+
+  // Lantai lapangan
+  drawCourt();
+
+  // Shuttlecock
+  const ch = CHARACTERS[selected];
+  drawShuttlecock(shuttle.x, shuttle.y, shuttle.rot, shuttle.flapPhase, ch, 1);
+
+  // Partikel
+  for (const p of particles){
+    const a = p.life / p.max;
+    ctx.globalAlpha = a;
+    ctx.fillStyle = p.c;
+    ctx.beginPath();
+    ctx.arc(p.x, p.y, p.r * (0.5 + a*0.5), 0, Math.PI*2);
+    ctx.fill();
+  }
+  ctx.globalAlpha = 1;
+
+  ctx.restore();
+
+  drawHUD();
+  if (state === 'over') drawOver();
+}
+
+/* ================= LOOP ================= */
+let last = performance.now();
+let acc = 0;
+
+function loop(now){
+  let dt = (now - last) / 1000;
+  last = now;
+  if (dt > 0.1) dt = 0.1;
+  acc += dt;
+  while (acc >= STEP){
+    step();
+    acc -= STEP;
+  }
+  render();
+  requestAnimationFrame(loop);
+}
+
+startGame();
+requestAnimationFrame(loop);
+})();
+</script>
+<script src="/games/ngbt-game.js?v=20261021-5" data-game="flappy-badminton"></script>
+</body>
+</html>

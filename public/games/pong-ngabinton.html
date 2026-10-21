@@ -1,0 +1,1471 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,user-scalable=no">
+<title>Pong Badminton — NGABINTON</title>
+<style>
+  html,body{margin:0;height:100dvh;background:#080613;display:flex;
+    align-items:center;justify-content:center;overflow:hidden;
+    font-family:system-ui,-apple-system,sans-serif;touch-action:none}
+  canvas{display:block;width:min(100vw,calc(100dvh * 480 / 720));height:auto;
+    aspect-ratio:480/720;border-radius:14px;box-shadow:0 24px 80px rgba(0,0,0,.85)}
+  #ngbt-toast{position:fixed;left:50%;top:14px;z-index:20;transform:translateX(-50%) translateY(-140%);
+    max-width:min(92vw,420px);padding:10px 14px;border-radius:10px;background:rgba(20,20,20,.94);
+    color:#fff;font:600 13px/1.35 system-ui,sans-serif;text-align:center;box-shadow:0 8px 28px rgba(0,0,0,.5);
+    border:1px solid #404040;opacity:0;transition:transform .25s ease,opacity .25s ease;pointer-events:none}
+  #ngbt-toast.show{transform:translateX(-50%) translateY(0);opacity:1}
+  #ngbt-toast.ok{border-color:#22c55e}
+  #ngbt-toast.guest{border-color:#f59e0b}
+  #ngbt-toast.err{border-color:#ef4444}
+</style>
+</head>
+<body>
+<canvas id="game" width="480" height="720"></canvas>
+<div id="ngbt-toast" role="status" aria-live="polite"></div>
+<script>
+(() => {
+"use strict";
+
+const cv = document.getElementById('game');
+const ctx = cv.getContext('2d');
+const W = 480, H = 720;
+
+/* ============ KONSTANTA ============ */
+const COURT_TOP    = 155;
+const COURT_BOTTOM = 660;
+const NET_X        = W / 2;
+const PADDLE_W     = 14;
+const PADDLE_H     = 88;
+const LEFT_PX      = 35;
+const RIGHT_PX     = W - 35 - PADDLE_W;
+const PADDLE_SPEED = 9;
+const BALL_R       = 9;
+const GRAVITY      = 0.10;
+const MIN_SPEED    = 5.5;
+const MAX_SPEED    = 14;
+const DRAG         = 0.0004;
+const WIN_SCORE    = 5;
+
+/* ============ KARAKTER ============ */
+const CHARACTERS = [
+  { id:'classic', name:'Classic', desc:'Seimbang',
+    body:'#5fb3ff', accent:'#ffffff' },
+  { id:'fire',    name:'Fire',    desc:'Cepat',
+    body:'#ff6b6b', accent:'#ffcccc' },
+  { id:'ice',     name:'Ice',     desc:'Ringan',
+    body:'#90e0ef', accent:'#caf0f8' },
+  { id:'forest',  name:'Forest',  desc:'Kuat',
+    body:'#57cc99', accent:'#c7f0d8' },
+  { id:'shadow',  name:'Shadow',  desc:'Sulit',
+    body:'#8a8aa0', accent:'#c0c0d0' },
+];
+
+/* ============ STATE ============ */
+let state = 'select';          // select | connecting | ready | playing | point | gameover
+let mode  = '1P';
+/* Level dikunci ke raket Shadow — Pang-Jagona. */
+let selected = 4;
+let readyTimer = 0;
+let pointTimer = 0;
+let server = 0;
+let shake  = 0;
+
+const left  = { x: LEFT_PX,  y: 0, score: 0, targetY: null };
+const right = { x: RIGHT_PX, y: 0, score: 0, targetY: null };
+
+const ball = {
+  x: 0, y: 0, vx: 0, vy: 0, r: BALL_R,
+  active: false, lastHitter: null, trail: [], rot: 0
+};
+
+const particles = [];
+
+/* ============ WIN/LOSS STATS ============ */
+let stats = { w: 0, l: 0 };
+try {
+  stats = JSON.parse(localStorage.getItem('pong_badminton_stats') || '{"w":0,"l":0}');
+} catch {}
+
+/* ============ ONLINE MULTIPLAYER (Pang-Jagona) ============ */
+const query = new URLSearchParams(location.search);
+const LOCAL_MODE = query.get('play') === '2p' ? '2P' : '1P';
+const ROOM_CODE = (query.get('room') || '').toUpperCase();
+const ONLINE_ROLE = query.get('role');
+const ONLINE = Boolean(ROOM_CODE && (ONLINE_ROLE === 'host' || ONLINE_ROLE === 'guest'));
+const ICE_SERVERS = {
+  iceServers: [
+    { urls: 'stun:stun.l.google.com:19302' },
+    { urls: 'stun:stun1.l.google.com:19302' },
+  ],
+};
+let pc = null;
+let dc = null;
+let onlineReady = false;
+let onlineError = '';
+let resultSent = false;
+let lastStateAt = 0;
+let lastInputAt = 0;
+
+const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+
+function onlineUrl() {
+  return '/api/mainan/pong/rooms/' + encodeURIComponent(ROOM_CODE);
+}
+
+function bindOnlineChannel() {
+  dc.onopen = () => {
+    onlineReady = true;
+    onlineError = '';
+    if (ONLINE_ROLE === 'host') {
+      startGame('ONLINE');
+    }
+  };
+  dc.onmessage = (event) => {
+    let msg;
+    try { msg = JSON.parse(event.data); } catch { return; }
+    if (ONLINE_ROLE === 'host' && msg.t === 'input') {
+      right.targetY = msg.y;
+      return;
+    }
+    if (ONLINE_ROLE === 'guest' && msg.t === 'state') {
+      applyOnlineState(msg);
+      return;
+    }
+    if (ONLINE_ROLE === 'guest' && msg.t === 'over') {
+      left.score = msg.s1;
+      right.score = msg.s2;
+      state = 'gameover';
+    }
+  };
+  dc.onclose = () => {
+    if (!resultSent) onlineError = 'Koneksi ke lawan terputus.';
+  };
+}
+
+function applyOnlineState(msg) {
+  left.y = msg.left;
+  right.y = msg.right;
+  left.score = msg.s1;
+  right.score = msg.s2;
+  ball.x = msg.bx;
+  ball.y = msg.by;
+  ball.active = Boolean(msg.active);
+  ball.rot = msg.rot || 0;
+  ball.trail.push({ x: ball.x, y: ball.y });
+  if (ball.trail.length > 14) ball.trail.shift();
+  server = msg.server || 0;
+  if (state !== 'gameover') state = msg.state || 'playing';
+}
+
+async function waitIceGathering(peer) {
+  if (peer.iceGatheringState === 'complete') return;
+  await new Promise((resolve) => {
+    const done = () => {
+      if (peer.iceGatheringState === 'complete') {
+        peer.removeEventListener('icegatheringstatechange', done);
+        resolve();
+      }
+    };
+    peer.addEventListener('icegatheringstatechange', done);
+    setTimeout(resolve, 4500);
+  });
+}
+
+async function readRoom() {
+  try {
+    const response = await fetch(onlineUrl(), { cache: 'no-store' });
+    if (response.status === 404) return undefined;
+    if (!response.ok) return null;
+    return response.json();
+  } catch {
+    return null;
+  }
+}
+
+async function patchRoom(body, retries) {
+  for (let attempt = 0; attempt < retries; attempt += 1) {
+    try {
+      const response = await fetch(onlineUrl(), {
+        method: 'PATCH',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify(body),
+      });
+      if (response.ok) return;
+    } catch {
+      /* jaringan putus sebentar — ulangi */
+    }
+    await sleep(900 + attempt * 600);
+  }
+  throw new Error(
+    body.offer
+      ? 'Gagal mengirim data room. Tekan "Muat ulang koneksi".'
+      : 'Gagal mengirim jawaban. Tekan "Muat ulang koneksi".',
+  );
+}
+
+async function joinRoomApi() {
+  for (let attempt = 0; attempt < 4; attempt += 1) {
+    try {
+      const response = await fetch(onlineUrl(), {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ action: 'join' }),
+      });
+      if (response.ok) return;
+      if (response.status === 404) {
+        throw new Error('Kode room tidak ditemukan. Periksa lagi kode dari temanmu.');
+      }
+    } catch (error) {
+      if (error instanceof Error && error.message.includes('tidak ditemukan')) throw error;
+    }
+    await sleep(900 + attempt * 600);
+  }
+  throw new Error('Gagal bergabung ke room. Tekan "Muat ulang koneksi".');
+}
+
+async function waitCanvasVisible() {
+  for (let attempt = 0; attempt < 24; attempt += 1) {
+    if (cv.getBoundingClientRect().width > 0) return;
+    await sleep(250);
+  }
+  throw new Error('Game belum siap ditampilkan. Muat ulang halaman.');
+}
+
+async function hostHandshake() {
+  await waitCanvasVisible();
+  pc = new RTCPeerConnection(ICE_SERVERS);
+  dc = pc.createDataChannel('game', { ordered: false, maxRetransmits: 0 });
+  bindOnlineChannel();
+  await pc.setLocalDescription(await pc.createOffer());
+  await waitIceGathering(pc);
+  await patchRoom({ offer: pc.localDescription.sdp, reset: true }, 4);
+
+  const started = Date.now();
+  while (Date.now() - started < 300000) {
+    await sleep(900);
+    const room = await readRoom();
+    if (room === undefined) throw new Error('Room sudah kedaluwarsa. Buat room baru.');
+    if (room && room.guestAnswer) {
+      await pc.setRemoteDescription({ type: 'answer', sdp: room.guestAnswer });
+      return;
+    }
+  }
+  throw new Error('Belum ada lawan yang bergabung. Minta temanmu memasukkan kode room.');
+}
+
+async function guestHandshake() {
+  await waitCanvasVisible();
+  await joinRoomApi();
+  pc = new RTCPeerConnection(ICE_SERVERS);
+  pc.ondatachannel = (event) => {
+    dc = event.channel;
+    bindOnlineChannel();
+  };
+
+  const started = Date.now();
+  let offer = null;
+  while (Date.now() - started < 45000) {
+    const room = await readRoom();
+    if (room === undefined) throw new Error('Kode room tidak ditemukan. Periksa lagi kode dari temanmu.');
+    if (room && room.hostOffer) { offer = room.hostOffer; break; }
+    await sleep(900);
+  }
+  if (!offer) throw new Error('Room tidak ditemukan. Periksa lagi kode dari temanmu.');
+  await pc.setRemoteDescription({ type: 'offer', sdp: offer });
+  await pc.setLocalDescription(await pc.createAnswer());
+  await waitIceGathering(pc);
+  await patchRoom({ answer: pc.localDescription.sdp }, 4);
+}
+
+async function startOnline() {
+  try {
+    if (ONLINE_ROLE === 'host') await hostHandshake();
+    else await guestHandshake();
+  } catch (error) {
+    onlineError = error instanceof Error ? error.message : 'Gagal terhubung ke lawan.';
+  }
+}
+
+function sendState() {
+  if (!dc || dc.readyState !== 'open') return;
+  const now = performance.now();
+  if (now - lastStateAt < 33) return;
+  lastStateAt = now;
+  dc.send(JSON.stringify({
+    t: 'state',
+    state,
+    left: left.y,
+    right: right.y,
+    s1: left.score,
+    s2: right.score,
+    bx: ball.x,
+    by: ball.y,
+    active: ball.active,
+    rot: ball.rot,
+    server,
+  }));
+}
+
+function sendInput() {
+  if (!dc || dc.readyState !== 'open') return;
+  const now = performance.now();
+  if (now - lastInputAt < 33) return;
+  lastInputAt = now;
+  let y = right.targetY;
+  if (y === null) y = right.y + PADDLE_H / 2;
+  if (keys['arrowup'] || keys['w']) y -= 36;
+  if (keys['arrowdown'] || keys['s']) y += 36;
+  dc.send(JSON.stringify({ t: 'input', y }));
+}
+
+function finishOnline() {
+  if (ONLINE_ROLE !== 'host' || resultSent) return;
+  resultSent = true;
+  if (dc && dc.readyState === 'open') {
+    dc.send(JSON.stringify({ t: 'over', s1: left.score, s2: right.score }));
+  }
+
+  const send = (attempt) => {
+    fetch('/api/mainan/pong/result', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({
+        code: ROOM_CODE,
+        hostScore: left.score,
+        guestScore: right.score,
+      }),
+    })
+      .then(async (response) => {
+        const data = await response.json().catch(() => ({}));
+        if (data.ok) {
+          if (window.NGBT) window.NGBT.notify('Hasil tanding masuk Riwayat Tanding', 'ok');
+          return;
+        }
+        if (attempt < 1) setTimeout(() => send(attempt + 1), 900);
+      })
+      .catch(() => {
+        if (attempt < 1) setTimeout(() => send(attempt + 1), 900);
+      });
+  };
+
+  send(0);
+}
+
+
+/* ============ LOGO ============ */
+const logoImg = new Image();
+logoImg.crossOrigin = 'anonymous';
+let logoLoaded = false;
+logoImg.onload  = () => { logoLoaded = true; };
+logoImg.onerror = () => { logoLoaded = false; };
+logoImg.src = '/brand/logo.svg';
+
+/* ============ UTIL ============ */
+const clamp = (v,a,b) => v < a ? a : v > b ? b : v;
+function roundRect(x,y,w,h,r){
+  ctx.beginPath();
+  ctx.moveTo(x+r,y);
+  ctx.arcTo(x+w,y,x+w,y+h,r);
+  ctx.arcTo(x+w,y+h,x,y+h,r);
+  ctx.arcTo(x,y+h,x,y,r);
+  ctx.arcTo(x,y,x+w,y,r);
+  ctx.closePath();
+}
+
+/* ============ LAYOUT UI ============ */
+const CARD_W = 80, CARD_H = 100;
+const cardX = i => 30 + i * 90;
+const cardY = 270;
+const btn1P = { x: 80,  y: 480, w: 140, h: 60 };
+const btn2P = { x: 260, y: 480, w: 140, h: 60 };
+const btnReplay = { x: 80,  y: 540, w: 150, h: 56 };
+const btnMenu   = { x: 250, y: 540, w: 150, h: 56 };
+
+/* ============ INPUT ============ */
+const keys = {};
+addEventListener('keydown', e => {
+  const k = e.key.toLowerCase();
+  if ([' ','arrowup','arrowdown','arrowleft','arrowright','enter'].includes(k)) e.preventDefault();
+  if (e.repeat) return;
+  keys[k] = true;
+
+  if (state === 'select'){
+    if (k >= '1' && k <= '5' && k !== ' ') { selected = +k - 1; return; }
+    if (k === 'arrowleft' || k === 'a'){ selected = (selected + 4) % 5; return; }
+    if (k === 'arrowright'|| k === 'd'){ selected = (selected + 1) % 5; return; }
+    if (k === 'enter' || k === ' '){ startGame('1P'); return; }
+  } else if (state === 'gameover'){
+    if (k === 'r' || k === ' ' || k === 'enter'){
+      if (mode === 'ONLINE'){
+        location.href = '/mainan/pong-ngabinton';
+      } else {
+        startGame(mode);
+      }
+    }
+    if (k === 'c'){ location.href = '/mainan'; }
+  }
+});
+addEventListener('keyup', e => { keys[e.key.toLowerCase()] = false; });
+
+cv.addEventListener('pointerdown', e => {
+  const r = cv.getBoundingClientRect();
+  const mx = (e.clientX - r.left) * (W / r.width);
+  const my = (e.clientY - r.top)  * (H / r.height);
+  handlePointerDown(mx, my);
+  if (state === 'playing') handlePointerMove(mx, my);
+});
+cv.addEventListener('pointermove', e => {
+  if (state !== 'playing') return;
+  const r = cv.getBoundingClientRect();
+  const mx = (e.clientX - r.left) * (W / r.width);
+  const my = (e.clientY - r.top)  * (H / r.height);
+  handlePointerMove(mx, my);
+});
+
+function handlePointerDown(mx, my){
+  if (state === 'select'){
+    for (let i = 0; i < 5; i++){
+      const cx = cardX(i);
+      if (mx > cx && mx < cx + CARD_W && my > cardY && my < cardY + CARD_H){
+        selected = i; return;
+      }
+    }
+    if (mx > btn1P.x && mx < btn1P.x + btn1P.w &&
+        my > btn1P.y && my < btn1P.y + btn1P.h){ startGame('1P'); return; }
+    if (mx > btn2P.x && mx < btn2P.x + btn2P.w &&
+        my > btn2P.y && my < btn2P.y + btn2P.h){ startGame('2P'); return; }
+  } else if (state === 'gameover'){
+    if (mx > btnReplay.x && mx < btnReplay.x + btnReplay.w &&
+        my > btnReplay.y && my < btnReplay.y + btnReplay.h){
+      if (mode === 'ONLINE') location.href = '/mainan/pong-ngabinton';
+      else startGame(mode);
+      return;
+    }
+    if (mx > btnMenu.x && mx < btnMenu.x + btnMenu.w &&
+        my > btnMenu.y && my < btnMenu.y + btnMenu.h){ location.href = '/mainan'; return; }
+  }
+}
+function handlePointerMove(mx, my){
+  if (mode === 'ONLINE'){
+    if (ONLINE_ROLE === 'host') left.targetY = my;
+    else right.targetY = my;
+    return;
+  }
+  if (mode === '2P'){
+    if (mx < NET_X) left.targetY  = my;
+    else            right.targetY = my;
+  } else {
+    left.targetY = my;
+  }
+}
+
+/* ============ FLOW ============ */
+function startGame(m){
+  mode = m;
+  left.score = 0; right.score = 0;
+  left.y = (COURT_TOP + COURT_BOTTOM) / 2 - PADDLE_H / 2;
+  right.y = left.y;
+  left.targetY = null; right.targetY = null;
+  server = 0;
+  readyTimer = 0; pointTimer = 0;
+  particles.length = 0;
+  state = 'ready';
+  resetBall();
+}
+function resetBall(){
+  ball.active = false;
+  ball.trail.length = 0;
+  ball.vx = 0; ball.vy = 0; ball.rot = 0;
+  ball.lastHitter = null;
+  ball.x = server === 0 ? left.x + PADDLE_W + 40 : right.x - 40;
+  ball.y = (COURT_TOP + COURT_BOTTOM) / 2;
+}
+function serveBall(){
+  const dir = server === 0 ? 1 : -1;
+  ball.vx = dir * 7.5;
+  ball.vy = (Math.random() - 0.5) * 3;
+  ball.lastHitter = server === 0 ? 'left' : 'right';
+  ball.active = true;
+  state = 'playing';
+}
+function scorePoint(winner){
+  if (winner === 0) left.score++; else right.score++;
+  server = winner;
+  shake = 10;
+  for (let i = 0; i < 15; i++){
+    const a = Math.random() * Math.PI * 2, s = 60 + Math.random() * 200;
+    particles.push({
+      x: ball.x, y: ball.y,
+      vx: Math.cos(a) * s, vy: Math.sin(a) * s,
+      life: 0.7, max: 0.7, r: 3 + Math.random() * 3,
+      c: winner === 0 ? CHARACTERS[selected].body : '#ff6b6b'
+    });
+  }
+  ball.active = false;
+  if (left.score >= WIN_SCORE || right.score >= WIN_SCORE){
+    if (mode === '1P'){
+      if (left.score > right.score) stats.w++; else stats.l++;
+      try { localStorage.setItem('pong_badminton_stats', JSON.stringify(stats)); } catch {}
+    }
+    state = 'gameover';
+    if (mode === 'ONLINE') finishOnline();
+  } else {
+    state = 'point';
+    pointTimer = 0;
+  }
+}
+
+/* ============ UPDATE ============ */
+function update(df){
+  // Partikel
+  for (let i = particles.length - 1; i >= 0; i--){
+    const p = particles[i];
+    p.x += p.vx * df / 60;
+    p.y += p.vy * df / 60;
+    p.vy += 400 * df / 60;
+    p.life -= df / 60;
+    if (p.life <= 0) particles.splice(i, 1);
+  }
+  if (shake > 0) shake *= 0.9;
+
+  // Tamu online tidak menghitung fisika: posisi bola & paddle dikirim host.
+  if (mode === 'ONLINE' && ONLINE_ROLE === 'guest'){
+    if (state === 'playing') sendInput();
+    return;
+  }
+
+  if (state === 'ready'){
+    readyTimer += df / 60;
+    if (readyTimer > 1.2) serveBall();
+    return;
+  }
+  if (state === 'point'){
+    pointTimer += df / 60;
+    if (pointTimer > 1){
+      resetBall();
+      state = 'ready';
+      readyTimer = 0;
+    }
+    return;
+  }
+  if (state !== 'playing') return;
+
+  updatePaddles(df);
+  updateBall(df);
+  checkCollisions();
+}
+
+function updatePaddles(df){
+  // ---- LEFT ----
+  let leftDir = 0;
+  if (mode === '1P' || mode === 'ONLINE'){
+    if (keys['w'] || keys['arrowup']) leftDir -= 1;
+    if (keys['s'] || keys['arrowdown']) leftDir += 1;
+  } else {
+    if (keys['w']) leftDir -= 1;
+    if (keys['s']) leftDir += 1;
+  }
+  if (leftDir !== 0){
+    left.targetY = null;
+    left.y += leftDir * PADDLE_SPEED * df;
+  } else if (left.targetY !== null){
+    const diff = (left.targetY - PADDLE_H / 2) - left.y;
+    left.y += clamp(diff / 4, -PADDLE_SPEED, PADDLE_SPEED) * df;
+  }
+  left.y = clamp(left.y, COURT_TOP, COURT_BOTTOM - PADDLE_H);
+
+  // ---- RIGHT ----
+  if (mode === '2P'){
+    let rightDir = 0;
+    if (keys['arrowup'])   rightDir -= 1;
+    if (keys['arrowdown']) rightDir += 1;
+    if (rightDir !== 0){
+      right.targetY = null;
+      right.y += rightDir * PADDLE_SPEED * df;
+    } else if (right.targetY !== null){
+      const diff = (right.targetY - PADDLE_H / 2) - right.y;
+      right.y += clamp(diff / 4, -PADDLE_SPEED, PADDLE_SPEED) * df;
+    }
+  } else if (mode === 'ONLINE'){
+    if (right.targetY !== null){
+      const diff = (right.targetY - PADDLE_H / 2) - right.y;
+      right.y += clamp(diff / 4, -PADDLE_SPEED, PADDLE_SPEED) * df;
+    }
+  } else {
+    const target = predictBallY();
+    if (target !== null){
+      const diff = target - (right.y + PADDLE_H / 2);
+      const speed = Math.min(PADDLE_SPEED * 0.85, Math.abs(diff) * 0.35);
+      right.y += Math.sign(diff) * speed * df;
+    }
+  }
+  right.y = clamp(right.y, COURT_TOP, COURT_BOTTOM - PADDLE_H);
+}
+
+function predictBallY(){
+  if (!ball.active || ball.vx <= 0) return null;
+  let bx = ball.x, by = ball.y, vx = ball.vx, vy = ball.vy;
+  for (let i = 0; i < 300; i++){
+    vy += GRAVITY;
+    const sp = Math.hypot(vx, vy);
+    const f = Math.max(0, 1 - DRAG * sp);
+    vx *= f; vy *= f;
+    bx += vx; by += vy;
+    if (by < COURT_TOP + BALL_R){
+      by = 2 * (COURT_TOP + BALL_R) - by;
+      vy = -vy;
+    }
+    if (by > COURT_BOTTOM - BALL_R){
+      by = 2 * (COURT_BOTTOM - BALL_R) - by;
+      vy = -vy;
+    }
+    if (bx >= right.x - 15) return by;
+    if (bx > W + 100) return null;
+  }
+  return by;
+}
+
+function updateBall(df){
+  if (!ball.active) return;
+  ball.vy += GRAVITY * df;
+  const sp = Math.hypot(ball.vx, ball.vy);
+  const f = Math.max(0, 1 - DRAG * sp * df);
+  ball.vx *= f;
+  ball.vy *= f;
+  ball.x += ball.vx * df;
+  ball.y += ball.vy * df;
+
+  const targetRot = Math.atan2(ball.vy, ball.vx);
+  let dRot = targetRot - ball.rot;
+  while (dRot > Math.PI)  dRot -= Math.PI * 2;
+  while (dRot < -Math.PI) dRot += Math.PI * 2;
+  ball.rot += dRot * 0.2 * df;
+
+  if (ball.y - ball.r < COURT_TOP){
+    ball.y = COURT_TOP + ball.r;
+    ball.vy = Math.abs(ball.vy);
+  }
+  if (ball.y + ball.r > COURT_BOTTOM){
+    ball.y = COURT_BOTTOM - ball.r;
+    ball.vy = -Math.abs(ball.vy);
+  }
+
+  ball.trail.push({ x: ball.x, y: ball.y });
+  if (ball.trail.length > 14) ball.trail.shift();
+
+  const sp2 = Math.hypot(ball.vx, ball.vy);
+  if (sp2 > 0.01 && sp2 < MIN_SPEED){
+    const boost = MIN_SPEED / sp2;
+    ball.vx *= boost; ball.vy *= boost;
+  } else if (sp2 > MAX_SPEED){
+    const shrink = MAX_SPEED / sp2;
+    ball.vx *= shrink; ball.vy *= shrink;
+  }
+}
+
+function checkCollisions(){
+  if (!ball.active) return;
+
+  // Left paddle
+  if (ball.vx < 0 &&
+      ball.x - ball.r < left.x + PADDLE_W &&
+      ball.x + ball.r > left.x &&
+      ball.y > left.y && ball.y < left.y + PADDLE_H &&
+      ball.lastHitter !== 'left'){
+    hitPaddle(left, 'left', 1);
+  }
+  // Right paddle
+  if (ball.vx > 0 &&
+      ball.x + ball.r > right.x &&
+      ball.x - ball.r < right.x + PADDLE_W &&
+      ball.y > right.y && ball.y < right.y + PADDLE_H &&
+      ball.lastHitter !== 'right'){
+    hitPaddle(right, 'right', -1);
+  }
+
+  // Off screen
+  if (ball.x + ball.r < 0){ scorePoint(1); return; }
+  if (ball.x - ball.r > W){ scorePoint(0); return; }
+}
+
+function hitPaddle(p, side, dir){
+  ball.vx = dir * Math.max(6, Math.abs(ball.vx) * 1.05);
+  const centerY = p.y + PADDLE_H / 2;
+  const offset = (ball.y - centerY) / (PADDLE_H / 2);
+  ball.vy += offset * 3;
+  ball.x = dir > 0 ? p.x + PADDLE_W + ball.r : p.x - ball.r;
+  const sp = Math.hypot(ball.vx, ball.vy);
+  if (sp > MAX_SPEED){
+    ball.vx *= MAX_SPEED / sp;
+    ball.vy *= MAX_SPEED / sp;
+  }
+  ball.lastHitter = side;
+
+  const ch = side === 'left' ? CHARACTERS[selected]
+                              : { body: (mode === '2P' || mode === 'ONLINE') ? '#00d4ff' : '#ff6b6b' };
+  for (let i = 0; i < 8; i++){
+    const a = Math.random() * Math.PI * 2, s = 50 + Math.random() * 150;
+    particles.push({
+      x: ball.x, y: ball.y,
+      vx: Math.cos(a) * s, vy: Math.sin(a) * s,
+      life: 0.4, max: 0.4, r: 2 + Math.random() * 2,
+      c: ch.body
+    });
+  }
+}
+
+/* ================================================================
+   RENDER: STADION SENJA
+   ================================================================ */
+function drawStadium(){
+  const t = performance.now() / 1000;
+
+  // Dinding gradien ungu gelap
+  const g = ctx.createLinearGradient(0, 0, 0, COURT_TOP);
+  g.addColorStop(0, '#120825');
+  g.addColorStop(1, '#2a1550');
+  ctx.fillStyle = g;
+  ctx.fillRect(0, 0, W, COURT_TOP);
+
+  // Spotlight cone dari langit-langit
+  for (let i = 0; i < 3; i++){
+    const lx = 90 + i * 150;
+    const pulse = 0.8 + 0.2 * Math.sin(t * 1.5 + i * 0.7);
+    const lg = ctx.createRadialGradient(lx, -10, 5, lx, COURT_TOP + 50, 220);
+    lg.addColorStop(0, `rgba(255, 200, 100, ${0.35 * pulse})`);
+    lg.addColorStop(0.4, `rgba(255, 170, 70, ${0.12 * pulse})`);
+    lg.addColorStop(1, 'rgba(255, 170, 70, 0)');
+    ctx.fillStyle = lg;
+    ctx.beginPath();
+    ctx.moveTo(lx - 18, 0);
+    ctx.lineTo(lx + 18, 0);
+    ctx.lineTo(lx + 170, COURT_TOP + 80);
+    ctx.lineTo(lx - 170, COURT_TOP + 80);
+    ctx.closePath();
+    ctx.fill();
+  }
+
+  // Tribun penonton (3 tier)
+  drawAudience(28,  8, 26, '#0d0520');
+  drawAudience(62,  7, 24, '#1a0d35');
+  drawAudience(94,  6, 22, '#251348');
+
+  // Papan skor LED
+  drawScoreboard();
+
+  // Banner merah "SPORTAINMENT RABBANI"
+  drawBanner();
+}
+
+function drawAudience(baseY, headR, spacing, color){
+  ctx.fillStyle = color;
+  for (let i = 0; i * spacing < W + spacing; i++){
+    const cx = i * spacing + spacing / 2 + Math.sin(i * 13.7) * 3;
+    ctx.beginPath();
+    ctx.arc(cx, baseY, headR, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.beginPath();
+    ctx.ellipse(cx, baseY + headR * 1.3, headR * 1.4, headR * 0.9, 0, Math.PI, 0);
+    ctx.fill();
+  }
+}
+
+function drawScoreboard(){
+  const sbX = (W - 200) / 2, sbY = 106, sbW = 200, sbH = 42;
+
+  // Frame
+  ctx.fillStyle = '#050510';
+  roundRect(sbX - 3, sbY - 3, sbW + 6, sbH + 6, 8);
+  ctx.fill();
+
+  // LED panel
+  ctx.fillStyle = '#0a1520';
+  roundRect(sbX, sbY, sbW, sbH, 5);
+  ctx.fill();
+
+  // Skor
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.shadowColor = '#00d4ff';
+  ctx.shadowBlur  = 10;
+
+  ctx.font = 'bold 30px "Courier New",monospace';
+  ctx.fillStyle = '#00d4ff';
+  ctx.fillText(String(left.score), sbX + sbW * 0.25, sbY + sbH / 2 - 3);
+
+  ctx.shadowColor = '#ff4455';
+  ctx.fillStyle = '#ff4455';
+  ctx.fillText(String(right.score), sbX + sbW * 0.75, sbY + sbH / 2 - 3);
+
+  ctx.shadowColor = '#ffffff';
+  ctx.shadowBlur  = 5;
+  ctx.fillStyle = '#ffffff';
+  ctx.font = 'bold 22px "Courier New",monospace';
+  ctx.fillText(':', sbX + sbW / 2, sbY + sbH / 2 - 4);
+
+  ctx.shadowBlur = 0;
+  ctx.shadowColor = 'transparent';
+
+  // Label
+  ctx.font = 'bold 9px system-ui,sans-serif';
+  ctx.fillStyle = 'rgba(150,220,255,0.65)';
+  ctx.fillText('KAMU', sbX + sbW * 0.25, sbY + sbH - 6);
+  ctx.fillStyle = 'rgba(255,150,150,0.65)';
+  ctx.fillText(mode === '2P' ? 'P2' : 'CPU', sbX + sbW * 0.75, sbY + sbH - 6);
+}
+
+function drawBanner(){
+  ctx.fillStyle = '#1a0a2e';
+  ctx.fillRect(0, 138, W, 14);
+
+  ctx.font = 'bold 9px system-ui,sans-serif';
+  ctx.fillStyle = '#ffd93d';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillText('★  SPORTAINMENT RABBANI  ★', W / 2, 145);
+
+  // Stripe merah di kiri & kanan
+  ctx.fillStyle = '#e63946';
+  ctx.fillRect(0, 138, 36, 14);
+  ctx.fillRect(W - 36, 138, 36, 14);
+  ctx.fillStyle = '#ffffff';
+  ctx.fillRect(14, 143, 8, 4);
+  ctx.fillRect(W - 22, 143, 8, 4);
+}
+
+function drawCourt(){
+  // Lantai lapangan hijau zamrud
+  const g = ctx.createLinearGradient(0, COURT_TOP, 0, COURT_BOTTOM);
+  g.addColorStop(0, '#1a4a3a');
+  g.addColorStop(0.5, '#154436');
+  g.addColorStop(1, '#0d2e23');
+  ctx.fillStyle = g;
+  ctx.fillRect(0, COURT_TOP, W, COURT_BOTTOM - COURT_TOP);
+
+  // Pantulan lampu di lantai
+  const t = performance.now() / 1000;
+  for (let i = 0; i < 3; i++){
+    const lx = 90 + i * 150;
+    const lgr = ctx.createRadialGradient(lx, COURT_TOP + 40, 5, lx, COURT_TOP + 200, 180);
+    const pulse = 0.6 + 0.4 * Math.sin(t * 1.5 + i);
+    lgr.addColorStop(0, `rgba(255, 200, 100, ${0.08 * pulse})`);
+    lgr.addColorStop(1, 'rgba(255, 200, 100, 0)');
+    ctx.fillStyle = lgr;
+    ctx.fillRect(0, COURT_TOP, W, COURT_BOTTOM - COURT_TOP);
+  }
+
+  // Tekstur garis lantai (subtle)
+  ctx.strokeStyle = 'rgba(255,255,255,0.02)';
+  ctx.lineWidth = 1;
+  for (let x = 0; x < W; x += 30){
+    ctx.beginPath();
+    ctx.moveTo(x, COURT_TOP);
+    ctx.lineTo(x, COURT_BOTTOM);
+    ctx.stroke();
+  }
+
+  // Garis lapangan
+  const cx = 60, cy = COURT_TOP + 20;
+  const cw = W - 120, ch = COURT_BOTTOM - COURT_TOP - 40;
+
+  ctx.strokeStyle = 'rgba(255,255,255,0.9)';
+  ctx.lineWidth = 3;
+  ctx.strokeRect(cx, cy, cw, ch);
+
+  ctx.strokeStyle = 'rgba(255,255,255,0.55)';
+  ctx.lineWidth = 1.5;
+  ctx.strokeRect(cx + 20, cy + 20, cw - 40, ch - 40);
+
+  ctx.beginPath();
+  ctx.moveTo(cx + cw * 0.25, cy);
+  ctx.lineTo(cx + cw * 0.25, cy + ch);
+  ctx.stroke();
+
+  ctx.beginPath();
+  ctx.moveTo(cx + cw * 0.75, cy);
+  ctx.lineTo(cx + cw * 0.75, cy + ch);
+  ctx.stroke();
+
+  ctx.beginPath();
+  ctx.moveTo(cx, cy + ch / 2);
+  ctx.lineTo(cx + cw, cy + ch / 2);
+  ctx.stroke();
+
+  drawNet();
+}
+
+function drawNet(){
+  // Tiang net
+  ctx.fillStyle = '#e0e0e0';
+  ctx.fillRect(NET_X - 3, COURT_TOP + 15, 6, COURT_BOTTOM - COURT_TOP - 30);
+  ctx.fillStyle = '#ffffff';
+  ctx.fillRect(NET_X - 16, COURT_TOP + 26, 32, 4);
+
+  // Mesh jala
+  ctx.strokeStyle = 'rgba(255,255,255,0.28)';
+  ctx.lineWidth = 1;
+  for (let y = COURT_TOP + 32; y < COURT_BOTTOM - 15; y += 8){
+    ctx.beginPath();
+    ctx.moveTo(NET_X - 15, y);
+    ctx.lineTo(NET_X + 15, y);
+    ctx.stroke();
+  }
+  for (let x = NET_X - 15; x <= NET_X + 15; x += 6){
+    ctx.beginPath();
+    ctx.moveTo(x, COURT_TOP + 30);
+    ctx.lineTo(x, COURT_BOTTOM - 15);
+    ctx.stroke();
+  }
+}
+
+function drawPaddle(p, ch){
+  ctx.fillStyle = 'rgba(0,0,0,0.4)';
+  ctx.fillRect(p.x + 3, p.y + 3, PADDLE_W, PADDLE_H);
+
+  ctx.fillStyle = ch.body;
+  roundRect(p.x, p.y, PADDLE_W, PADDLE_H, 7);
+  ctx.fill();
+
+  ctx.fillStyle = 'rgba(255,255,255,0.35)';
+  roundRect(p.x + 2, p.y + 4, 4, PADDLE_H - 8, 2);
+  ctx.fill();
+
+  ctx.strokeStyle = ch.accent;
+  ctx.lineWidth = 2;
+  roundRect(p.x, p.y, PADDLE_W, PADDLE_H, 7);
+  ctx.stroke();
+
+  // Grip band
+  ctx.fillStyle = 'rgba(0,0,0,0.35)';
+  ctx.fillRect(p.x + 2, p.y + PADDLE_H / 2 - 8, PADDLE_W - 4, 16);
+  ctx.fillStyle = 'rgba(255,255,255,0.55)';
+  ctx.fillRect(p.x + 2, p.y + PADDLE_H / 2 - 8, PADDLE_W - 4, 1);
+  ctx.fillRect(p.x + 2, p.y + PADDLE_H / 2 + 7, PADDLE_W - 4, 1);
+}
+
+function drawShuttlecock(){
+  if (!ball.active) return;
+
+  const ch = CHARACTERS[selected];
+  const otherCh = { body: mode === '2P' ? '#00d4ff' : '#ff6b6b' };
+  const trailColor = ball.lastHitter === 'left' ? ch.body : otherCh.body;
+
+  // Trail
+  for (let i = 0; i < ball.trail.length; i++){
+    const t = ball.trail[i];
+    const a = (i / ball.trail.length) * 0.35;
+    ctx.globalAlpha = a;
+    ctx.fillStyle = trailColor;
+    ctx.beginPath();
+    ctx.arc(t.x, t.y, 4, 0, Math.PI * 2);
+    ctx.fill();
+  }
+  ctx.globalAlpha = 1;
+
+  // Glow
+  const gg = ctx.createRadialGradient(ball.x, ball.y, 3, ball.x, ball.y, 22);
+  gg.addColorStop(0, 'rgba(255,240,200,0.4)');
+  gg.addColorStop(1, 'rgba(255,240,200,0)');
+  ctx.fillStyle = gg;
+  ctx.beginPath();
+  ctx.arc(ball.x, ball.y, 22, 0, Math.PI * 2);
+  ctx.fill();
+
+  // Shuttlecock
+  ctx.save();
+  ctx.translate(ball.x, ball.y);
+  ctx.rotate(ball.rot);
+
+  // Feather cone
+  ctx.fillStyle = '#f5f5f5';
+  ctx.beginPath();
+  ctx.moveTo(-16, -7);
+  ctx.lineTo(-16, 7);
+  ctx.lineTo(4, 5);
+  ctx.lineTo(4, -5);
+  ctx.closePath();
+  ctx.fill();
+
+  // Feather lines
+  ctx.strokeStyle = 'rgba(0,0,0,0.15)';
+  ctx.lineWidth = 1;
+  for (let i = -12; i <= -4; i += 3){
+    ctx.beginPath();
+    ctx.moveTo(i, -7);
+    ctx.lineTo(i, 7);
+    ctx.stroke();
+  }
+
+  // Cork
+  ctx.fillStyle = '#d4a373';
+  ctx.beginPath();
+  ctx.arc(6, 0, 6, 0, Math.PI * 2);
+  ctx.fill();
+
+  // Cork highlight
+  ctx.fillStyle = 'rgba(255,255,255,0.4)';
+  ctx.beginPath();
+  ctx.arc(5, -2, 2, 0, Math.PI * 2);
+  ctx.fill();
+
+  ctx.restore();
+}
+
+/* ============ HUD ============ */
+function drawHUD(){
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+
+  if (state === 'ready'){
+    ctx.font = 'bold 24px system-ui,sans-serif';
+    ctx.fillStyle = 'rgba(0,0,0,0.5)';
+    ctx.fillText('SERVIS...', W/2 + 1, H/2 - 20 + 1);
+    ctx.fillStyle = '#ffffff';
+    ctx.fillText('SERVIS...', W/2, H/2 - 20);
+
+    ctx.font = 'bold 14px system-ui,sans-serif';
+    ctx.fillStyle = 'rgba(0,212,255,0.85)';
+    let serveLabel;
+    if (mode === 'ONLINE'){
+      const hostServes = server === 0;
+      const selfServes = ONLINE_ROLE === 'host' ? hostServes : !hostServes;
+      serveLabel = selfServes ? 'KAMU' : 'LAWAN';
+    } else {
+      serveLabel = server === 0 ? 'KAMU' : (mode === '2P' ? 'P2' : 'CPU');
+    }
+    ctx.fillText(serveLabel, W/2, H/2 + 12);
+  }
+
+  if (state === 'point'){
+    const pulse = 1 + Math.sin(performance.now() / 150) * 0.08;
+    ctx.save();
+    ctx.translate(W/2, H/2);
+    ctx.scale(pulse, pulse);
+    ctx.font = 'bold 40px system-ui,sans-serif';
+    ctx.fillStyle = 'rgba(255,217,61,0.3)';
+    ctx.fillText('POIN!', 2, 2);
+    ctx.fillStyle = '#ffd93d';
+    ctx.fillText('POIN!', 0, 0);
+    ctx.restore();
+  }
+
+  if (state === 'playing'){
+    ctx.font = 'bold 11px system-ui,sans-serif';
+    ctx.fillStyle = 'rgba(150,200,230,0.55)';
+    if (mode === 'ONLINE'){
+      ctx.textAlign = 'center';
+      ctx.fillText('Geser jari di sisi lapangan atau tekan W / S', W/2, H - 22);
+    } else if (mode === '2P'){
+      ctx.textAlign = 'left';
+      ctx.fillText('W / S', 15, H - 22);
+      ctx.textAlign = 'right';
+      ctx.fillText('↑ / ↓', W - 15, H - 22);
+    } else {
+      ctx.textAlign = 'left';
+      ctx.fillText('W / S  atau  ↑ / ↓', 15, H - 22);
+    }
+    ctx.textAlign = 'center';
+  }
+}
+
+/* ============ SELECT SCREEN ============ */
+function drawSelect(){
+  const g = ctx.createLinearGradient(0, 0, 0, H);
+  g.addColorStop(0, '#120825');
+  g.addColorStop(0.6, '#1a0d35');
+  g.addColorStop(1, '#08061a');
+  ctx.fillStyle = g;
+  ctx.fillRect(0, 0, W, H);
+
+  // Bintang
+  const t = performance.now() / 1000;
+  for (let i = 0; i < 50; i++){
+    const sx = (i * 137.5) % W;
+    const sy = (i * 79.3) % (H * 0.5);
+    ctx.globalAlpha = 0.2 + 0.25 * Math.sin(t * 2 + i);
+    ctx.fillStyle = '#ffffff';
+    ctx.fillRect(sx, sy, 2, 2);
+  }
+  ctx.globalAlpha = 1;
+
+  // Spotlight halus
+  for (let i = 0; i < 2; i++){
+    const lx = 120 + i * 240;
+    const lg = ctx.createRadialGradient(lx, -40, 5, lx, 220, 200);
+    lg.addColorStop(0, 'rgba(255, 200, 100, 0.18)');
+    lg.addColorStop(1, 'rgba(255, 200, 100, 0)');
+    ctx.fillStyle = lg;
+    ctx.fillRect(0, 0, W, 350);
+  }
+
+  // Logo
+  if (logoLoaded){
+    const lw = 130;
+    const lh = 130 * (logoImg.height / logoImg.width || 1);
+    ctx.drawImage(logoImg, (W - lw) / 2, 22, lw, lh);
+  } else {
+    ctx.fillStyle = '#ffd93d';
+    ctx.font = 'bold 38px system-ui,sans-serif';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText('NGABINTON', W / 2, 52);
+  }
+
+  // Judul
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.font = 'bold 34px system-ui,sans-serif';
+  ctx.fillStyle = '#00d4ff';
+  ctx.shadowColor = '#00d4ff';
+  ctx.shadowBlur = 15;
+  ctx.fillText('PONG BADMINTON', W / 2, 168);
+  ctx.shadowBlur = 0;
+  ctx.shadowColor = 'transparent';
+
+  ctx.font = '600 13px system-ui,sans-serif';
+  ctx.fillStyle = 'rgba(200,215,235,0.7)';
+  ctx.fillText('PILIH RAKETMU', W / 2, 200);
+
+  // Kartu karakter
+  for (let i = 0; i < 5; i++){
+    const c = CHARACTERS[i];
+    const cx = cardX(i);
+    const sel = i === selected;
+
+    ctx.fillStyle = sel ? 'rgba(0,212,255,0.15)' : 'rgba(255,255,255,0.05)';
+    roundRect(cx, cardY, CARD_W, CARD_H, 12);
+    ctx.fill();
+
+    ctx.strokeStyle = sel ? '#00d4ff' : 'rgba(255,255,255,0.2)';
+    ctx.lineWidth = sel ? 3 : 1.5;
+    roundRect(cx, cardY, CARD_W, CARD_H, 12);
+    ctx.stroke();
+
+    // Mini paddle
+    const px = cx + CARD_W / 2 - 6;
+    const py = cardY + 12;
+    ctx.fillStyle = 'rgba(0,0,0,0.35)';
+    ctx.fillRect(px + 2, py + 2, 12, 55);
+    ctx.fillStyle = c.body;
+    roundRect(px, py, 12, 55, 6);
+    ctx.fill();
+    ctx.strokeStyle = c.accent;
+    ctx.lineWidth = 1.5;
+    roundRect(px, py, 12, 55, 6);
+    ctx.stroke();
+    ctx.fillStyle = 'rgba(255,255,255,0.35)';
+    roundRect(px + 2, py + 4, 3, 47, 1.5);
+    ctx.fill();
+
+    // Nama
+    ctx.fillStyle = sel ? '#00d4ff' : '#ffffff';
+    ctx.font = 'bold 12px system-ui,sans-serif';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(c.name, cx + CARD_W / 2, cardY + CARD_H - 22);
+
+    ctx.fillStyle = 'rgba(200,215,235,0.55)';
+    ctx.font = '10px system-ui,sans-serif';
+    ctx.fillText(c.desc, cx + CARD_W / 2, cardY + CARD_H - 8);
+
+    // Hotkey
+    ctx.fillStyle = 'rgba(255,255,255,0.35)';
+    ctx.font = 'bold 10px system-ui,sans-serif';
+    ctx.textAlign = 'right';
+    ctx.fillText(String(i + 1), cx + CARD_W - 6, cardY + 12);
+    ctx.textAlign = 'center';
+  }
+
+  // Label mode
+  ctx.fillStyle = 'rgba(200,215,235,0.85)';
+  ctx.font = 'bold 15px system-ui,sans-serif';
+  ctx.fillText('PILIH MODE', W / 2, 440);
+
+  // Tombol mode
+  drawModeBtn(btn1P, '1 PEMAIN', '#e63946', '#ff8a8a');
+  drawModeBtn(btn2P, '2 PEMAIN', '#00d4ff', '#7fe6ff');
+
+  // Hint
+  ctx.font = '11px system-ui,sans-serif';
+  ctx.fillStyle = 'rgba(180,205,235,0.5)';
+  ctx.fillText('Klik tombol mode untuk mulai', W / 2, 582);
+  ctx.fillText('W/S (P1)  ·  ↑/↓ (P2)  ·  drag sisi layar', W / 2, 602);
+
+  // Stats
+  if (stats.w + stats.l > 0 && mode === '1P'){
+    ctx.fillStyle = 'rgba(255,217,61,0.6)';
+    ctx.font = 'bold 11px system-ui,sans-serif';
+    ctx.fillText(`Menang ${stats.w}  ·  Kalah ${stats.l}`, W / 2, 640);
+  }
+}
+
+function drawModeBtn(b, label, color, accent){
+  const pulse = 1 + Math.sin(performance.now() / 400) * 0.02;
+  ctx.save();
+  ctx.translate(b.x + b.w / 2, b.y + b.h / 2);
+  ctx.scale(pulse, pulse);
+
+  // Shadow
+  ctx.fillStyle = 'rgba(0,0,0,0.5)';
+  roundRect(-b.w/2 + 3, -b.h/2 + 3, b.w, b.h, 12);
+  ctx.fill();
+
+  ctx.fillStyle = color;
+  roundRect(-b.w/2, -b.h/2, b.w, b.h, 12);
+  ctx.fill();
+
+  // Top highlight
+  ctx.fillStyle = 'rgba(255,255,255,0.15)';
+  roundRect(-b.w/2 + 2, -b.h/2 + 2, b.w - 4, b.h / 2, 10);
+  ctx.fill();
+
+  // Border
+  ctx.strokeStyle = accent;
+  ctx.lineWidth = 1.5;
+  roundRect(-b.w/2, -b.h/2, b.w, b.h, 12);
+  ctx.stroke();
+
+  // Label
+  ctx.fillStyle = '#ffffff';
+  ctx.font = 'bold 17px system-ui,sans-serif';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillText(label, 0, 2);
+
+  ctx.restore();
+}
+
+/* ============ GAME OVER ============ */
+function drawGameOver(){
+  ctx.fillStyle = 'rgba(6,4,15,0.88)';
+  ctx.fillRect(0, 0, W, H);
+
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+
+  let won;
+  if (mode === 'ONLINE'){
+    won = ONLINE_ROLE === 'host' ? left.score > right.score : right.score > left.score;
+  } else {
+    won = left.score > right.score;
+  }
+  let headline, color;
+
+  if (mode === '2P'){
+    headline = won ? 'P1 MENANG!' : 'P2 MENANG!';
+    color = won ? '#00d4ff' : '#ff6b6b';
+  } else if (mode === 'ONLINE'){
+    headline = won ? 'KAMU MENANG!' : 'KAMU KALAH';
+    color = won ? '#00d4ff' : '#ff6b6b';
+  } else {
+    headline = won ? 'KAMU MENANG!' : 'KALAH';
+    color = won ? '#00d4ff' : '#ff6b6b';
+  }
+
+  // Judul
+  ctx.shadowColor = color;
+  ctx.shadowBlur = 20;
+  ctx.font = 'bold 38px system-ui,sans-serif';
+  ctx.fillStyle = color;
+  ctx.fillText(headline, W/2, 205);
+  ctx.shadowBlur = 0;
+  ctx.shadowColor = 'transparent';
+
+  // Skor
+  ctx.font = 'bold 13px system-ui,sans-serif';
+  ctx.fillStyle = 'rgba(200,215,235,0.7)';
+  ctx.fillText('SKOR AKHIR', W/2, 258);
+
+  ctx.font = 'bold 64px "Courier New",monospace';
+  ctx.fillStyle = '#ffffff';
+  ctx.fillText(`${left.score}  :  ${right.score}`, W/2, 320);
+
+  // Sub-text
+  ctx.font = 'bold 12px system-ui,sans-serif';
+  if (mode === '2P'){
+    ctx.fillStyle = 'rgba(0,212,255,0.65)';
+    ctx.fillText('Main lagi? Pilih Ulangi atau Menu', W/2, 380);
+  } else if (mode === 'ONLINE'){
+    ctx.fillStyle = 'rgba(0,212,255,0.65)';
+    ctx.fillText('Tanding online · hasil masuk Riwayat Tanding', W/2, 380);
+  } else {
+    ctx.fillStyle = 'rgba(255,217,61,0.65)';
+    ctx.fillText(`Total: ${stats.w} menang · ${stats.l} kalah`, W/2, 380);
+  }
+
+  // Tombol
+  const btn = (b, label, color) => {
+    ctx.fillStyle = 'rgba(0,0,0,0.4)';
+    roundRect(b.x + 3, b.y + 3, b.w, b.h, 12);
+    ctx.fill();
+    ctx.fillStyle = color;
+    roundRect(b.x, b.y, b.w, b.h, 12);
+    ctx.fill();
+    ctx.fillStyle = 'rgba(255,255,255,0.15)';
+    roundRect(b.x + 2, b.y + 2, b.w - 4, b.h / 2, 10);
+    ctx.fill();
+    ctx.fillStyle = '#ffffff';
+    ctx.font = 'bold 18px system-ui,sans-serif';
+    ctx.fillText(label, b.x + b.w / 2, b.y + b.h / 2 + 1);
+  };
+  btn(btnReplay, mode === 'ONLINE' ? 'SELESAI' : 'ULANGI', '#00d4ff');
+  btn(btnMenu, mode === 'ONLINE' ? 'KELUAR' : 'ARENA', '#8a5fd3');
+
+  // Hint keyboard
+  ctx.fillStyle = 'rgba(180,205,235,0.4)';
+  ctx.font = '11px system-ui,sans-serif';
+  ctx.fillText('R = ulang  ·  C = kembali ke arena', W/2, 630);
+}
+
+/* ============ CONNECTING (ONLINE) ============ */
+function wrapText(text, maxWidth){
+  const words = String(text).split(' ');
+  const lines = [];
+  let line = '';
+  for (const word of words){
+    const test = line ? line + ' ' + word : word;
+    if (ctx.measureText(test).width > maxWidth && line){
+      lines.push(line);
+      line = word;
+    } else {
+      line = test;
+    }
+  }
+  if (line) lines.push(line);
+  return lines;
+}
+
+function drawConnecting(){
+  const g = ctx.createLinearGradient(0, 0, 0, H);
+  g.addColorStop(0, '#120825');
+  g.addColorStop(1, '#08061a');
+  ctx.fillStyle = g;
+  ctx.fillRect(0, 0, W, H);
+
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+
+  ctx.font = 'bold 34px system-ui,sans-serif';
+  ctx.fillStyle = '#00d4ff';
+  ctx.shadowColor = '#00d4ff';
+  ctx.shadowBlur = 18;
+  ctx.fillText('PONG ONLINE', W/2, 150);
+  ctx.shadowBlur = 0;
+  ctx.shadowColor = 'transparent';
+
+  ctx.font = 'bold 12px system-ui,sans-serif';
+  ctx.fillStyle = 'rgba(200,215,235,0.65)';
+  ctx.fillText(ONLINE_ROLE === 'host' ? 'KAMU HOST' : 'KAMU TAMU', W/2, 188);
+
+  ctx.font = 'bold 13px system-ui,sans-serif';
+  ctx.fillStyle = 'rgba(200,215,235,0.7)';
+  ctx.fillText('KODE ROOM', W/2, 245);
+  ctx.font = 'bold 64px "Courier New",monospace';
+  ctx.fillStyle = '#ffffff';
+  ctx.fillText(ROOM_CODE || '-----', W/2, 305);
+
+  ctx.font = '600 14px system-ui,sans-serif';
+  ctx.fillStyle = onlineError ? '#ff6b6b' : '#ffd93d';
+  const message = onlineError
+    ? onlineError
+    : onlineReady
+      ? 'Tersambung. Menunggu permainan dimulai...'
+      : 'Menyambungkan ke lawan...';
+  const lines = wrapText(message, W - 70);
+  lines.forEach((line, index) => {
+    ctx.fillText(line, W/2, 390 + index * 22);
+  });
+
+  ctx.font = '12px system-ui,sans-serif';
+  ctx.fillStyle = 'rgba(180,205,235,0.55)';
+  const hints = ONLINE_ROLE === 'host'
+    ? ['Bagikan kode ini ke temanmu, lalu minta dia', 'membuka Pong Ngabinton dan memilih Gabung Room.']
+    : ['Kamu masuk sebagai tamu. Tunggu host memulai', 'pertandingan. Jangan tutup halaman ini.'];
+  hints.forEach((line, index) => {
+    ctx.fillText(line, W/2, 500 + index * 18);
+  });
+
+  const pulse = 0.5 + 0.5 * Math.sin(performance.now() / 350);
+  ctx.globalAlpha = 0.35 + pulse * 0.45;
+  ctx.fillStyle = '#00d4ff';
+  ctx.beginPath();
+  ctx.arc(W/2, 600, 7, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.globalAlpha = 1;
+}
+
+/* ============ RENDER UTAMA ============ */
+function render(){
+  ctx.setTransform(1, 0, 0, 1, 0, 0);
+  ctx.clearRect(0, 0, W, H);
+
+  if (state === 'select'){
+    drawSelect();
+    return;
+  }
+  if (state === 'connecting'){
+    drawConnecting();
+    return;
+  }
+
+  ctx.save();
+  if (shake > 0.5){
+    ctx.translate((Math.random() - 0.5) * shake, (Math.random() - 0.5) * shake);
+  }
+
+  drawStadium();
+  drawCourt();
+
+  // Paddle kiri
+  drawPaddle(left, CHARACTERS[selected]);
+  // Paddle kanan
+  drawPaddle(right, (mode === '2P' || mode === 'ONLINE')
+    ? { body:'#00d4ff', accent:'#7fe6ff' }
+    : { body:'#ff6b6b', accent:'#ffcccc' });
+
+  drawShuttlecock();
+
+  // Partikel
+  for (const p of particles){
+    const a = p.life / p.max;
+    ctx.globalAlpha = a;
+    ctx.fillStyle = p.c;
+    ctx.beginPath();
+    ctx.arc(p.x, p.y, p.r * (0.5 + a * 0.5), 0, Math.PI * 2);
+    ctx.fill();
+  }
+  ctx.globalAlpha = 1;
+
+  ctx.restore();
+
+  drawHUD();
+  if (state === 'gameover') drawGameOver();
+}
+
+/* ============ LOOP ============ */
+let last = performance.now();
+function loop(now){
+  const dt = (now - last) / 1000;
+  last = now;
+  const df = Math.min(dt, 0.1) * 60;
+  update(df);
+  if (mode === 'ONLINE' && ONLINE_ROLE === 'host' && onlineReady) sendState();
+  render();
+  requestAnimationFrame(loop);
+}
+
+if (ONLINE){
+  mode = 'ONLINE';
+  state = 'connecting';
+  startOnline();
+} else {
+  startGame(LOCAL_MODE);
+}
+requestAnimationFrame(loop);
+
+})();
+</script>
+<script src="/games/ngbt-game.js?v=20261021-5" data-game="pong-ngabinton"></script>
+</body>
+</html>
