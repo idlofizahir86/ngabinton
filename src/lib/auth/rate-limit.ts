@@ -24,9 +24,14 @@ const LOGIN_PREFIX = "ratelimit:login";
 const REDIS_TIMEOUT_MS = 2500;
 const REDIS_RETRIES = 2;
 
+/** Submit skor game: 30 percobaan / menit per anggota. */
+const GAME_SCORE_ATTEMPTS = 30;
+const GAME_SCORE_WINDOW = "1 m";
+
 const globalForRateLimit = globalThis as unknown as {
   __ngabintonRedis?: Redis;
   __ngabintonLoginLimiter?: Ratelimit;
+  __ngabintonGameScoreLimiter?: Ratelimit;
 };
 
 function getRedis(): Redis {
@@ -57,6 +62,18 @@ function getLoginLimiter(): Ratelimit {
   return globalForRateLimit.__ngabintonLoginLimiter;
 }
 
+function getGameScoreLimiter(): Ratelimit {
+  if (!globalForRateLimit.__ngabintonGameScoreLimiter) {
+    globalForRateLimit.__ngabintonGameScoreLimiter = new Ratelimit({
+      redis: getRedis(),
+      limiter: Ratelimit.slidingWindow(GAME_SCORE_ATTEMPTS, GAME_SCORE_WINDOW),
+      prefix: "ratelimit:game-score",
+      timeout: REDIS_TIMEOUT_MS,
+    });
+  }
+  return globalForRateLimit.__ngabintonGameScoreLimiter;
+}
+
 export type RateLimitResult = {
   success: boolean;
   remaining: number;
@@ -70,6 +87,21 @@ export type RateLimitResult = {
 export async function checkLoginRateLimit(ip: string): Promise<RateLimitResult> {
   const { success, remaining, reset, reason } = await getLoginLimiter().limit(ip);
   return { success, remaining, reset, reason };
+}
+
+/**
+ * Batasi submit skor game per anggota. Gagal-terbuka (fail-open) supaya
+ * gangguan Redis tidak menghalangi anggota menyimpan skor.
+ */
+export async function checkGameScoreRateLimit(userId: number): Promise<RateLimitResult> {
+  try {
+    const { success, remaining, reset, reason } = await getGameScoreLimiter().limit(
+      String(userId),
+    );
+    return { success, remaining, reset, reason };
+  } catch {
+    return { success: true, remaining: GAME_SCORE_ATTEMPTS, reset: 0, reason: "timeout" };
+  }
 }
 
 /** Ambil IP client dari header (Vercel menyetel `x-forwarded-for`). */
