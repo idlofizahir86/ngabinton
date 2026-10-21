@@ -27,6 +27,13 @@ export type DefinitionFormState = { error: string | null; ok: boolean };
 export type AwardFormState = { error: string | null; ok: boolean; duplicate: boolean };
 /** Form assign EO event. */
 export type OrganizerFormState = { error: string | null; ok: boolean };
+/** Upload foto dokumentasi ke Google Drive. */
+export type DocumentationUploadState = {
+  error: string | null;
+  ok: boolean;
+  fileName: string | null;
+  webViewLink: string | null;
+};
 /** Input massal iuran sesi — melaporkan berapa yang dibuat & dilewati. */
 export type BulkDuesState = {
   error: string | null;
@@ -47,6 +54,12 @@ export const INITIAL_MATCH_STATE: MatchFormState = { error: null, ok: false };
 export const INITIAL_PROFILE_STATE: ProfileState = { error: null, ok: false };
 export const INITIAL_CONVERT_STATE: ConvertGuestState = { error: null, ok: false };
 export const INITIAL_AVATAR_STATE: AvatarState = { error: null, ok: false };
+export const INITIAL_DOCUMENTATION_UPLOAD_STATE: DocumentationUploadState = {
+  error: null,
+  ok: false,
+  fileName: null,
+  webViewLink: null,
+};
 export const INITIAL_MEMBER_FORM_STATE: MemberFormState = { error: null, ok: false };
 export const INITIAL_RESET_PASSWORD_STATE: ResetPasswordState = {
   error: null,

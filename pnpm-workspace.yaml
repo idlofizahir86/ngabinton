@@ -1,0 +1,11 @@
+# Setting pnpm 12+ (pengganti field "pnpm" di package.json).
+minimumReleaseAgeExclude:
+  - framer-motion@14.5.0
+  - googleapis@187.0.0
+  - motion-dom@14.5.0
+  - motion@14.5.0
+
+allowBuilds:
+  esbuild: true
+  sharp: true
+  unrs-resolver: true

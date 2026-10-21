@@ -155,7 +155,7 @@ export async function recordMatchAction(
   await recomputeExpForUsers(memberIds);
   await syncAchievements();
 
-  revalidateTag("rankings");
+  revalidateTag("rankings", "max");
   revalidatePath("/leaderboard");
   revalidatePath(`/admin/sesi/${sessionId}`);
   revalidatePath("/admin/sesi");
@@ -181,7 +181,7 @@ export async function deleteMatchAction(formData: FormData): Promise<void> {
   await db.delete(matches).where(eq(matches.id, matchId));
   await recomputeExpForUsers(memberIds);
 
-  revalidateTag("rankings");
+  revalidateTag("rankings", "max");
   revalidatePath("/leaderboard");
   revalidatePath("/admin/sesi");
   if (sessionId) revalidatePath(`/admin/sesi/${sessionId}`);
@@ -274,8 +274,8 @@ export async function deleteSessionAction(
   await db.delete(playSessions).where(eq(playSessions.id, sessionId));
 
   // Transaksi sesi jadi kas umum (FK set null) & papan peringkat berubah.
-  revalidateTag("finance");
-  revalidateTag("rankings");
+  revalidateTag("finance", "max");
+  revalidateTag("rankings", "max");
   revalidatePath("/admin/sesi");
   revalidatePath("/");
   redirect("/admin/sesi");

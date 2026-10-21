@@ -25,6 +25,18 @@ export function formatDate(value: Date | string | number): string {
   return dateFormatter.format(toDate(value));
 }
 
+const shortDateFormatter = new Intl.DateTimeFormat(LOCALE, {
+  timeZone: TIME_ZONE,
+  day: "numeric",
+  month: "short",
+  year: "numeric",
+});
+
+/** "12 Okt 2026" — label ringkas untuk kartu galeri. */
+export function formatDateShort(value: Date | string | number): string {
+  return shortDateFormatter.format(toDate(value));
+}
+
 const timeFormatter = new Intl.DateTimeFormat(LOCALE, {
   timeZone: TIME_ZONE,
   hour: "2-digit",

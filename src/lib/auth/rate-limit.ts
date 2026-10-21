@@ -28,10 +28,15 @@ const REDIS_RETRIES = 2;
 const GAME_SCORE_ATTEMPTS = 30;
 const GAME_SCORE_WINDOW = "1 m";
 
+/** Upload foto dokumentasi: 10 foto / 10 menit per anggota. */
+const DOCUMENTATION_UPLOAD_ATTEMPTS = 10;
+const DOCUMENTATION_UPLOAD_WINDOW = "10 m";
+
 const globalForRateLimit = globalThis as unknown as {
   __ngabintonRedis?: Redis;
   __ngabintonLoginLimiter?: Ratelimit;
   __ngabintonGameScoreLimiter?: Ratelimit;
+  __ngabintonDocumentationUploadLimiter?: Ratelimit;
 };
 
 function getRedis(): Redis {
@@ -74,6 +79,21 @@ function getGameScoreLimiter(): Ratelimit {
   return globalForRateLimit.__ngabintonGameScoreLimiter;
 }
 
+function getDocumentationUploadLimiter(): Ratelimit {
+  if (!globalForRateLimit.__ngabintonDocumentationUploadLimiter) {
+    globalForRateLimit.__ngabintonDocumentationUploadLimiter = new Ratelimit({
+      redis: getRedis(),
+      limiter: Ratelimit.slidingWindow(
+        DOCUMENTATION_UPLOAD_ATTEMPTS,
+        DOCUMENTATION_UPLOAD_WINDOW,
+      ),
+      prefix: "ratelimit:documentation-upload",
+      timeout: REDIS_TIMEOUT_MS,
+    });
+  }
+  return globalForRateLimit.__ngabintonDocumentationUploadLimiter;
+}
+
 export type RateLimitResult = {
   success: boolean;
   remaining: number;
@@ -101,6 +121,27 @@ export async function checkGameScoreRateLimit(userId: number): Promise<RateLimit
     return { success, remaining, reset, reason };
   } catch {
     return { success: true, remaining: GAME_SCORE_ATTEMPTS, reset: 0, reason: "timeout" };
+  }
+}
+
+/**
+ * Batasi upload dokumentasi per anggota. Fail-open seperti skor game:
+ * gangguan Redis tidak boleh menghalangi anggota mengunggah kenangan.
+ */
+export async function checkDocumentationUploadRateLimit(
+  userId: number,
+): Promise<RateLimitResult> {
+  try {
+    const { success, remaining, reset, reason } =
+      await getDocumentationUploadLimiter().limit(String(userId));
+    return { success, remaining, reset, reason };
+  } catch {
+    return {
+      success: true,
+      remaining: DOCUMENTATION_UPLOAD_ATTEMPTS,
+      reset: 0,
+      reason: "timeout",
+    };
   }
 }
 

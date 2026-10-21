@@ -23,6 +23,8 @@ const nextConfig: NextConfig = {
       bodySizeLimit: "6mb",
     },
   },
+  // googleapis memakai require dinamis/stream Node — jangan di-bundle oleh Turbopack.
+  serverExternalPackages: ["googleapis"],
   images: {
     remotePatterns: imageHost
       ? [

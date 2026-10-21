@@ -28,7 +28,7 @@ function isAllowedType(type: string): boolean {
 }
 
 function revalidateAvatar() {
-  revalidateTag("rankings");
+  revalidateTag("rankings", "max");
   revalidatePath("/member");
   revalidatePath("/member/profil");
   revalidatePath("/leaderboard");

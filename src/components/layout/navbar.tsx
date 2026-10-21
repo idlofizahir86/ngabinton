@@ -30,6 +30,7 @@ const NAV_LINKS: readonly NavLink[] = [
     children: [
       { label: "Arsip Event", href: "/arsip" },
       { label: "Arsip Mabar", href: "/sesi" },
+      { label: "Arsip Dokumentasi", href: "/dokumentasi" },
     ],
   },
   { label: "Tentang", href: "/tentang" },
@@ -62,7 +63,12 @@ function homeHref(role: NavbarUser["role"]): string {
   return role === "member" ? "/member" : "/admin";
 }
 
-export function Navbar({ variant = "public", transparentOnTop = true, user = null, panelHref = null }: NavbarProps) {
+export function Navbar({
+  variant = "public",
+  transparentOnTop = true,
+  user = null,
+  panelHref = null,
+}: NavbarProps) {
   const [scrolled, setScrolled] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
 
@@ -85,13 +91,23 @@ export function Navbar({ variant = "public", transparentOnTop = true, user = nul
         solid ? "bg-background-elevated shadow-card" : "bg-transparent",
       )}
     >
-      <Container size="full" className="flex h-16 items-center justify-between gap-4">
-        <Link href="/" aria-label="NGABINTON — Beranda" className="flex items-center">
+      <Container
+        size="full"
+        className="flex h-16 items-center justify-between gap-4"
+      >
+        <Link
+          href="/"
+          aria-label="NGABINTON — Beranda"
+          className="flex items-center"
+        >
           <BrandLogo decorative priority className="h-7 w-auto" />
         </Link>
 
         {showMenu ? (
-          <nav aria-label="Navigasi utama" className="hidden items-center gap-8 md:flex">
+          <nav
+            aria-label="Navigasi utama"
+            className="hidden items-center gap-8 md:flex"
+          >
             {NAV_LINKS.map((link) =>
               link.children ? (
                 <div key={link.label} className="group relative">
@@ -202,7 +218,12 @@ export function Navbar({ variant = "public", transparentOnTop = true, user = nul
       </Container>
 
       {showMenu ? (
-        <Sheet open={menuOpen} onOpenChange={setMenuOpen} side="top" label="Menu">
+        <Sheet
+          open={menuOpen}
+          onOpenChange={setMenuOpen}
+          side="top"
+          label="Menu"
+        >
           <div className="flex h-16 items-center justify-between px-4">
             <BrandLogo decorative className="h-7 w-auto" />
             <button
@@ -214,7 +235,10 @@ export function Navbar({ variant = "public", transparentOnTop = true, user = nul
               <X className="h-6 w-6" />
             </button>
           </div>
-          <nav aria-label="Navigasi mobile" className="flex flex-col gap-2 px-4 pb-8">
+          <nav
+            aria-label="Navigasi mobile"
+            className="flex flex-col gap-2 px-4 pb-8"
+          >
             {NAV_LINKS.map((link) =>
               link.children ? (
                 <div key={link.label} className="flex flex-col gap-1">
@@ -267,7 +291,10 @@ export function Navbar({ variant = "public", transparentOnTop = true, user = nul
                     {panelLabel}
                   </Link>
                 ) : null}
-                <form action={logoutAction} onSubmit={() => notifySessionChanged()}>
+                <form
+                  action={logoutAction}
+                  onSubmit={() => notifySessionChanged()}
+                >
                   <button
                     type="submit"
                     className="w-full rounded-md border border-border-strong px-4 py-3 text-center font-semibold text-text"

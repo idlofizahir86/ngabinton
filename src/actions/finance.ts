@@ -27,7 +27,7 @@ import {
 
 function revalidateFinance(sessionId?: string | null) {
   // Tag dipakai `unstable_cache` (saldo & daftar bulan), path untuk RSC.
-  revalidateTag("finance");
+  revalidateTag("finance", "max");
   revalidatePath("/admin/keuangan");
   revalidatePath("/member/keuangan");
   revalidatePath("/member");

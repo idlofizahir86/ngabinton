@@ -10,11 +10,11 @@ export type TransportCardProps = {
 };
 
 /**
- * Pilih ikon kendaraan dari nama moda (Lucide) — COMPONENTS.md §4.4.
- * Heuristik sederhana: moda berbau bus/angkot → `Bus`, sisanya `Car`.
+ * Heuristik ikon kendaraan dari nama moda (Lucide) — COMPONENTS.md §4.4.
+ * Moda berbau bus/angkot → `Bus`, sisanya `Car`.
  */
-function getTransportIcon(mode: string) {
-  return /bus|angkot|bis|minibus|elf/i.test(mode) ? Bus : Car;
+function isBusMode(mode: string): boolean {
+  return /bus|angkot|bis|minibus|elf/i.test(mode);
 }
 
 /**
@@ -29,11 +29,13 @@ export function TransportCard({
   image,
   imageAlt,
 }: TransportCardProps) {
-  const Icon = getTransportIcon(mode);
-
   return (
     <div className="rounded-lg bg-story-bg-alt p-8">
-      <Icon aria-hidden strokeWidth={1.5} className="h-16 w-16 text-story-orange" />
+      {isBusMode(mode) ? (
+        <Bus aria-hidden strokeWidth={1.5} className="h-16 w-16 text-story-orange" />
+      ) : (
+        <Car aria-hidden strokeWidth={1.5} className="h-16 w-16 text-story-orange" />
+      )}
 
       <h3 className="mt-4 text-xl font-semibold text-story-text md:text-2xl">{mode}</h3>
 

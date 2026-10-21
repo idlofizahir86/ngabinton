@@ -10,6 +10,8 @@
 !.yarn/releases
 !.yarn/versions
 _ref/
+# token OAuth Google Drive (dev lokal) — jangan di-commit
+/.data/
 # testing
 /coverage
 

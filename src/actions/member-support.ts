@@ -64,7 +64,7 @@ export async function linkGuestHistory(guestName: string, userId: number): Promi
 /** Revalidate halaman yang menampilkan data anggota. */
 export function revalidateMemberViews(): void {
   // Papan peringkat memuat nama/avatar/status anggota (lihat cache `rankings`).
-  revalidateTag("rankings");
+  revalidateTag("rankings", "max");
   revalidatePath("/admin/anggota");
   revalidatePath("/leaderboard");
 }
