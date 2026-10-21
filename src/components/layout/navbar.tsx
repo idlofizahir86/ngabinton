@@ -23,6 +23,7 @@ type NavLink = {
 const NAV_LINKS: readonly NavLink[] = [
   { label: "Event", href: "/#events" },
   { label: "Pang-Giatna Ngabinton", href: "/leaderboard" },
+  { label: "Mainan", href: "/mainan" },
   {
     label: "Arsip",
     href: "/arsip",
