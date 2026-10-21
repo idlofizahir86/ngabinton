@@ -63,12 +63,12 @@ export async function GET(request: NextRequest) {
     try {
       await saveRefreshToken(tokens.refresh_token);
     } catch (err) {
-      // Vercel read-only — admin harus menyalin token ke env GOOGLE_REFRESH_TOKEN.
+      // Vercel read-only — mkdir di /var/task bisa melempar ENOENT/EROFS/
+      // EACCES/EPERM. Semua kegagalan tulis di sini berarti token tidak
+      // tersimpan; admin harus menyalinnya ke env GOOGLE_REFRESH_TOKEN.
       const code = (err as NodeJS.ErrnoException).code;
-      if (code === "EROFS" || code === "EACCES") {
-        return backToUpload(request, "auth_error", "token_not_saved");
-      }
-      throw err;
+      console.error("[oauth callback] gagal menyimpan token:", code);
+      return backToUpload(request, "auth_error", "token_not_saved");
     }
 
     return backToUpload(request, "connected", "1");
