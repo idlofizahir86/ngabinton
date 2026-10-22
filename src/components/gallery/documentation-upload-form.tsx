@@ -27,13 +27,8 @@ const MAX_INPUT_BYTES = 10 * 1024 * 1024;
 const MAX_COMPRESSED_BYTES = 3.5 * 1024 * 1024;
 const MAX_DIMENSION = 2000;
 const WEBP_QUALITY = 0.85;
-
 const MAX_FILES = 50;
-/**
- * Berapa file diproses paralel. 4 = trade-off: cukup cepat untuk 50 file
- * (~15–25s total), tanpa menabrak rate-limit Drive / memory browser.
- * Turunkan ke 2–3 kalau target device banyak HP.
- */
+/** Paralel 4: cepat, tapi tidak menabrak rate-limit Drive / memory browser. */
 const UPLOAD_CONCURRENCY = 4;
 
 const ACCEPTED = "image/jpeg,image/png,image/webp";
@@ -80,18 +75,6 @@ function formatDateInput(ms: number): string {
   const d = new Date(ms);
   const pad = (n: number) => String(n).padStart(2, "0");
   return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
-}
-
-function deriveTitle(rawTitle: string, fileName: string): string {
-  const trimmed = rawTitle.trim();
-  if (trimmed.length >= 3) return trimmed.slice(0, 120);
-
-  const base = fileName
-    .replace(/\.[^.]+$/, "")
-    .replace(/[_-]+/g, " ")
-    .trim();
-
-  return base.length >= 3 ? base.slice(0, 120) : "Dokumentasi";
 }
 
 /** Jalankan `worker` untuk tiap item dengan batas paralel. */
@@ -164,6 +147,7 @@ export function DocumentationUploadForm() {
   const addFiles = (list: FileList | null) => {
     if (!list || list.length === 0) return;
     setLocalError(null);
+    setResults([]);
 
     const slots = MAX_FILES - items.length;
     if (slots <= 0) {
@@ -224,17 +208,22 @@ export function DocumentationUploadForm() {
     event.preventDefault();
     setLocalError(null);
 
+    const trimmedTitle = title.trim();
+    if (trimmedTitle.length < 3) {
+      setLocalError("Judul minimal 3 karakter.");
+      return;
+    }
     if (items.length === 0) {
       setLocalError("Pilih minimal satu foto.");
       return;
     }
 
-    const targets = items.slice(); // snapshot
+    const targets = items.slice();
+    const sharedTitle = trimmedTitle.slice(0, 120);
+
     setBusy(true);
     setResults([]);
     setProgress({ done: 0, total: targets.length });
-
-    // reset status (mis. sisa error dari percobaan sebelumnya)
     setItems((prev) =>
       prev.map((i) => ({ ...i, status: "pending", error: undefined })),
     );
@@ -261,7 +250,7 @@ export function DocumentationUploadForm() {
           }
 
           const formData = new FormData();
-          formData.set("title", deriveTitle(title, item.file.name));
+          formData.set("title", sharedTitle);
           // Tanggal otomatis dari metadata file — tidak ada input tanggal.
           formData.set("date", formatDateInput(item.file.lastModified));
           formData.set("file", compressed);
@@ -279,11 +268,6 @@ export function DocumentationUploadForm() {
               fileName: state.fileName,
               webViewLink: state.webViewLink,
             };
-            setItems((prev) =>
-              prev.map((i) =>
-                i.id === item.id ? { ...i, status: "pending" } : i,
-              ),
-            );
           } else {
             const errMsg = state.error ?? "Gagal mengunggah.";
             result = {
@@ -339,23 +323,25 @@ export function DocumentationUploadForm() {
 
   return (
     <form onSubmit={handleSubmit} className="flex flex-col gap-6">
-      {/* Judul (opsional untuk bulk) */}
+      {/* Judul — wajib, satu untuk semua foto dalam batch ini */}
       <div className="flex flex-col gap-2">
         <label htmlFor="title" className="text-sm font-semibold text-text">
-          Judul / Keterangan Momen
+          Judul / Keterangan Momen <span className="text-danger">*</span>
         </label>
         <Input
           id="title"
           name="title"
+          required
+          minLength={3}
+          maxLength={120}
           value={title}
           onChange={(e) => setTitle(e.target.value)}
-          maxLength={120}
           disabled={busy}
           placeholder="Contoh: Keseruan Mabar Weekend di Gor..."
         />
         <p className="text-xs text-text-muted">
-          Kosongkan untuk memakai nama file. Tanggal diambil otomatis dari
-          metadata file (last modified).
+          Judul ini dipakai untuk semua foto yang kamu pilih. Tanggal diambil
+          otomatis dari metadata file (last modified).
         </p>
       </div>
 
@@ -398,42 +384,44 @@ export function DocumentationUploadForm() {
             {items.map((item) => (
               <div
                 key={item.id}
-                className={`relative overflow-hidden rounded-xl border bg-surface ${
+                className={`flex flex-col overflow-hidden rounded-xl border bg-surface ${
                   item.status === "error" ? "border-danger/60" : "border-border"
                 }`}
               >
-                {/* Blob preview tidak lewat optimizer Next. */}
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img
-                  src={item.preview}
-                  alt={item.file.name}
-                  loading="lazy"
-                  decoding="async"
-                  className="h-28 w-full object-cover"
-                />
+                <div className="relative">
+                  {/* Blob preview tidak lewat optimizer Next. */}
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    src={item.preview}
+                    alt={item.file.name}
+                    loading="lazy"
+                    decoding="async"
+                    className="h-28 w-full object-cover"
+                  />
 
-                {item.status === "uploading" ? (
-                  <div className="absolute inset-0 flex items-center justify-center bg-black/40">
-                    <Loader2 className="h-6 w-6 animate-spin text-white" />
-                  </div>
-                ) : null}
+                  {item.status === "uploading" ? (
+                    <div className="absolute inset-0 flex items-center justify-center bg-black/40">
+                      <Loader2 className="h-6 w-6 animate-spin text-white" />
+                    </div>
+                  ) : null}
 
-                <button
-                  type="button"
-                  onClick={() => removeItem(item.id)}
-                  disabled={busy}
-                  aria-label={`Hapus ${item.file.name}`}
-                  className="absolute right-2 top-2 inline-flex h-6 w-6 items-center justify-center rounded-pill bg-black/60 text-white transition hover:bg-black/80 disabled:opacity-50"
-                >
-                  <X className="h-3 w-3" />
-                </button>
+                  <button
+                    type="button"
+                    onClick={() => removeItem(item.id)}
+                    disabled={busy}
+                    aria-label={`Hapus ${item.file.name}`}
+                    className="absolute right-2 top-2 inline-flex h-6 w-6 items-center justify-center rounded-pill bg-black/60 text-white transition hover:bg-black/80 disabled:opacity-50"
+                  >
+                    <X className="h-3 w-3" />
+                  </button>
+                </div>
 
-                <div className="px-2 py-1.5 text-[11px]">
-                  <p className="truncate text-text-muted">
+                <div className="flex flex-col gap-0.5 px-2 py-1.5">
+                  <p className="truncate text-[11px] text-text-muted">
                     {item.file.name} · {formatSize(item.file.size)}
                   </p>
                   {item.status === "error" && item.error ? (
-                    <p className="mt-0.5 line-clamp-2 text-danger">
+                    <p className="line-clamp-2 text-[10px] text-danger">
                       {item.error}
                     </p>
                   ) : null}
@@ -537,7 +525,9 @@ export function DocumentationUploadForm() {
 
       {successCount > 0 ? (
         <p role="status" className="text-sm text-live">
-          {successCount} foto berhasil diunggah ·{" "}
+          {successCount} foto berhasil diunggah dengan judul &quot;
+          {title.trim()}
+          &quot; ·{" "}
           <Link href="/dokumentasi" className="underline">
             Lihat galeri
           </Link>
@@ -558,7 +548,10 @@ export function DocumentationUploadForm() {
         >
           Batal
         </Link>
-        <Button type="submit" disabled={busy || items.length === 0}>
+        <Button
+          type="submit"
+          disabled={busy || items.length === 0 || title.trim().length < 3}
+        >
           {busy
             ? "Mengunggah..."
             : items.length > 1
