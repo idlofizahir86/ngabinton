@@ -34,6 +34,25 @@ const UPLOAD_CONCURRENCY = 4;
 const ACCEPTED = "image/jpeg,image/png,image/webp";
 const ACCEPTED_TYPES = new Set(ACCEPTED.split(","));
 
+/**
+ * Safari (terutama iOS) tidak bisa encode WebP dari canvas: saat diminta
+ * `image/webp`, ia diam-diam mengembalikan PNG lossless yang bisa jauh melebihi
+ * batas ukuran. Probe sekali dengan canvas kecil, bukan dengan foto penuh.
+ */
+let webpEncodeSupported: boolean | null = null;
+
+async function canEncodeWebp(): Promise<boolean> {
+  if (webpEncodeSupported !== null) return webpEncodeSupported;
+  const probe = document.createElement("canvas");
+  probe.width = 1;
+  probe.height = 1;
+  const blob = await new Promise<Blob | null>((resolve) =>
+    probe.toBlob(resolve, "image/webp", WEBP_QUALITY),
+  );
+  webpEncodeSupported = blob?.type === "image/webp";
+  return webpEncodeSupported;
+}
+
 async function compressImage(file: File): Promise<File> {
   const bitmap = await createImageBitmap(file, {
     imageOrientation: "from-image",
@@ -57,13 +76,20 @@ async function compressImage(file: File): Promise<File> {
   ctx.drawImage(bitmap, 0, 0, width, height);
   bitmap.close();
 
+  // JPEG didukung semua browser; server tetap mengubahnya jadi WebP (sharp).
+  const mimeType = (await canEncodeWebp()) ? "image/webp" : "image/jpeg";
   const blob = await new Promise<Blob | null>((resolve) =>
-    canvas.toBlob(resolve, "image/webp", WEBP_QUALITY),
+    canvas.toBlob(resolve, mimeType, WEBP_QUALITY),
   );
   if (!blob) throw new Error("Gagal mengompres foto.");
+  // Jangan percaya label: pastikan browser benar-benar memberi format yang diminta.
+  if (blob.type !== mimeType) {
+    throw new Error("Browser tidak mendukung kompresi foto ini.");
+  }
 
+  const extension = mimeType === "image/webp" ? "webp" : "jpg";
   const baseName = file.name.replace(/\.[^.]+$/, "") || "foto";
-  return new File([blob], `${baseName}.webp`, { type: "image/webp" });
+  return new File([blob], `${baseName}.${extension}`, { type: mimeType });
 }
 
 function formatSize(bytes: number): string {
