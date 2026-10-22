@@ -54,7 +54,6 @@ export function DocumentationGallery({ photos }: DocumentationGalleryProps) {
           <motion.div
             key={photo.id}
             variants={itemVariants}
-            whileHover={{ y: -4 }}
             className="group relative break-inside-avoid overflow-hidden rounded-xl border border-border bg-background-elevated shadow-card transition-shadow duration-200 hover:shadow-lg"
           >
             <div
