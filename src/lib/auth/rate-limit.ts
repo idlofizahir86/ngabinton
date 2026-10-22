@@ -28,8 +28,8 @@ const REDIS_RETRIES = 2;
 const GAME_SCORE_ATTEMPTS = 30;
 const GAME_SCORE_WINDOW = "1 m";
 
-/** Upload foto dokumentasi: 10 foto / 10 menit per anggota. */
-const DOCUMENTATION_UPLOAD_ATTEMPTS = 10;
+/** Upload foto dokumentasi: 55 foto / 10 menit per anggota. */
+const DOCUMENTATION_UPLOAD_ATTEMPTS = 55;
 const DOCUMENTATION_UPLOAD_WINDOW = "10 m";
 
 const globalForRateLimit = globalThis as unknown as {
