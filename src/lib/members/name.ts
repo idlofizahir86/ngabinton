@@ -29,3 +29,19 @@ export function memberLabel(
   const raw = member.nickname?.trim() || member.username;
   return reveal ? raw : maskName(raw);
 }
+
+/** Label baris papan peringkat — berlaku untuk anggota maupun BaturanNgabinton. */
+export function standingLabel(
+  row: {
+    kind: "member" | "guest";
+    displayName: string;
+    nickname: string | null;
+    username: string | null;
+  },
+  reveal: boolean,
+): string {
+  if (row.kind === "guest") {
+    return reveal ? row.displayName : maskName(row.displayName);
+  }
+  return memberLabel({ nickname: row.nickname, username: row.username ?? row.displayName }, reveal);
+}

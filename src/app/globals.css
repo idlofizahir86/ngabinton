@@ -105,6 +105,65 @@ body {
 }
 
 /* ============================================================
+   Podium Pang-Giatna bulanan — panggung naik sekali saat dimuat
+   (DESIGN.md §7.23). Bukan animasi loop; hormati reduced-motion
+   lewat blok global di atas.
+   ============================================================ */
+@keyframes ngabinton-podium-rise {
+  0% {
+    opacity: 0;
+    transform: translateY(22px) scaleY(0.72);
+  }
+  60% {
+    opacity: 1;
+    transform: translateY(0) scaleY(1.03);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) scaleY(1);
+  }
+}
+
+.ngbt-podium-step {
+  transform-origin: bottom center;
+  animation: ngabinton-podium-rise 0.62s var(--ease-brand-out) both;
+}
+
+@keyframes ngabinton-podium-fade {
+  0% {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.ngbt-podium-card {
+  animation: ngabinton-podium-fade 0.45s var(--ease-brand-out) both;
+}
+
+@keyframes ngabinton-podium-pop {
+  0% {
+    opacity: 0;
+    transform: scale(0.4);
+  }
+  70% {
+    opacity: 1;
+    transform: scale(1.12);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.ngbt-podium-numeral {
+  animation: ngabinton-podium-pop 0.5s var(--ease-brand-out) both;
+}
+
+/* ============================================================
    Loading overlay NGABINTON — raket & kok "saling tepok".
    Dipakai oleh src/app/loading.tsx (App Router Suspense fallback).
    ============================================================ */

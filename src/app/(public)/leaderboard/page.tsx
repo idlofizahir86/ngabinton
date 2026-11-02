@@ -3,6 +3,10 @@ import Link from "next/link";
 
 import { LeaderboardTable } from "@/components/leaderboard/leaderboard-table";
 import { MonthlyAwards, type AwardEntry } from "@/components/leaderboard/monthly-awards";
+import {
+  MonthlyPodium,
+  podiumEntryFromStanding,
+} from "@/components/leaderboard/monthly-podium";
 import { Container } from "@/components/layout/container";
 import { buttonClass } from "@/components/ui/button";
 import {
@@ -18,7 +22,7 @@ import {
   getStandings,
 } from "@/lib/api/rankings";
 import { getCurrentUser } from "@/lib/auth/guards";
-import { EXP_LOSS_PER_SET, EXP_WIN_PER_SET } from "@/lib/constants";
+import { ACE_MONTHLY_LIMIT, EXP_LOSS_PER_SET, EXP_WIN_PER_SET } from "@/lib/constants";
 import {
   currentPeriod,
   getPeriod,
@@ -91,7 +95,25 @@ export default async function LeaderboardPage({ searchParams }: PageProps) {
   const gameCount = await countMatchesInPeriod(period);
 
   if (gameCount > 0) {
-    const rows = await getMonthlyStandings(period);
+    const [rows, periodAwards] = await Promise.all([
+      getMonthlyStandings(period),
+      getAchievementsForPeriod(period.key),
+    ]);
+
+    // Pang-Tangguh dari pencapaian tersimpan (RULES.md §13.6.5) — kosong untuk bulan berjalan.
+    const tangguhKeys = new Set(
+      periodAwards
+        .filter((achievement) => achievement.type === "pang_tangguh_of_month")
+        .map((achievement) => achievement.subjectKey),
+    );
+
+    const podium = rows
+      .slice(0, ACE_MONTHLY_LIMIT)
+      .map((row, index) =>
+        podiumEntryFromStanding(row, index + 1, reveal, tangguhKeys.has(row.key)),
+      );
+    const rest = rows.slice(ACE_MONTHLY_LIMIT);
+
     return (
       <LeaderboardShell
         reveal={reveal}
@@ -101,7 +123,24 @@ export default async function LeaderboardPage({ searchParams }: PageProps) {
         periodOptions={periodOptions}
         title="Pang-Giatna Ngabinton"
         subtitle={period.label}
-        body={<LeaderboardTable rows={rows} reveal={reveal} achievements={achievements} />}
+        body={
+          rows.length > 0 ? (
+            <div className="flex flex-col gap-8">
+              <MonthlyPodium entries={podium} />
+              {rest.length > 0 ? (
+                <LeaderboardTable
+                  rows={rest}
+                  reveal={reveal}
+                  achievements={achievements}
+                  highlightKeys={tangguhKeys}
+                  startRank={ACE_MONTHLY_LIMIT + 1}
+                />
+              ) : null}
+            </div>
+          ) : (
+            <EmptyState hasUser={Boolean(user)} />
+          )
+        }
       />
     );
   }

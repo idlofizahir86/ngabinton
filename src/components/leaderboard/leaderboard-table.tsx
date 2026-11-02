@@ -1,10 +1,11 @@
+import { Flame } from "lucide-react";
 import Link from "next/link";
 
 import { AchievementBadges } from "@/components/member/achievement-badge";
 import { MemberAvatar } from "@/components/member/member-avatar";
 import type { Achievement } from "@/lib/api/achievements";
 import type { LeaderboardRow } from "@/lib/api/members";
-import { maskName, memberLabel } from "@/lib/members/name";
+import { standingLabel } from "@/lib/members/name";
 import { cn } from "@/lib/utils/cn";
 
 export type LeaderboardTableProps = {
@@ -13,6 +14,10 @@ export type LeaderboardTableProps = {
   reveal: boolean;
   /** Pencapaian per `subjectKey`; badge hanya tampil untuk anggota. */
   achievements?: Map<string, Achievement[]>;
+  /** `subjectKey` penerima Pang-Tangguh periode ini — diberi aksen `live`. */
+  highlightKeys?: Set<string>;
+  /** Nomor urut awal; dipakai saat peringkat 1–3 sudah tampil di podium. */
+  startRank?: number;
 };
 
 /** Peringkat 1–3 dapat aksen merah; sisanya netral (DESIGN.md §3.4). */
@@ -20,32 +25,35 @@ function rankClass(rank: number): string {
   return rank <= 3 ? "text-primary" : "text-text-subtle";
 }
 
-function rowLabel(row: LeaderboardRow, reveal: boolean): string {
-  if (row.kind === "guest") {
-    return reveal ? row.displayName : maskName(row.displayName);
-  }
-  return memberLabel(
-    { nickname: row.nickname, username: row.username ?? row.displayName },
-    reveal,
-  );
-}
-
 /** Tabel Pang-Giatna Ngabinton (papan peringkat EXP) — `/leaderboard`. */
-export function LeaderboardTable({ rows, reveal, achievements }: LeaderboardTableProps) {
+export function LeaderboardTable({
+  rows,
+  reveal,
+  achievements,
+  highlightKeys,
+  startRank = 1,
+}: LeaderboardTableProps) {
   return (
     <ol className="divide-y divide-border rounded-lg border border-border bg-surface">
       {rows.map((row, index) => {
-        const rank = index + 1;
+        const rank = startRank + index;
+        const highlighted = highlightKeys?.has(row.key) ?? false;
         const winRate =
           row.stats.setsPlayed > 0
             ? Math.round((row.stats.setsWon / row.stats.setsPlayed) * 100)
             : 0;
         const badgeList =
           reveal && row.kind === "member" ? (achievements?.get(row.key) ?? []) : [];
-        const label = rowLabel(row, reveal);
+        const label = standingLabel(row, reveal);
 
         return (
-          <li key={row.key} className="flex items-center gap-3 px-4 py-3 sm:gap-4 sm:px-5">
+          <li
+            key={row.key}
+            className={cn(
+              "flex items-center gap-3 border-l-2 px-4 py-3 sm:gap-4 sm:px-5",
+              highlighted ? "border-live bg-live/5" : "border-transparent",
+            )}
+          >
             <span
               className={cn(
                 "w-7 shrink-0 text-right font-display text-xl tabular-nums sm:w-8",
@@ -75,6 +83,12 @@ export function LeaderboardTable({ rows, reveal, achievements }: LeaderboardTabl
                 {row.kind === "guest" ? (
                   <span className="rounded-pill bg-surface-hover px-2 py-0.5 text-[10px] uppercase tracking-[0.04em] text-text-subtle">
                     BaturanNgabinton
+                  </span>
+                ) : null}
+                {highlighted ? (
+                  <span className="inline-flex items-center gap-1 rounded-pill border border-live/40 bg-live/10 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.04em] text-live">
+                    <Flame className="h-3 w-3" aria-hidden />
+                    Pang-Tangguh
                   </span>
                 ) : null}
                 {badgeList.length > 0 ? (
