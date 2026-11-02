@@ -143,7 +143,7 @@ export function useMediaDraft(mode: MediaMode) {
         previewUrl: URL.createObjectURL(blob),
         width: meta.width,
         height: meta.height,
-        durationSeconds: meta.duration,
+        durationSeconds: Math.round(meta.duration),
       });
     };
     recorder.start();
@@ -195,7 +195,7 @@ export function useMediaDraft(mode: MediaMode) {
       previewUrl: URL.createObjectURL(file),
       width: meta.width,
       height: meta.height,
-      durationSeconds: meta.duration,
+      durationSeconds: Math.round(meta.duration),
     });
   }, [mode]);
 

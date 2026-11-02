@@ -71,15 +71,21 @@ export const mabarMetaSchema = z.object({
     .max(140, "Keterangan maksimal 140 karakter.")
     .optional()
     .transform((value) => (value && value.length > 0 ? value : null)),
-  durationSeconds: z.preprocess(
-    (value) => (value === null || value === undefined || value === "" ? undefined : value),
-    z.coerce
-      .number()
-      .int()
-      .min(0)
-      .max(MABAR_VIDEO_MAX_SECONDS, `Video maksimal ${MABAR_VIDEO_MAX_SECONDS} detik.`)
-      .optional(),
-  ).transform((value) => value ?? null),
+  durationSeconds: z
+    .preprocess(
+      // Durasi hasil `MediaRecorder` berupa desimal (mis. 3.47) — bulatkan.
+      (value) => (value === null || value === undefined || value === "" ? undefined : value),
+      z.coerce
+        .number()
+        .min(0)
+        .max(MABAR_VIDEO_MAX_SECONDS + 1)
+        .optional(),
+    )
+    .transform((value) =>
+      value === undefined
+        ? null
+        : Math.min(MABAR_VIDEO_MAX_SECONDS, Math.round(value)),
+    ),
   width: optionalInt(10000).transform((value) => value ?? null),
   height: optionalInt(10000).transform((value) => value ?? null),
 });

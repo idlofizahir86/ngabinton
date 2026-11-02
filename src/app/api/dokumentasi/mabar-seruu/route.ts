@@ -37,8 +37,12 @@ export async function POST(request: Request) {
   const body: unknown = await request.json().catch(() => null);
   const parsed = createSchema.safeParse(body);
   if (!parsed.success) {
+    console.error(
+      "[mabar-seruu/create] validasi:",
+      parsed.error.issues.map((issue) => `${issue.path.join(".")}: ${issue.message}`).join("; "),
+    );
     return NextResponse.json(
-      { ok: false, error: parsed.error.issues[0]?.message ?? "Data tidak valid." },
+      { ok: false, error: "Data momen tidak valid. Coba rekam ulang." },
       { status: 400, headers: NO_STORE },
     );
   }
