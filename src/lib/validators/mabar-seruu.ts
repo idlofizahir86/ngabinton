@@ -24,7 +24,32 @@ export const MABAR_VIDEO_MIME_TYPES = [
   "video/mp4",
   "video/webm",
   "video/quicktime",
+  "video/x-matroska",
+  "video/3gpp",
+  "video/ogg",
 ] as const;
+
+/**
+ * Ambil tipe MIME tanpa parameter (`video/webm;codecs=vp9` → `video/webm`).
+ * `MediaRecorder` hampir selalu menambahkan `codecs=...`, jadi nilai mentahnya
+ * tidak pernah cocok dengan daftar di atas.
+ */
+export function baseMimeType(value: string): string {
+  return value.split(";")[0]?.trim().toLowerCase() ?? "";
+}
+
+/** Video apa pun tetap diterima (server tidak men-transcode); ini hanya pagar format. */
+export function isAllowedVideoMimeType(value: string): boolean {
+  const base = baseMimeType(value);
+  return (
+    (MABAR_VIDEO_MIME_TYPES as readonly string[]).includes(base) || base.startsWith("video/")
+  );
+}
+
+/** Foto harus salah satu format yang bisa dikompres `<canvas>`. */
+export function isAllowedPhotoMimeType(value: string): boolean {
+  return (MABAR_PHOTO_MIME_TYPES as readonly string[]).includes(baseMimeType(value));
+}
 
 /** Angka opsional dari form/JSON — string kosong & null dianggap "tidak diisi". */
 const optionalInt = (max: number) =>

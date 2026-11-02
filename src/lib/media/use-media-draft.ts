@@ -13,7 +13,7 @@ import {
   pickRecorderMimeType,
   readVideoMeta,
 } from "@/lib/media/capture";
-import { MABAR_VIDEO_MAX_SECONDS } from "@/lib/validators/mabar-seruu";
+import { MABAR_VIDEO_MAX_SECONDS, baseMimeType } from "@/lib/validators/mabar-seruu";
 
 export type MediaMode = "photo" | "video";
 
@@ -129,7 +129,8 @@ export function useMediaDraft(mode: MediaMode) {
       if (event.data.size > 0) chunksRef.current.push(event.data);
     };
     recorder.onstop = async () => {
-      const type = recorder.mimeType || "video/webm";
+      // `recorder.mimeType` memuat parameter codec (mis. `video/webm;codecs=vp9`).
+      const type = baseMimeType(recorder.mimeType) || "video/webm";
       const blob = new Blob(chunksRef.current, { type });
       const meta = await readVideoMeta(blob);
       const poster = await createVideoPoster(blob);
@@ -189,7 +190,7 @@ export function useMediaDraft(mode: MediaMode) {
     setDraft({
       kind: "video",
       blob: file,
-      mimeType: file.type || "video/mp4",
+      mimeType: baseMimeType(file.type) || "video/mp4",
       posterBlob: poster,
       previewUrl: URL.createObjectURL(file),
       width: meta.width,

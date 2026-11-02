@@ -13,7 +13,7 @@ import { getCurrentUser } from "@/lib/auth/guards";
 import { checkSessionMediaUploadRateLimit } from "@/lib/auth/rate-limit";
 import { MEDIA_BUCKET, mediaObjectPath } from "@/lib/supabase/media";
 import { getSupabaseAdmin } from "@/lib/supabase/server";
-import { MABAR_PHOTO_MIME_TYPES, MABAR_VIDEO_MIME_TYPES } from "@/lib/validators/mabar-seruu";
+import { isAllowedPhotoMimeType, isAllowedVideoMimeType } from "@/lib/validators/mabar-seruu";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -45,9 +45,8 @@ export async function POST(request: Request) {
   }
 
   const { kind, mimeType, withPoster } = parsed.data;
-  const allowed: readonly string[] =
-    kind === "video" ? MABAR_VIDEO_MIME_TYPES : MABAR_PHOTO_MIME_TYPES;
-  if (!allowed.includes(mimeType)) {
+  const allowed = kind === "video" ? isAllowedVideoMimeType(mimeType) : isAllowedPhotoMimeType(mimeType);
+  if (!allowed) {
     return NextResponse.json(
       {
         ok: false,

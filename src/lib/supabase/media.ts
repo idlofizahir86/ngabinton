@@ -19,10 +19,14 @@ const EXT_BY_MIME: Record<string, string> = {
   "video/mp4": "mp4",
   "video/webm": "webm",
   "video/quicktime": "mov",
+  "video/x-matroska": "mkv",
+  "video/3gpp": "3gp",
+  "video/ogg": "ogv",
 };
 
 export function mediaExtension(mimeType: string): string {
-  return EXT_BY_MIME[mimeType] ?? "bin";
+  const base = mimeType.split(";")[0]?.trim().toLowerCase() ?? "";
+  return EXT_BY_MIME[base] ?? "bin";
 }
 
 /** Path unik: `mabar-seruu/{photo|video|poster}/{userId}-{waktu}-{acak}.{ext}`. */

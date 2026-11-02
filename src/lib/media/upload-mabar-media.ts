@@ -38,18 +38,18 @@ export async function uploadMabarMedia({
     throw new Error(sign.error ?? "Gagal menyiapkan unggahan.");
   }
 
-  const put = async (url: string, blob: Blob) => {
+  const put = async (url: string, blob: Blob, contentType: string) => {
     const response = await fetch(url, {
       method: "PUT",
-      headers: { "content-type": blob.type, "x-upsert": "false" },
+      headers: { "content-type": contentType, "x-upsert": "false" },
       body: blob,
     });
     if (!response.ok) throw new Error("Gagal mengunggah file ke penyimpanan.");
   };
 
-  await put(mediaTarget.signedUrl, draft.blob);
+  await put(mediaTarget.signedUrl, draft.blob, draft.mimeType);
   if (posterTarget && draft.posterBlob) {
-    await put(posterTarget.signedUrl, draft.posterBlob);
+    await put(posterTarget.signedUrl, draft.posterBlob, "image/webp");
   }
 
   const saveResponse = await fetch("/api/dokumentasi/mabar-seruu", {
