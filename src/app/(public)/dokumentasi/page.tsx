@@ -4,10 +4,12 @@ import { Upload } from "lucide-react";
 
 import { Container } from "@/components/layout/container";
 import { DocumentationTabs } from "@/components/gallery/documentation-tabs";
+import { MabarHighlights } from "@/components/gallery/mabar-highlights";
 import {
   DocumentationGallery,
   type PhotoItem,
 } from "@/components/gallery/documentation-gallery";
+import { getStoryHighlights } from "@/lib/api/session-media";
 import { getDocumentationPhotos } from "@/lib/google/drive";
 import { formatDateShort } from "@/lib/utils/format";
 
@@ -37,8 +39,12 @@ function toPhotoItem(
 }
 
 export default async function DokumentasiPage() {
-  // Sumber: folder Google Drive (sudah di-cache 5 menit + error-safe).
-  const photos = (await getDocumentationPhotos()).map(toPhotoItem);
+  // Sumber: folder Google Drive (sudah di-cache 5 menit + error-safe) + Highlight Mabar Seruu.
+  const [drivePhotos, highlights] = await Promise.all([
+    getDocumentationPhotos(),
+    getStoryHighlights(),
+  ]);
+  const photos = drivePhotos.map(toPhotoItem);
 
   return (
     <div className="pb-24 pt-28">
@@ -67,28 +73,51 @@ export default async function DokumentasiPage() {
           </Link>
         </div>
 
-        {/* Pintasan Mabar Seruu */}
-        <div className="mt-8 flex flex-col gap-3 rounded-lg border border-border bg-surface p-5 sm:flex-row sm:items-center sm:justify-between">
-          <div className="min-w-0">
-            <p className="font-display text-xl text-text">Mabar Seruu</p>
-            <p className="mt-1 text-sm text-text-muted">
-              Foto &amp; video singkat dari sesi mabar — ditonton bergaya stories,
-              tayang setelah disetujui admin utama.
-            </p>
+        {/* Highlight Mabar Seruu per sesi (bila ada) — grid masonry sama seperti galeri */}
+        {highlights.length > 0 ? (
+          <section className="mt-10">
+            <div className="flex flex-wrap items-end justify-between gap-3">
+              <div>
+                <h2 className="font-display text-2xl text-text">Highlight Mabar Seruu</h2>
+                <p className="mt-1 text-sm text-text-muted">
+                  Klik salah satu sesi untuk menonton momennya.
+                </p>
+              </div>
+              <Link
+                href="/dokumentasi/mabar-seruu"
+                className="text-sm text-text-muted underline-offset-4 hover:text-text hover:underline"
+              >
+                Lihat semua →
+              </Link>
+            </div>
+            <MabarHighlights highlights={highlights} />
+          </section>
+        ) : (
+          <div className="mt-8 flex flex-col gap-3 rounded-lg border border-border bg-surface p-5 sm:flex-row sm:items-center sm:justify-between">
+            <div className="min-w-0">
+              <p className="font-display text-xl text-text">Mabar Seruu</p>
+              <p className="mt-1 text-sm text-text-muted">
+                Foto &amp; video singkat dari sesi mabar — ditonton bergaya stories,
+                langsung tayang begitu diunggah.
+              </p>
+            </div>
+            <Link
+              href="/dokumentasi/mabar-seruu"
+              className="inline-flex shrink-0 items-center justify-center rounded-md border border-border-strong px-4 py-2 text-sm font-semibold text-text transition hover:bg-surface-hover"
+            >
+              Buka Mabar Seruu
+            </Link>
           </div>
-          <Link
-            href="/dokumentasi/mabar-seruu"
-            className="inline-flex shrink-0 items-center justify-center rounded-md border border-border-strong px-4 py-2 text-sm font-semibold text-text transition hover:bg-surface-hover"
-          >
-            Buka Mabar Seruu
-          </Link>
-        </div>
+        )}
 
         {/* Gallery Masonry */}
+        <div className="mt-10">
+          <h2 className="font-display text-2xl text-text">Semua Foto</h2>
+        </div>
         {photos.length > 0 ? (
           <DocumentationGallery photos={photos} />
         ) : (
-          <p className="mt-12 text-text-muted">
+          <p className="mt-6 text-text-muted">
             Belum ada dokumentasi. Jadi yang pertama mengunggah momen keseruan!
           </p>
         )}

@@ -18,8 +18,16 @@ export const metadata: Metadata = {
 export const revalidate = 0;
 
 /** Halaman "Mabar Seruu" — stories dokumentasi sesi mabar (ROUTES.md §3.4). */
-export default async function MabarSeruuPage() {
-  const [groups, user] = await Promise.all([getApprovedStoryGroups(), getCurrentUser()]);
+export default async function MabarSeruuPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ sesi?: string }>;
+}) {
+  const [groups, user, params] = await Promise.all([
+    getApprovedStoryGroups(),
+    getCurrentUser(),
+    searchParams,
+  ]);
 
   const storyGroups: StoryGroup[] = groups.map((group) => ({
     sessionId: group.sessionId,
@@ -50,7 +58,8 @@ export default async function MabarSeruuPage() {
           </h1>
           <p className="mt-4 text-base text-text-muted md:text-lg">
             Momen singkat dari sesi mabar: foto dan video 15 detik yang direkam langsung
-            di lapangan. Semua tayang setelah disetujui admin utama.
+            di lapangan. Semua momen tayang langsung — admin utama bisa menurunkannya
+            bila perlu.
           </p>
           <p className="mt-3 flex flex-wrap items-center gap-3">
             <Link href="/dokumentasi/mabar-seruu/unggah" className={buttonClass("primary", "sm")}>
@@ -74,12 +83,12 @@ export default async function MabarSeruuPage() {
 
         <div className="mt-8">
           {storyGroups.length > 0 ? (
-            <StoryPlayer groups={storyGroups} />
+            <StoryPlayer groups={storyGroups} initialSessionId={params.sesi ?? null} />
           ) : (
             <div className="rounded-lg border border-border bg-surface p-8 text-center">
               <p className="font-semibold text-text">Belum ada momen yang tayang.</p>
               <p className="mt-2 text-sm text-text-muted">
-                Rekam foto atau video singkat saat mabar, lalu tunggu persetujuan admin utama.
+                Rekam foto atau video singkat saat mabar — momen langsung tayang di sini.
               </p>
               <p className="mt-4">
                 <Link

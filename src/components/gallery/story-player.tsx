@@ -32,11 +32,19 @@ export type StoryGroup = {
 
 export type StoryPlayerProps = {
   groups: StoryGroup[];
+  /** Grup yang langsung dibuka (dipakai tautan highlight `?sesi=`). */
+  initialSessionId?: string | null;
 };
 
 /** Player cerita: satu grup = satu sesi mabar. */
-export function StoryPlayer({ groups }: StoryPlayerProps) {
-  const [groupIndex, setGroupIndex] = useState(0);
+export function StoryPlayer({ groups, initialSessionId }: StoryPlayerProps) {
+  const initialGroupIndex = initialSessionId
+    ? Math.max(
+        0,
+        groups.findIndex((group) => group.sessionId === initialSessionId),
+      )
+    : 0;
+  const [groupIndex, setGroupIndex] = useState(initialGroupIndex);
   const [itemIndex, setItemIndex] = useState(0);
   const [paused, setPaused] = useState(false);
   const [muted, setMuted] = useState(true);
