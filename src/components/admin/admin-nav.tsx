@@ -16,6 +16,7 @@ export const ADMIN_NAV: AdminNavItem[] = [
   { label: "Sesi Bermain", href: "/admin/sesi", menu: "matches" },
   { label: "Anggota", href: "/admin/anggota", menu: "members" },
   { label: "Pencapaian", href: "/admin/pencapaian", adminOnly: true },
+  { label: "Mabar Seruu", href: "/admin/media", adminOnly: true },
   { label: "Akses Menu", href: "/admin/akses", adminOnly: true },
 ];
 

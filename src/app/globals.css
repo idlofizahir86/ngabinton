@@ -105,6 +105,18 @@ body {
 }
 
 /* ============================================================
+   Player stories "Mabar Seruu" — progress bar foto (DESIGN.md §7.24).
+   ============================================================ */
+@keyframes ngabinton-story-progress {
+  from {
+    width: 0%;
+  }
+  to {
+    width: 100%;
+  }
+}
+
+/* ============================================================
    Podium Pang-Giatna bulanan — panggung naik sekali saat dimuat
    (DESIGN.md §7.23). Bukan animasi loop; hormati reduced-motion
    lewat blok global di atas.

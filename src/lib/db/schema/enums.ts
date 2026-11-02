@@ -47,3 +47,13 @@ export const achievementTypeEnum = pgEnum("achievement_type", [
   "role",
   "family_join",
 ]);
+
+/** Jenis media "Mabar Seruu" — foto atau video singkat (RULES.md §19). */
+export const sessionMediaKindEnum = pgEnum("session_media_kind", ["photo", "video"]);
+
+/** Status moderasi media Mabar Seruu; hanya `approved` yang tayang publik. */
+export const sessionMediaStatusEnum = pgEnum("session_media_status", [
+  "pending",
+  "approved",
+  "rejected",
+]);

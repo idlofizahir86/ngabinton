@@ -32,11 +32,16 @@ const GAME_SCORE_WINDOW = "1 m";
 const DOCUMENTATION_UPLOAD_ATTEMPTS = 55;
 const DOCUMENTATION_UPLOAD_WINDOW = "10 m";
 
+/** Upload media Mabar Seruu: 20 unggahan / 10 menit per anggota. */
+const SESSION_MEDIA_UPLOAD_ATTEMPTS = 20;
+const SESSION_MEDIA_UPLOAD_WINDOW = "10 m";
+
 const globalForRateLimit = globalThis as unknown as {
   __ngabintonRedis?: Redis;
   __ngabintonLoginLimiter?: Ratelimit;
   __ngabintonGameScoreLimiter?: Ratelimit;
   __ngabintonDocumentationUploadLimiter?: Ratelimit;
+  __ngabintonSessionMediaLimiter?: Ratelimit;
 };
 
 function getRedis(): Redis {
@@ -94,6 +99,21 @@ function getDocumentationUploadLimiter(): Ratelimit {
   return globalForRateLimit.__ngabintonDocumentationUploadLimiter;
 }
 
+function getSessionMediaLimiter(): Ratelimit {
+  if (!globalForRateLimit.__ngabintonSessionMediaLimiter) {
+    globalForRateLimit.__ngabintonSessionMediaLimiter = new Ratelimit({
+      redis: getRedis(),
+      limiter: Ratelimit.slidingWindow(
+        SESSION_MEDIA_UPLOAD_ATTEMPTS,
+        SESSION_MEDIA_UPLOAD_WINDOW,
+      ),
+      prefix: "ratelimit:session-media-upload",
+      timeout: REDIS_TIMEOUT_MS,
+    });
+  }
+  return globalForRateLimit.__ngabintonSessionMediaLimiter;
+}
+
 export type RateLimitResult = {
   success: boolean;
   remaining: number;
@@ -145,8 +165,29 @@ export async function checkDocumentationUploadRateLimit(
   }
 }
 
-/** Ambil IP client dari header (Vercel menyetel `x-forwarded-for`). */
-export async function getClientIp(): Promise<string> {
+/**
+ * Batasi upload media Mabar Seruu per anggota (foto/video).
+ * Fail-open seperti upload dokumentasi.
+ */
+export async function checkSessionMediaUploadRateLimit(
+  userId: number,
+): Promise<RateLimitResult> {
+  try {
+    const { success, remaining, reset, reason } = await getSessionMediaLimiter().limit(
+      String(userId),
+    );
+    return { success, remaining, reset, reason };
+  } catch {
+    return {
+      success: true,
+      remaining: SESSION_MEDIA_UPLOAD_ATTEMPTS,
+      reset: 0,
+      reason: "timeout",
+    };
+  }
+}
+
+/** Ambil IP client dari header (Vercel menyetel `x-forwarded-for`). */export async function getClientIp(): Promise<string> {
   const h = await headers();
   const forwarded = h.get("x-forwarded-for");
   if (forwarded) {

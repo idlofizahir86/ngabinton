@@ -3,6 +3,7 @@ import Link from "next/link";
 import { Upload } from "lucide-react";
 
 import { Container } from "@/components/layout/container";
+import { DocumentationTabs } from "@/components/gallery/documentation-tabs";
 import {
   DocumentationGallery,
   type PhotoItem,
@@ -42,6 +43,8 @@ export default async function DokumentasiPage() {
   return (
     <div className="pb-24 pt-28">
       <Container size="full">
+        <DocumentationTabs active="arsip" />
+
         {/* Header Section */}
         <div className="flex flex-col gap-6 sm:flex-row sm:items-end sm:justify-between">
           <div>
@@ -61,6 +64,23 @@ export default async function DokumentasiPage() {
           >
             <Upload className="h-5 w-5" />
             <span>Upload Foto</span>
+          </Link>
+        </div>
+
+        {/* Pintasan Mabar Seruu */}
+        <div className="mt-8 flex flex-col gap-3 rounded-lg border border-border bg-surface p-5 sm:flex-row sm:items-center sm:justify-between">
+          <div className="min-w-0">
+            <p className="font-display text-xl text-text">Mabar Seruu</p>
+            <p className="mt-1 text-sm text-text-muted">
+              Foto &amp; video singkat dari sesi mabar — ditonton bergaya stories,
+              tayang setelah disetujui admin utama.
+            </p>
+          </div>
+          <Link
+            href="/dokumentasi/mabar-seruu"
+            className="inline-flex shrink-0 items-center justify-center rounded-md border border-border-strong px-4 py-2 text-sm font-semibold text-text transition hover:bg-surface-hover"
+          >
+            Buka Mabar Seruu
           </Link>
         </div>
 

@@ -43,6 +43,11 @@ export function avatarObjectPath(userId: number): string {
 
 /** URL publik objek di bucket `public`. */
 export function avatarPublicUrl(objectPath: string): string {
+  return publicObjectUrl(objectPath);
+}
+
+/** URL publik objek apa pun di bucket `public` (avatar, media sesi, dst.). */
+export function publicObjectUrl(objectPath: string): string {
   return `${process.env.SUPABASE_URL}/storage/v1/object/public/${AVATAR_BUCKET}/${objectPath}`;
 }
 

@@ -31,6 +31,7 @@ const NAV_LINKS: readonly NavLink[] = [
       { label: "Arsip Event", href: "/arsip" },
       { label: "Arsip Mabar", href: "/sesi" },
       { label: "Arsip Dokumentasi", href: "/dokumentasi" },
+      { label: "Mabar Seruu", href: "/dokumentasi/mabar-seruu" },
     ],
   },
   { label: "Tentang", href: "/tentang" },
