@@ -51,8 +51,8 @@ export default async function UnggahMabarSeruuPage() {
             Rekam Momen Mabar
           </h1>
           <p className="mt-2 max-w-xl text-base text-text-muted">
-            Pilih foto atau video (maksimal 15 detik). Setelah dikirim, momen menunggu
-            persetujuan admin utama sebelum tayang di arsip.
+            Pilih foto atau video (maksimal 15 detik). Momen langsung tayang di arsip
+            Mabar Seruu; admin utama bisa menurunkannya bila perlu.
           </p>
         </header>
 

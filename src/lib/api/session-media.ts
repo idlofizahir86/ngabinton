@@ -127,8 +127,7 @@ export async function getApprovedStoryGroups(): Promise<SessionMediaGroup[]> {
 }
 
 /** Media untuk panel moderasi admin utama. */
-export async function getMediaByStatus(status: SessionMediaStatus): Promise<SessionMediaItem[]> {
-  const rows: SelectedRow[] = await db
+export async function getMediaByStatus(status: SessionMediaStatus): Promise<SessionMediaItem[]> {  const rows: SelectedRow[] = await db
     .select(SELECTED_COLUMNS)
     .from(sessionMedia)
     .leftJoin(playSessions, eq(playSessions.id, sessionMedia.sessionId))
@@ -164,6 +163,45 @@ export async function getRecentSessionOptions(
     .limit(limit);
 }
 
+/** Satu "highlight" ala Instagram: sesi + sampul dari momen terbaru. */
+export type StoryHighlight = {
+  sessionId: string | null;
+  title: string;
+  playedAt: Date | null;
+  count: number;
+  coverUrl: string;
+  coverIsVideo: boolean;
+};
+
+/** Highlight Mabar Seruu per sesi — dipakai di Arsip Dokumentasi. */
+export async function getStoryHighlights(limit = 10): Promise<StoryHighlight[]> {
+  try {
+    const groups = await getApprovedStoryGroups();
+
+    return groups.slice(0, limit).flatMap((group) => {
+      const latest = group.items[group.items.length - 1];
+      if (!latest) return [];
+      return [
+        {
+          sessionId: group.sessionId,
+          title: group.title,
+          playedAt: group.playedAt,
+          count: group.items.length,
+          coverUrl: latest.posterUrl ?? latest.url,
+          coverIsVideo: latest.kind === "video",
+        },
+      ];
+    });
+  } catch (err) {
+    // Arsip Dokumentasi di-prerender; DB bermasalah tidak boleh menggagalkan build.
+    console.error(
+      "[session-media] gagal memuat highlight:",
+      err instanceof Error ? err.message : String(err),
+    );
+    return [];
+  }
+}
+
 export type NewSessionMedia = {
   sessionId: string | null;
   uploaderUserId: number;
@@ -174,13 +212,16 @@ export type NewSessionMedia = {
   durationSeconds: number | null;
   width: number | null;
   height: number | null;
+  /** Default `approved` — media langsung tayang; admin utama bisa menurunkannya. */
+  status?: Extract<SessionMediaStatus, "pending" | "approved">;
 };
 
-/** Simpan media baru — selalu masuk sebagai `pending` (menunggu admin utama). */
+/** Simpan media baru — default langsung tayang (`approved`). */
 export async function createSessionMedia(input: NewSessionMedia): Promise<string> {
+  const { status = "approved", ...values } = input;
   const rows = await db
     .insert(sessionMedia)
-    .values({ ...input, status: "pending" })
+    .values({ ...values, status })
     .returning({ id: sessionMedia.id });
   const id = rows[0]?.id;
   if (!id) {

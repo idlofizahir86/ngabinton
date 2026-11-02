@@ -21,9 +21,9 @@ export const metadata: Metadata = {
 export const revalidate = 0;
 
 const TABS: { status: SessionMediaStatus; label: string }[] = [
-  { status: "pending", label: "Menunggu" },
   { status: "approved", label: "Tayang" },
-  { status: "rejected", label: "Ditolak" },
+  { status: "pending", label: "Menunggu" },
+  { status: "rejected", label: "Diturunkan" },
 ];
 
 type PageProps = {
@@ -31,7 +31,7 @@ type PageProps = {
 };
 
 function resolveStatus(value: string | undefined): SessionMediaStatus {
-  return value === "approved" || value === "rejected" ? value : "pending";
+  return value === "pending" || value === "rejected" ? value : "approved";
 }
 
 /** Moderasi media Mabar Seruu — hanya admin utama (RULES.md §19). */
@@ -49,9 +49,10 @@ export default async function AdminMediaPage({ searchParams }: PageProps) {
       <header>
         <h1 className="font-display text-3xl text-text md:text-4xl">Mabar Seruu</h1>
         <p className="mt-2 max-w-2xl text-sm text-text-muted">
-          Foto &amp; video momen mabar yang diunggah anggota. Hanya media yang
-          <span className="font-semibold text-text"> disetujui</span> yang tayang di
-          halaman publik{" "}
+          Foto &amp; video momen mabar yang diunggah anggota — <span className="font-semibold text-text">langsung tayang</span>{" "}
+          begitu diunggah. Turunkan bila ada yang tidak pantas; tombol{" "}
+          <span className="font-semibold text-text">Setujui</span> tetap tersedia bila
+          media pernah diturunkan. Halaman publik:{" "}
           <Link
             href="/dokumentasi/mabar-seruu"
             className="text-primary underline-offset-4 hover:underline"

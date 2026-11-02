@@ -79,8 +79,11 @@ export async function POST(request: Request) {
       height: height ?? null,
     });
 
+    // Media langsung tayang → segarkan halaman publik + panel admin.
+    revalidatePath("/dokumentasi");
+    revalidatePath("/dokumentasi/mabar-seruu");
     revalidatePath("/admin/media");
-    return NextResponse.json({ ok: true, id, status: "pending" }, { headers: NO_STORE });
+    return NextResponse.json({ ok: true, id, status: "approved" }, { headers: NO_STORE });
   } catch (err) {
     console.error("[mabar-seruu/create]", err instanceof Error ? err.message : String(err));
     return NextResponse.json(

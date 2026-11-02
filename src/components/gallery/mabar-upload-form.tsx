@@ -50,7 +50,7 @@ export function MabarUploadForm({ sessions }: { sessions: MabarSessionOption[] }
       await uploadMabarMedia({ draft, sessionId, caption });
       resetDraft();
       setCaption("");
-      setNotice("Momen terkirim! Menunggu persetujuan admin utama sebelum tayang.");
+      setNotice("Momen langsung tayang di Mabar Seruu! Admin utama bisa menurunkannya bila perlu.");
     } catch (err) {
       setUploadError(err instanceof Error ? err.message : "Terjadi kesalahan. Coba lagi.");
     } finally {
